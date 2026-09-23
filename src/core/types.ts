@@ -65,6 +65,8 @@ export interface Entity {
 export interface Projectile {
   id: number;
   side: Side;
+  /** What fired it (card id or tower type); only used for visuals. */
+  source: string;
   x: number;
   y: number;
   tx: number;

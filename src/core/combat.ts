@@ -77,6 +77,7 @@ export function attack(state: GameState, e: Entity, target: Entity): void {
     state.projectiles.push({
       id: state.nextId++,
       side: e.side,
+      source: e.type,
       x: e.x,
       y: e.y,
       tx: target.x,

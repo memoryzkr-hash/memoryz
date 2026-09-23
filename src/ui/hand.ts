@@ -3,7 +3,7 @@ import { getCard } from '../core/cards';
 import { ELIXIR_MAX } from '../core/constants';
 import { nextCard } from '../core/deck';
 import type { PlayerState } from '../core/types';
-import { COLORS, FONT, GAME_W, UI_Y } from '../render/layout';
+import { COLORS, FONT, GAME_W, UI_Y, cardArtKey } from '../render/layout';
 
 const CARD_W = 148;
 const CARD_H = 132;
@@ -14,7 +14,7 @@ const BAR_Y = UI_Y + CARD_H + 18;
 interface CardSlot {
   root: Phaser.GameObjects.Container;
   bg: Phaser.GameObjects.Graphics;
-  icon: Phaser.GameObjects.Text;
+  icon: Phaser.GameObjects.Image;
   name: Phaser.GameObjects.Text;
   cost: Phaser.GameObjects.Text;
   cardId: string | null;
@@ -25,7 +25,7 @@ interface CardSlot {
 /** Bottom panel: 4 cards in hand, the next card and the elixir bar. */
 export class HandUI {
   private slots: CardSlot[] = [];
-  private nextIcon: Phaser.GameObjects.Text;
+  private nextIcon: Phaser.GameObjects.Image;
   private barFill: Phaser.GameObjects.Graphics;
   private barText: Phaser.GameObjects.Text;
 
@@ -41,13 +41,13 @@ export class HandUI {
     const nextBg = scene.add.graphics();
     nextBg.fillStyle(0x374151);
     nextBg.fillRoundedRect(14, UI_Y + 26, 64, 76, 8);
-    this.nextIcon = scene.add.text(46, UI_Y + 64, '', { fontFamily: FONT, fontSize: '30px' }).setOrigin(0.5);
+    this.nextIcon = scene.add.image(46, UI_Y + 64, '__DEFAULT').setDisplaySize(58, 58);
 
     for (let i = 0; i < 4; i++) {
       const x = CARDS_X + i * (CARD_W + CARD_GAP);
       const root = scene.add.container(x, UI_Y);
       const bg = scene.add.graphics();
-      const icon = scene.add.text(CARD_W / 2, 56, '', { fontFamily: FONT, fontSize: '48px' }).setOrigin(0.5);
+      const icon = scene.add.image(CARD_W / 2, 52, '__DEFAULT').setDisplaySize(CARD_W - 12, CARD_H - 36);
       const name = scene.add
         .text(CARD_W / 2, CARD_H - 18, '', { fontFamily: FONT, fontSize: '16px', color: '#ffffff' })
         .setOrigin(0.5);
@@ -83,7 +83,7 @@ export class HandUI {
       const isSelected = selected === i;
       if (slot.cardId !== id) {
         slot.cardId = id;
-        slot.icon.setText(card.icon);
+        slot.icon.setTexture(cardArtKey(id)).setDisplaySize(CARD_W - 12, CARD_H - 36);
         slot.name.setText(card.name);
         slot.cost.setText(String(card.cost));
         slot.selected = !isSelected; // force a redraw below
@@ -94,7 +94,8 @@ export class HandUI {
         this.drawCardBg(slot);
       }
     });
-    this.nextIcon.setText(getCard(nextCard(player.deck)).icon);
+    const next = cardArtKey(nextCard(player.deck));
+    if (this.nextIcon.texture.key !== next) this.nextIcon.setTexture(next).setDisplaySize(58, 58);
 
     const w = GAME_W - CARDS_X - 12;
     const g = this.barFill;
@@ -118,5 +119,7 @@ export class HandUI {
     g.strokeRoundedRect(0, 0, CARD_W, CARD_H, 10);
     slot.root.y = slot.selected ? UI_Y - 10 : UI_Y;
     slot.icon.setAlpha(slot.affordable ? 1 : 0.4);
+    if (slot.affordable) slot.icon.clearTint();
+    else slot.icon.setTint(0x777777);
   }
 }

@@ -30,6 +30,7 @@ export class DeckScene extends Phaser.Scene {
   }
 
   create(): void {
+    this.cameras.main.setBackgroundColor('#10131c');
     this.deck = loadDeck();
     this.slot = null;
     this.info = null;

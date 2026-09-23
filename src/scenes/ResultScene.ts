@@ -17,6 +17,7 @@ export class ResultScene extends Phaser.Scene {
   }
 
   create(data: ResultData): void {
+    this.cameras.main.setBackgroundColor('#10131c');
     const cx = GAME_W / 2;
     if (data.winner === 0) sfx.win();
     else if (data.winner === 1) sfx.lose();

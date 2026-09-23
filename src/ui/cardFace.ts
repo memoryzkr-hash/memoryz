@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import type { CardDef } from '../core/types';
-import { COLORS, FONT } from '../render/layout';
+import { COLORS, FONT, cardArtKey } from '../render/layout';
 
 export interface CardFaceOptions {
   highlight?: boolean;
@@ -23,7 +23,8 @@ export function drawCardFace(
   bg.fillRoundedRect(0, 0, w, h, 10);
   bg.lineStyle(opts.highlight ? 4 : 2, opts.highlight ? 0xfde047 : 0x111827);
   bg.strokeRoundedRect(0, 0, w, h, 10);
-  const icon = scene.add.text(w / 2, h * 0.42, card.icon, { fontFamily: FONT, fontSize: `${Math.round(h * 0.36)}px` }).setOrigin(0.5);
+  const art = h - 32;
+  const icon = scene.add.image(w / 2, 4 + art / 2, cardArtKey(card.id)).setDisplaySize(Math.min(w - 8, art), art);
   const name = scene.add
     .text(w / 2, h - 16, card.name, { fontFamily: FONT, fontSize: `${w < 130 ? 14 : 16}px`, color: '#ffffff' })
     .setOrigin(0.5);

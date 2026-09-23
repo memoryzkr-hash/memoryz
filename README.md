@@ -1,6 +1,6 @@
 # Memoryz Royale
 
-클래시로얄 스타일의 실시간 카드 배틀 웹 게임 (TypeScript + Phaser 3).
+클래시로얄 스타일의 실시간 카드 배틀 웹 게임 (TypeScript + Three.js 3D 전장 + Phaser 3 UI).
 
 ![배틀 화면](docs/screenshot.png)
 
@@ -60,7 +60,9 @@ src/core/     게임 규칙 (Phaser 의존 없음, 결정적 20Hz 시뮬레이�
   movement.ts   다리를 통한 이동, 충돌 밀어내기
   ai.ts         규칙 기반 AI 상대
 src/audio/    WebAudio로 합성한 효과음 (파일 없음)
-src/render/   core 상태를 화면에 그리는 코드
+src/render3d/ Three.js 3D 전장: 유닛/타워 모델(models.ts), 경기장(arena.ts),
+              애니메이션·이펙트(world.ts), 카드 초상화 렌더링(cardArt.ts)
+src/render/   화면 레이아웃 상수
 src/ui/       손패, 엘릭서 바, 버튼
 src/scenes/   메뉴 / 배틀 / 덱 편집 / 결과 씬
 tests/        core 단위 테스트
@@ -69,4 +71,5 @@ tests/        core 단위 테스트
 게임 로직(`src/core`)이 렌더링과 분리되어 있어서, 나중에 멀티플레이 서버에서 그대로 재사용할 수 있습니다.
 플레이어 입력은 모두 `playCard(state, { side, handIndex, x, y })` 명령 하나로 들어갑니다.
 
-그래픽은 현재 도형 + 이모지 플레이스홀더입니다. 개발 계획은 [docs/PLAN.md](docs/PLAN.md)를 참고하세요.
+유닛과 타워는 외부 에셋 없이 코드로 만든 오리지널 3D 모델(카툰 셰이딩)이고, 카드 그림도 이 모델을 렌더링해서 만듭니다.
+개발 중에는 `http://localhost:5173/showcase.html`에서 모든 모델을 가까이서 볼 수 있습니다 (`?towers`로 타워). 개발 계획은 [docs/PLAN.md](docs/PLAN.md)를 참고하세요.

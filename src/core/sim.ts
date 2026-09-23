@@ -128,6 +128,7 @@ export function playCard(state: GameState, cmd: PlayCommand): boolean {
     state.projectiles.push({
       id: state.nextId++,
       side: cmd.side,
+      source: card.id,
       x: from.x,
       y: from.y,
       tx: cmd.x,

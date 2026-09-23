@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { getCard } from '../core/cards';
 import { isMuted, setMuted } from '../audio/sfx';
 import type { Difficulty } from '../core/ai';
-import { FONT, GAME_W } from '../render/layout';
+import { FONT, GAME_W, cardArtKey } from '../render/layout';
 import { makeButton } from '../ui/button';
 import { loadDeck } from '../ui/deckStore';
 
@@ -12,6 +12,7 @@ export class MenuScene extends Phaser.Scene {
   }
 
   create(): void {
+    this.cameras.main.setBackgroundColor('#10131c');
     const cx = GAME_W / 2;
     const sound = this.add
       .text(GAME_W - 24, 24, isMuted() ? '🔇' : '🔊', { fontFamily: FONT, fontSize: '36px' })
@@ -41,7 +42,7 @@ export class MenuScene extends Phaser.Scene {
       const card = getCard(id);
       const x = cx + ((i % 4) - 1.5) * 150;
       const y = 850 + Math.floor(i / 4) * 105;
-      this.add.text(x, y, card.icon, { fontFamily: FONT, fontSize: '44px' }).setOrigin(0.5);
+      this.add.image(x, y - 4, cardArtKey(card.id)).setDisplaySize(84, 84);
       this.add.text(x, y + 42, `${card.name} (${card.cost})`, { fontFamily: FONT, fontSize: '16px', color: '#e5e7eb' }).setOrigin(0.5);
     });
 
