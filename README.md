@@ -47,9 +47,11 @@ npm run build    # dist/ 에 정적 빌드 (GitHub Pages 등에 그대로 배포
 
 ## 배포 (GitHub Pages)
 
-`.github/workflows/ci.yml`이 모든 push에서 테스트와 빌드를 돌리고, `main` 브랜치에 push되면
-`https://<계정>.github.io/<저장소>/`로 자동 배포합니다. 처음 한 번은 저장소 **Settings → Pages → Source**를
-**GitHub Actions**로 바꿔야 합니다.
+`.github/workflows/ci.yml`이 모든 push에서 테스트와 빌드를 돌리고, 저장소 **기본 브랜치**에 push되면
+https://memoryzkr-hash.github.io/memoryz/ 로 자동 배포합니다. 처음 한 번은 저장소 **Settings → Pages → Source**를
+**GitHub Actions**로 바꾼 뒤, Actions 탭에서 CI를 다시 실행하면 됩니다.
+
+폰에서는 위 주소를 열고 브라우저 메뉴의 **홈 화면에 추가**를 누르면 앱처럼 전체 화면으로 실행됩니다.
 
 ## 구조
 

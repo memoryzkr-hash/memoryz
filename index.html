@@ -2,11 +2,34 @@
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#10131c" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Memoryz Royale" />
     <title>Memoryz Royale</title>
     <style>
-      html, body { margin: 0; height: 100%; background: #10131c; overflow: hidden; }
-      #game { width: 100%; height: 100%; }
+      html, body { margin: 0; height: 100%; background: #10131c; overflow: hidden; color-scheme: dark; }
+      body {
+        /* Phone games: no pull-to-refresh, page scroll, text selection or tap flashes while dragging cards. */
+        touch-action: none;
+        overscroll-behavior: none;
+        -webkit-user-select: none;
+        user-select: none;
+        -webkit-touch-callout: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+      /* Keeps the game clear of the notch and home indicator. */
+      #game {
+        position: fixed;
+        left: 0;
+        right: 0;
+        top: env(safe-area-inset-top, 0px);
+        bottom: env(safe-area-inset-bottom, 0px);
+        /* Above the Three.js canvas (z-index 0), which is a sibling on <body>. */
+        z-index: 1;
+      }
     </style>
   </head>
   <body>

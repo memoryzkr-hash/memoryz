@@ -87,8 +87,10 @@ export class World3D {
   private ground = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 
   constructor() {
-    this.renderer = new THREE.WebGLRenderer({ antialias: true });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    // Phones get a lighter setup (fewer pixels, smaller shadow map) to hold the frame rate.
+    const phone = window.matchMedia?.('(pointer: coarse)').matches ?? false;
+    this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, phone ? 1.5 : 2));
     this.renderer.setSize(VIEW_W, VIEW_H, false);
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFShadowMap;
@@ -106,7 +108,7 @@ export class World3D {
     const sun = new THREE.DirectionalLight(0xfff4e0, 2.4);
     sun.position.set(-10, 30, 14);
     sun.castShadow = true;
-    sun.shadow.mapSize.set(2048, 2048);
+    sun.shadow.mapSize.setScalar(phone ? 1024 : 2048);
     Object.assign(sun.shadow.camera, { left: -16, right: 16, top: 22, bottom: -22, near: 1, far: 80 });
     sun.shadow.bias = -0.0005;
     sun.shadow.normalBias = 0.03;
