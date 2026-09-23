@@ -1,0 +1,96 @@
+[
+  {
+    "id": "knight",
+    "name": "기사",
+    "icon": "⚔️",
+    "cost": 3,
+    "type": "troop",
+    "count": 1,
+    "unit": {
+      "hp": 690, "damage": 79, "hitSpeed": 1.2, "range": 0.8, "sightRange": 5.5,
+      "speed": 1.0, "radius": 0.5, "flying": false, "targets": "ground"
+    }
+  },
+  {
+    "id": "archers",
+    "name": "궁수",
+    "icon": "🏹",
+    "cost": 3,
+    "type": "troop",
+    "count": 2,
+    "unit": {
+      "hp": 125, "damage": 42, "hitSpeed": 0.9, "range": 5.0, "sightRange": 5.5,
+      "speed": 1.0, "radius": 0.4, "flying": false, "targets": "all", "projectileSpeed": 10
+    }
+  },
+  {
+    "id": "giant",
+    "name": "자이언트",
+    "icon": "🗿",
+    "cost": 5,
+    "type": "troop",
+    "count": 1,
+    "unit": {
+      "hp": 1930, "damage": 120, "hitSpeed": 1.5, "range": 0.8, "sightRange": 7.5,
+      "speed": 0.75, "radius": 0.75, "flying": false, "targets": "buildings"
+    }
+  },
+  {
+    "id": "goblins",
+    "name": "고블린",
+    "icon": "👺",
+    "cost": 2,
+    "type": "troop",
+    "count": 3,
+    "unit": {
+      "hp": 80, "damage": 50, "hitSpeed": 1.1, "range": 0.5, "sightRange": 5.5,
+      "speed": 2.0, "radius": 0.35, "flying": false, "targets": "ground"
+    }
+  },
+  {
+    "id": "babydragon",
+    "name": "아기 드래곤",
+    "icon": "🐉",
+    "cost": 4,
+    "type": "troop",
+    "count": 1,
+    "unit": {
+      "hp": 580, "damage": 80, "hitSpeed": 1.5, "range": 3.5, "sightRange": 5.5,
+      "speed": 1.5, "radius": 0.6, "flying": true, "targets": "all", "splash": 1.5,
+      "projectileSpeed": 8
+    }
+  },
+  {
+    "id": "skeletons",
+    "name": "해골 군대",
+    "icon": "💀",
+    "cost": 3,
+    "type": "troop",
+    "count": 12,
+    "unit": {
+      "hp": 32, "damage": 32, "hitSpeed": 1.0, "range": 0.5, "sightRange": 5.5,
+      "speed": 1.5, "radius": 0.3, "flying": false, "targets": "ground"
+    }
+  },
+  {
+    "id": "fireball",
+    "name": "파이어볼",
+    "icon": "🔥",
+    "cost": 4,
+    "type": "spell",
+    "spell": { "radius": 2.5, "damage": 325, "towerScale": 0.35, "travelSpeed": 12 }
+  },
+  {
+    "id": "cannon",
+    "name": "대포",
+    "icon": "💣",
+    "cost": 3,
+    "type": "building",
+    "count": 1,
+    "unit": {
+      "hp": 400, "damage": 83, "hitSpeed": 0.8, "range": 5.5, "sightRange": 5.5,
+      "speed": 0, "radius": 0.9, "flying": false, "targets": "ground",
+      "projectileSpeed": 12, "lifetime": 30
+    }
+  }
+]
