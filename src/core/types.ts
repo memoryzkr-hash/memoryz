@@ -14,6 +14,10 @@ export interface UnitStats {
   splash?: number;
   projectileSpeed?: number;
   lifetime?: number;
+  /** Ground unit that leaps over the river instead of using a bridge. */
+  jumpsRiver?: boolean;
+  /** Splash is centered on the attacker (a spin attack) instead of on the target. */
+  selfSplash?: boolean;
 }
 
 export interface SpellStats {
@@ -88,6 +92,7 @@ export interface PlayerState {
 
 export type GameEvent =
   | { type: 'hit'; x: number; y: number; targetId: number }
+  | { type: 'attack'; id: number; tx: number; ty: number; ranged: boolean }
   | { type: 'death'; x: number; y: number; id: number; kind: EntityKind; side: Side }
   | { type: 'explosion'; x: number; y: number; radius: number }
   | { type: 'deploy'; side: Side; cardId: string; x: number; y: number }

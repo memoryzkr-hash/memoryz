@@ -72,6 +72,7 @@ export function applySplash(
 
 export function attack(state: GameState, e: Entity, target: Entity): void {
   const s = e.stats;
+  state.events.push({ type: 'attack', id: e.id, tx: target.x, ty: target.y, ranged: !!s.projectileSpeed });
   if (s.projectileSpeed) {
     state.projectiles.push({
       id: state.nextId++,
@@ -89,7 +90,8 @@ export function attack(state: GameState, e: Entity, target: Entity): void {
       isSpell: false,
     });
   } else if (s.splash) {
-    applySplash(state, e.side, target.x, target.y, s.splash, s.damage, s.targets, 1);
+    const [x, y] = s.selfSplash ? [e.x, e.y] : [target.x, target.y];
+    applySplash(state, e.side, x, y, s.splash, s.damage, s.targets, 1);
   } else {
     dealDamage(state, target, s.damage);
   }

@@ -24,7 +24,7 @@ function nearestBridge(x: number): number {
 /** Where a unit should walk next to reach (tx, ty), routing ground units over a bridge. */
 export function nextWaypoint(e: Entity, tx: number, ty: number): Point {
   const target = { x: tx, y: ty };
-  if (e.stats.flying) return target;
+  if (e.stats.flying || e.stats.jumpsRiver) return target;
   const from = half(e.y);
   const to = half(ty);
   if (from === to) return target;
@@ -63,7 +63,7 @@ export function constrain(e: Entity, prevX: number, prevY: number): void {
   const r = e.stats.radius;
   e.x = Math.min(ARENA_W - r, Math.max(r, e.x));
   e.y = Math.min(ARENA_H - r, Math.max(r, e.y));
-  if (!e.stats.flying && half(e.y) === -1 && !onBridge(e.x)) {
+  if (!e.stats.flying && !e.stats.jumpsRiver && half(e.y) === -1 && !onBridge(e.x)) {
     if (half(prevY) === -1 && onBridge(prevX)) {
       // Slid sideways off a bridge: snap back to its edge.
       const bx = nearestBridge(prevX);

@@ -1,11 +1,18 @@
 import Phaser from 'phaser';
+import { sfx } from '../audio/sfx';
 import { getCard } from '../core/cards';
 import type { Entity, GameEvent, GameState } from '../core/types';
 import { COLORS, FONT, TILE, toScreen } from './layout';
 
 interface View {
   root: Phaser.GameObjects.Container;
+  /** Body + icon, moved as one for lunges. */
+  sprite: Phaser.GameObjects.Container;
   body: Phaser.GameObjects.Graphics;
+  lift: number;
+  lastX: number;
+  lastY: number;
+  phase: number;
   icon: Phaser.GameObjects.Text;
   hpBar: Phaser.GameObjects.Graphics;
   hpText?: Phaser.GameObjects.Text;
@@ -21,8 +28,10 @@ export class EntityRenderer {
   private projectiles: Phaser.GameObjects.Graphics;
   private groundLayer: Phaser.GameObjects.Container;
   private airLayer: Phaser.GameObjects.Container;
+  private rubble: Phaser.GameObjects.Graphics;
 
   constructor(private scene: Phaser.Scene) {
+    this.rubble = scene.add.graphics();
     this.groundLayer = scene.add.container(0, 0);
     this.projectiles = scene.add.graphics();
     this.airLayer = scene.add.container(0, 0);
@@ -41,6 +50,7 @@ export class EntityRenderer {
     }
     for (const [id, view] of this.views) {
       if (!seen.has(id)) {
+        this.scene.tweens.killTweensOf(view.sprite);
         view.root.destroy();
         this.views.delete(id);
       }
@@ -94,9 +104,14 @@ export class EntityRenderer {
       .text(0, -lift, icon, { fontFamily: FONT, fontSize: `${fontSize}px` })
       .setOrigin(0.5);
     const hpBar = this.scene.add.graphics();
-    root.add([body, iconText, hpBar]);
+    const sprite = this.scene.add.container(0, 0, [body, iconText]);
+    root.add([sprite, hpBar]);
+    if (e.kind !== 'tower') {
+      sprite.setScale(1.5);
+      this.scene.tweens.add({ targets: sprite, scale: 1, duration: 220, ease: 'Back.easeOut' });
+    }
 
-    const view: View = { root, body, icon: iconText, hpBar };
+    const view: View = { root, sprite, body, lift, lastX: e.x, lastY: e.y, phase: e.id * 1.7, icon: iconText, hpBar };
     if (e.kind === 'tower') {
       view.hpText = this.scene.add
         .text(0, -r - 16, '', { fontFamily: FONT, fontSize: '13px', color: '#ffffff', stroke: '#000', strokeThickness: 3 })
@@ -116,6 +131,12 @@ export class EntityRenderer {
     view.root.setPosition(p.x, p.y);
     view.root.setAlpha(e.deployTimer > 0 ? 0.45 : 1);
     if (view.sleep) view.sleep.setVisible(!e.active);
+    // Little hop while walking.
+    const moved = Math.hypot(e.x - view.lastX, e.y - view.lastY) > 0.001;
+    view.lastX = e.x;
+    view.lastY = e.y;
+    if (moved) view.phase += 0.35;
+    view.icon.y = -view.lift - (moved ? Math.abs(Math.sin(view.phase)) * 4 : 0);
 
     const r = e.stats.radius * TILE;
     const lift = e.stats.flying ? FLY_OFFSET : 0;
@@ -156,15 +177,36 @@ export class EntityRenderer {
     for (const ev of events) {
       if (ev.type === 'explosion') {
         const s = toScreen(ev.x, ev.y);
+        sfx.explosion();
         const c = this.scene.add.circle(s.x, s.y, ev.radius * TILE, 0xf97316, 0.55).setScale(0.3);
         this.scene.tweens.add({ targets: c, scale: 1, alpha: 0, duration: 380, onComplete: () => c.destroy() });
+      } else if (ev.type === 'attack') {
+        const view = this.views.get(ev.id);
+        if (ev.ranged) sfx.shoot();
+        else sfx.swing();
+        if (view && !ev.ranged && view.sprite.x === 0 && view.sprite.y === 0) {
+          const from = toScreen(view.lastX, view.lastY);
+          const to = toScreen(ev.tx, ev.ty);
+          const d = Math.hypot(to.x - from.x, to.y - from.y) || 1;
+          this.scene.tweens.add({
+            targets: view.sprite,
+            x: ((to.x - from.x) / d) * 6,
+            y: ((to.y - from.y) / d) * 6,
+            duration: 70,
+            yoyo: true,
+            onComplete: () => view.sprite.setPosition(0, 0),
+          });
+        }
       } else if (ev.type === 'death') {
         const s = toScreen(ev.x, ev.y);
+        if (ev.kind === 'tower') this.drawRubble(s.x, s.y);
+        else sfx.death();
         const size = ev.kind === 'tower' ? 60 : 16;
         const c = this.scene.add.circle(s.x, s.y, size, 0xffffff, 0.6);
         this.scene.tweens.add({ targets: c, scale: 1.8, alpha: 0, duration: 300, onComplete: () => c.destroy() });
       } else if (ev.type === 'deploy') {
         const s = toScreen(ev.x, ev.y);
+        sfx.deploy();
         const c = this.scene.add.circle(s.x, s.y, 20).setStrokeStyle(3, COLORS.side[ev.side]);
         this.scene.tweens.add({ targets: c, scale: 2, alpha: 0, duration: 450, onComplete: () => c.destroy() });
       } else if (ev.type === 'hit') {
@@ -174,8 +216,17 @@ export class EntityRenderer {
           this.scene.time.delayedCall(60, () => view.body.active && view.body.setAlpha(1));
         }
       } else if (ev.type === 'towerDestroyed') {
+        sfx.towerDown();
         this.scene.cameras.main.shake(250, 0.008);
       }
     }
+  }
+
+  private drawRubble(x: number, y: number): void {
+    const g = this.rubble;
+    g.fillStyle(0x4b5563, 0.9);
+    g.fillEllipse(x, y + 6, 70, 40);
+    g.fillStyle(0x6b7280);
+    for (const [dx, dy, r] of [[-18, 0, 9], [10, -6, 11], [20, 10, 7], [-6, 12, 8], [0, -2, 6]]) g.fillCircle(x + dx, y + dy, r);
   }
 }

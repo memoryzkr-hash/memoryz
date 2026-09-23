@@ -183,3 +183,39 @@ describe('ai', () => {
     expect(s.phase).toBe('ended');
   });
 });
+
+describe('special cards', () => {
+  it('hog rider jumps the river off-bridge', () => {
+    const s = newGame();
+    forceHand(s, 0, 'hogrider');
+    playCard(s, { side: 0, handIndex: 0, x: 8.5, y: 18.5 });
+    const hog = s.entities.find((e) => e.type === 'hogrider')!;
+    let crossedOffBridge = false;
+    for (let i = 0; i < 6 * TICK_RATE; i++) {
+      step(s);
+      if (hog.y > 15 && hog.y < 17 && Math.min(Math.abs(hog.x - 3.5), Math.abs(hog.x - 14.5)) > 1) crossedOffBridge = true;
+    }
+    expect(crossedOffBridge).toBe(true);
+    expect(hog.y).toBeLessThan(15);
+  });
+
+  it('valkyrie hits every enemy around her', () => {
+    const s = newGame();
+    forceHand(s, 0, 'valkyrie');
+    playCard(s, { side: 0, handIndex: 0, x: 9.5, y: 22.5 });
+    forceHand(s, 1, 'skeletons');
+    playCard(s, { side: 1, handIndex: 0, x: 9.5, y: 20.5 });
+    run(s, 6);
+    expect(s.entities.filter((e) => e.type === 'skeletons').length).toBeLessThan(3);
+  });
+});
+
+describe('decks', () => {
+  it('sanitizes stored decks', async () => {
+    const { sanitizeDeck, DEFAULT_DECK, AI_DECKS } = await import('../src/core/cards');
+    expect(sanitizeDeck(null)).toEqual(DEFAULT_DECK);
+    expect(sanitizeDeck(['knight', 'knight'])).toEqual(DEFAULT_DECK);
+    expect(sanitizeDeck(AI_DECKS[1])).toEqual(AI_DECKS[1]);
+    for (const d of AI_DECKS) expect(sanitizeDeck(d)).toEqual(d);
+  });
+});

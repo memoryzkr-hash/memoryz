@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { sfx } from '../audio/sfx';
 import { FONT } from '../render/layout';
 
 export function makeButton(
@@ -26,6 +27,7 @@ export function makeButton(
   btn.on('pointerout', () => btn.setScale(1));
   btn.on('pointerup', () => {
     btn.setScale(1);
+    sfx.click();
     onClick();
   });
   return btn;

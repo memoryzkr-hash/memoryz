@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { sfx } from '../audio/sfx';
 import type { Difficulty } from '../core/ai';
 import type { Side } from '../core/types';
 import { FONT, GAME_W } from '../render/layout';
@@ -17,6 +18,8 @@ export class ResultScene extends Phaser.Scene {
 
   create(data: ResultData): void {
     const cx = GAME_W / 2;
+    if (data.winner === 0) sfx.win();
+    else if (data.winner === 1) sfx.lose();
     const [title, color] =
       data.winner === 0 ? ['승리!', '#fde047'] : data.winner === 1 ? ['패배', '#f87171'] : ['무승부', '#e5e7eb'];
     this.add

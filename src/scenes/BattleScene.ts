@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
+import { sfx } from '../audio/sfx';
 import { AiPlayer, type Difficulty } from '../core/ai';
-import { DEFAULT_DECK, getCard } from '../core/cards';
+import { AI_DECKS, getCard } from '../core/cards';
 import { ARENA_H, ARENA_W, TICK_RATE } from '../core/constants';
 import { elixirMultiplier } from '../core/elixir';
 import { canDeploy, createGame, playCard, step, timeLeft } from '../core/sim';
@@ -8,6 +9,7 @@ import type { GameState } from '../core/types';
 import { drawArena } from '../render/arena';
 import { EntityRenderer } from '../render/entities';
 import { ARENA_X, ARENA_Y, FONT, GAME_W, TILE, inArena, toScreen, toWorld } from '../render/layout';
+import { loadDeck } from '../ui/deckStore';
 import { HandUI } from '../ui/hand';
 import type { ResultData } from './ResultScene';
 
@@ -50,7 +52,8 @@ export class BattleScene extends Phaser.Scene {
 
   create(): void {
     const seed = (Math.random() * 2 ** 31) | 0;
-    this.state = createGame({ seed, decks: [DEFAULT_DECK, DEFAULT_DECK] });
+    const aiDeck = AI_DECKS[Math.abs(seed) % AI_DECKS.length];
+    this.state = createGame({ seed, decks: [loadDeck(), aiDeck] });
     this.ai = new AiPlayer(1, this.difficulty, seed ^ 0x5bd1e995);
     // Dev-only handle for poking at the live game from the browser console.
     if (import.meta.env.DEV) (window as unknown as { battle: GameState }).battle = this.state;
@@ -132,6 +135,7 @@ export class BattleScene extends Phaser.Scene {
     }
     this.selected = index;
     this.dragging = true;
+    sfx.click();
     this.drawOverlay();
   }
 
@@ -211,6 +215,7 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private showToast(message: string): void {
+    sfx.error();
     this.toast.setText(message).setAlpha(1);
     this.tweens.killTweensOf(this.toast);
     this.tweens.add({ targets: this.toast, alpha: 0, delay: 700, duration: 400 });

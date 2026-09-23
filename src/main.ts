@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { GAME_H, GAME_W } from './render/layout';
 import { BattleScene } from './scenes/BattleScene';
+import { DeckScene } from './scenes/DeckScene';
 import { MenuScene } from './scenes/MenuScene';
 import { ResultScene } from './scenes/ResultScene';
 
@@ -12,5 +13,5 @@ new Phaser.Game({
   backgroundColor: '#10131c',
   scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
   input: { activePointers: 2 },
-  scene: [MenuScene, BattleScene, ResultScene],
+  scene: [MenuScene, BattleScene, DeckScene, ResultScene],
 });
