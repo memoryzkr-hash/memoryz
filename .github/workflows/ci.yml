@@ -27,7 +27,7 @@ jobs:
       - run: node scripts/fetch-blog.mjs dist/daycare
         continue-on-error: true
       - uses: actions/upload-pages-artifact@v3
-        if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && github.event_name != 'pull_request'
+        if: github.event_name == 'schedule' || (github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && github.event_name != 'pull_request')
         with:
           path: dist
 
@@ -35,7 +35,7 @@ jobs:
     # Publishes the game at https://<owner>.github.io/<repo>/ after a push to the default branch.
     # Needs Settings → Pages → Source set to "GitHub Actions" once; until then this job fails
     # without turning the whole run red.
-    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && github.event_name != 'pull_request'
+    if: github.event_name == 'schedule' || (github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && github.event_name != 'pull_request')
     needs: build
     continue-on-error: true
     runs-on: ubuntu-latest
