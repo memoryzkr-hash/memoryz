@@ -59,7 +59,7 @@ https://memoryzkr-hash.github.io/memoryz/ 로 자동 배포합니다. 처음 한
 기본 브랜치에 반영되면 https://memoryzkr-hash.github.io/memoryz/daycare/ 에 게시됩니다
 (개발 서버에서는 `http://localhost:5173/daycare/index.html`).
 
-- CSS와 JS가 모두 들어 있는 HTML 파일 하나라서 다른 호스팅에 그대로 올려도 됩니다. 글꼴만 Google Fonts에서 불러옵니다.
+- CSS와 JS가 모두 들어 있는 HTML 파일 하나라서 다른 호스팅에 그대로 올려도 됩니다. 글꼴(Pretendard)만 jsDelivr CDN에서 불러옵니다.
 - 센터 이름, 전화번호(`02-000-0000`), 문자 받을 휴대폰(`010-0000-0000`), 주소·대표자·사업자번호(`○○`),
   운영 시간과 송영 지역은 임시 값입니다. 실제 정보로 바꾼 뒤 공개하세요.
 - 상담 신청서는 서버 없이 동작합니다. 입력한 내용으로 보호자 휴대폰의 문자 앱에 신청 문자를 채워 주고,
