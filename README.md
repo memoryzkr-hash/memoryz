@@ -55,17 +55,23 @@ https://memoryzkr-hash.github.io/memoryz/ 로 자동 배포합니다. 처음 한
 
 ## 주간보호센터 랜딩페이지
 
-`public/daycare/index.html`은 주간보호센터 홍보용 한 페이지 사이트입니다. 빌드하면 `dist/daycare/`로 그대로 복사되고,
+`public/daycare/index.html`은 더한방 주간보호센터 홍보용 한 페이지 사이트입니다. 빌드하면 `dist/daycare/`로 그대로 복사되고,
 기본 브랜치에 반영되면 https://memoryzkr-hash.github.io/memoryz/daycare/ 에 게시됩니다
 (개발 서버에서는 `http://localhost:5173/daycare/index.html`).
 
-- CSS와 JS가 모두 들어 있는 HTML 파일 하나라서 다른 호스팅에 그대로 올려도 됩니다. 글꼴(Pretendard)만 jsDelivr CDN에서 불러옵니다.
-- 센터 이름, 전화번호(`02-000-0000`), 문자 받을 휴대폰(`010-0000-0000`), 주소·대표자·사업자번호(`○○`),
-  운영 시간과 송영 지역은 임시 값입니다. 실제 정보로 바꾼 뒤 공개하세요.
+- CSS와 JS가 모두 들어 있는 HTML 파일 하나입니다. 글꼴(Pretendard)만 jsDelivr CDN에서 불러옵니다.
+- 로고는 센터 간판 사진을 보고 SVG로 다시 그린 것입니다(`#logo-mark`). 원본 로고 파일이 있으면 교체하세요.
+- 전화번호(`000-000-0000`), 문자 받을 휴대폰(`010-0000-0000`), 주소·대표자·사업자번호(`○○`), 운영 시간과 송영 지역은
+  임시 값입니다. 실제 정보로 바꾼 뒤 공개하세요.
 - 상담 신청서는 서버 없이 동작합니다. 입력한 내용으로 보호자 휴대폰의 문자 앱에 신청 문자를 채워 주고,
   받는 번호는 `<form data-sms="...">`에서 정합니다.
+- **센터 소식(네이버 블로그 연동)**: CI가 빌드 뒤 `scripts/fetch-blog.mjs`로 블로그 RSS
+  (`https://rss.blog.naver.com/thehanbang0157.xml`)를 읽어 최신 글 6개를 `dist/daycare/posts.json`과 썸네일(`dist/daycare/blog/`)로
+  만듭니다. 페이지는 이 파일이 있으면 글 카드를 보여 주고, 없으면 블로그 바로가기만 보여 줍니다.
+  매일 오전 6시(한국 시간)에 다시 빌드되어 새 글이 반영됩니다. GitHub는 저장소에 60일 동안 활동이 없으면 예약 실행을 멈추니,
+  그때는 Actions 탭에서 다시 켜 주세요.
 - 같은 폴더의 `og.png`는 카카오톡 등에서 링크를 공유할 때 보이는 미리보기 이미지이고, `apple-touch-icon.png`는 홈 화면 아이콘입니다.
-  센터 이름이 바뀌면 `og.png`도 다시 만들어야 합니다.
+  센터 이름이나 문구가 바뀌면 `og.png`도 다시 만들어야 합니다.
 
 ## 구조
 
