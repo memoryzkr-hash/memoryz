@@ -1,0 +1,1108 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>메모리즈 주간보호센터</title>
+<meta name="description" content="장기요양 1~5등급·인지지원등급 어르신이 낮 동안 식사, 건강 관리, 인지·신체 활동을 받고 저녁이면 댁으로 돌아가시는 주간보호센터입니다. 차량 송영, 월~토 운영. 상담 02-000-0000">
+<meta name="theme-color" content="#FAFBF9" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#10192A" media="(prefers-color-scheme: dark)">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="ko_KR">
+<meta property="og:site_name" content="메모리즈 주간보호센터">
+<meta property="og:title" content="메모리즈 주간보호센터">
+<meta property="og:description" content="낮에는 즐겁게, 저녁엔 가족 곁으로. 차량 송영 · 식사 · 건강 관리 · 인지 활동">
+<meta property="og:url" content="https://memoryzkr-hash.github.io/memoryz/daycare/">
+<meta property="og:image" content="https://memoryzkr-hash.github.io/memoryz/daycare/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="https://memoryzkr-hash.github.io/memoryz/daycare/">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3CclipPath id='c'%3E%3Crect width='32' height='32' rx='8'/%3E%3C/clipPath%3E%3Cg clip-path='url(%23c)' style='isolation:isolate'%3E%3Crect width='32' height='32' fill='%23fff'/%3E%3Crect width='17.5' height='19' fill='%23A9CCE7' style='mix-blend-mode:multiply'/%3E%3Crect x='15.5' width='16.5' height='12.5' fill='%23F2C660' style='mix-blend-mode:multiply'/%3E%3Crect x='15.5' y='10.5' width='16.5' height='21.5' fill='%238FCBB7' style='mix-blend-mode:multiply'/%3E%3Crect y='17' width='17.5' height='15' fill='%23F3B7B5' style='mix-blend-mode:multiply'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@400;500;700;800&family=Gowun+Batang:wght@400;700&family=Nanum+Pen+Script&display=swap">
+<script>try{if(localStorage.getItem('daycare-text-lg')==='1')document.documentElement.classList.add('text-lg')}catch(e){}</script>
+<style>
+/* 조각보(자투리 천을 이어 만든 보자기) 색을 기본 팔레트로 씁니다. */
+:root{
+  --bg:#FAFBF9;
+  --bg-alt:#EEF4F0;
+  --surface:#FFFFFF;
+  --paper:#FFFEFA;
+  --ink:#1D2A3F;
+  --ink-soft:#46536B;
+  --ink-faint:#626E84;
+  --line:#DAE2DD;
+  --line-strong:#B4C3BC;
+  --jade:#2E7D68;
+  --jade-strong:#23624F;
+  --on-jade:#FFFFFF;
+  --jade-tint:#D5EBE1;
+  --highlight:#F6D98A;
+  --focus:#1D2A3F;
+  --footer-bg:#1D2A3F;
+  --footer-ink:#D5DCE7;
+  --footer-faint:#9AA6B9;
+  --p-sky:#A9CCE7;
+  --p-jade:#8FCBB7;
+  --p-gardenia:#F2C660;
+  --p-persimmon:#EF9A6A;
+  --p-lavender:#C7BCE2;
+  --p-pink:#F3B7B5;
+  --p-mugwort:#BDCB8B;
+  --p-indigo:#4E6C9F;
+  --patch-ink:#1D2A3F;
+  --patch-ink-inv:#FBF8EF;
+  --stitch:rgba(255,255,255,.8);
+  --rule:rgba(46,125,104,.18);
+  --quilt-shadow:0 24px 48px -26px rgba(29,42,63,.5);
+  --card-shadow:0 1px 2px rgba(29,42,63,.05),0 12px 30px -20px rgba(29,42,63,.3);
+  --select-arrow:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231D2A3F' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  --font-display:'Gowun Batang','Nanum Myeongjo','AppleMyungjo','Batang',serif;
+  --font-body:'Gothic A1','Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',system-ui,sans-serif;
+  --font-hand:'Nanum Pen Script','Gowun Batang',cursive;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#10192A;
+    --bg-alt:#152136;
+    --surface:#1A2740;
+    --paper:#1D2B45;
+    --ink:#EBF0F6;
+    --ink-soft:#BAC5D6;
+    --ink-faint:#96A3B8;
+    --line:#2A3A55;
+    --line-strong:#40557A;
+    --jade:#63C3A7;
+    --jade-strong:#88D7BF;
+    --on-jade:#0B1B16;
+    --jade-tint:#20413A;
+    --highlight:#6A5424;
+    --focus:#EBF0F6;
+    --footer-bg:#0B1220;
+    --footer-ink:#C9D2E0;
+    --footer-faint:#8995AA;
+    --p-sky:#5F89B0;
+    --p-jade:#4F9C86;
+    --p-gardenia:#C99E40;
+    --p-persimmon:#C9754B;
+    --p-lavender:#8C80B6;
+    --p-pink:#BF8A8C;
+    --p-mugwort:#8EA15F;
+    --p-indigo:#6D88BE;
+    --patch-ink:#0E1626;
+    --patch-ink-inv:#F3F0E6;
+    --stitch:rgba(255,255,255,.6);
+    --rule:rgba(99,195,167,.2);
+    --quilt-shadow:0 24px 48px -22px rgba(0,0,0,.75);
+    --card-shadow:0 1px 2px rgba(0,0,0,.3),0 12px 30px -20px rgba(0,0,0,.65);
+    --select-arrow:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23EBF0F6' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#10192A;
+  --bg-alt:#152136;
+  --surface:#1A2740;
+  --paper:#1D2B45;
+  --ink:#EBF0F6;
+  --ink-soft:#BAC5D6;
+  --ink-faint:#96A3B8;
+  --line:#2A3A55;
+  --line-strong:#40557A;
+  --jade:#63C3A7;
+  --jade-strong:#88D7BF;
+  --on-jade:#0B1B16;
+  --jade-tint:#20413A;
+  --highlight:#6A5424;
+  --focus:#EBF0F6;
+  --footer-bg:#0B1220;
+  --footer-ink:#C9D2E0;
+  --footer-faint:#8995AA;
+  --p-sky:#5F89B0;
+  --p-jade:#4F9C86;
+  --p-gardenia:#C99E40;
+  --p-persimmon:#C9754B;
+  --p-lavender:#8C80B6;
+  --p-pink:#BF8A8C;
+  --p-mugwort:#8EA15F;
+  --p-indigo:#6D88BE;
+  --patch-ink:#0E1626;
+  --patch-ink-inv:#F3F0E6;
+  --stitch:rgba(255,255,255,.6);
+  --rule:rgba(99,195,167,.2);
+  --quilt-shadow:0 24px 48px -22px rgba(0,0,0,.75);
+  --card-shadow:0 1px 2px rgba(0,0,0,.3),0 12px 30px -20px rgba(0,0,0,.65);
+  --select-arrow:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23EBF0F6' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  color-scheme:dark;
+}
+
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none!important}
+html{
+  font-size:112.5%;
+  -webkit-text-size-adjust:100%;
+  text-size-adjust:100%;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  scroll-behavior:smooth;
+  scroll-padding-top:5rem;
+}
+html.text-lg{font-size:128%}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--ink);
+  font-family:var(--font-body);
+  font-size:1rem;
+  line-height:1.75;
+  word-break:keep-all;
+  overflow-wrap:break-word;
+  -webkit-font-smoothing:antialiased;
+}
+img,svg{max-width:100%}
+a{color:inherit}
+p,h1,h2,h3,dl,dd,ol,ul,figure{margin:0}
+ol,ul{padding:0;list-style:none}
+h1,h2,h3{font-family:var(--font-display);font-weight:700;line-height:1.32;letter-spacing:-.01em;text-wrap:balance}
+:focus-visible{outline:3px solid var(--focus);outline-offset:3px;border-radius:4px}
+.sprite{position:absolute;width:0;height:0;overflow:hidden}
+.ico{width:1.2em;height:1.2em;flex:none}
+.skip{position:absolute;left:1rem;top:-100px;z-index:100;background:var(--ink);color:var(--bg);padding:.6rem 1rem;border-radius:8px;text-decoration:none;font-weight:700}
+.skip:focus{top:calc(env(safe-area-inset-top,0px) + .75rem)}
+.wrap{
+  width:100%;
+  max-width:1224px;
+  margin-inline:auto;
+  padding-left:max(20px,env(safe-area-inset-left,0px));
+  padding-right:max(20px,env(safe-area-inset-right,0px));
+}
+@media (min-width:720px){
+  .wrap{padding-left:max(32px,env(safe-area-inset-left,0px));padding-right:max(32px,env(safe-area-inset-right,0px))}
+}
+
+/* 버튼 */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:.5em;
+  min-height:3.1rem;padding:.7em 1.2em;
+  border:1.5px solid transparent;border-radius:12px;
+  font:inherit;font-weight:700;line-height:1.25;text-decoration:none;text-align:center;
+  cursor:pointer;
+  transition:background-color .15s ease,border-color .15s ease,color .15s ease;
+}
+.btn .ico{width:1.15em;height:1.15em}
+.btn-primary{background:var(--jade);color:var(--on-jade)}
+.btn-primary:hover{background:var(--jade-strong)}
+.btn-ghost{background:var(--surface);color:var(--ink);border-color:var(--line-strong)}
+.btn-ghost:hover{border-color:var(--ink)}
+.btn-lg{min-height:3.6rem;padding-inline:1.5em;font-size:1.06rem}
+.btn-sm{min-height:2.6rem;padding:.4em .95em;font-size:.92rem}
+.num{font-variant-numeric:tabular-nums;letter-spacing:.01em}
+.nowrap{white-space:nowrap}
+
+/* 머리글 */
+.site-header{
+  position:sticky;top:env(safe-area-inset-top,0px);z-index:40;
+  background:var(--bg);
+  background:color-mix(in srgb,var(--bg) 90%,transparent);
+  -webkit-backdrop-filter:saturate(1.4) blur(10px);
+  backdrop-filter:saturate(1.4) blur(10px);
+  border-bottom:1px solid var(--line);
+}
+.header-row{display:flex;align-items:center;gap:1rem;min-height:4rem}
+.brand{display:flex;align-items:center;gap:.65rem;margin-right:auto;text-decoration:none;color:var(--ink)}
+.brand-mark{width:2.15rem;height:2.15rem;flex:none;isolation:isolate}
+.brand-name{display:flex;flex-direction:column;font-family:var(--font-display);font-weight:700;font-size:1.18rem;line-height:1.1;letter-spacing:-.01em}
+.brand-name small{margin-top:.22rem;font-family:var(--font-body);font-size:.66rem;font-weight:700;letter-spacing:.14em;color:var(--ink-faint)}
+.nav{display:none;gap:.15rem}
+.nav a{padding:.45rem .7rem;border-radius:8px;font-size:.92rem;font-weight:700;color:var(--ink-soft);text-decoration:none}
+.nav a:hover{color:var(--ink);background:var(--bg-alt)}
+@media (min-width:1120px){.nav{display:flex}}
+.header-actions{display:flex;align-items:center;gap:.5rem}
+.text-size{
+  display:inline-flex;align-items:center;gap:.4rem;
+  min-height:2.6rem;padding:.35rem .8rem;
+  border:1.5px solid var(--line-strong);border-radius:10px;
+  background:var(--surface);color:var(--ink);
+  font:inherit;font-size:.88rem;font-weight:700;cursor:pointer;
+}
+.text-size[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.ts-glyph{font-family:var(--font-display);font-size:1.1rem;line-height:1}
+.ts-glyph small{margin-left:1px;font-size:.7em}
+.header-call{display:none}
+@media (min-width:760px){.header-call{display:inline-flex}}
+@media (max-width:480px){
+  .ts-label{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+}
+
+/* 첫 화면 */
+.hero{padding-block:clamp(1.5rem,4vw,4.5rem) clamp(2.5rem,5vw,4rem)}
+.hero-grid{display:grid;gap:2rem;align-items:center}
+.hero-kicker{font-size:.95rem;font-weight:700;color:var(--jade)}
+.hero h1{margin-top:.85rem;font-size:clamp(2.1rem,1.3rem + 3.6vw,3.8rem);line-height:1.26}
+.mark{
+  padding-inline:.04em;
+  background:linear-gradient(transparent 60%,var(--highlight) 60%,var(--highlight) 92%,transparent 92%);
+  -webkit-box-decoration-break:clone;box-decoration-break:clone;
+}
+.lead{margin-top:1.3rem;max-width:32em;font-size:1.1rem;color:var(--ink-soft)}
+.hero-cta{display:flex;flex-wrap:wrap;gap:.75rem;margin-top:2rem}
+.hero-cta .btn{flex:1 1 100%}
+.hero-facts{display:grid;gap:.7rem;margin-top:2.25rem;padding-top:1.4rem;border-top:1px solid var(--line)}
+.hero-facts div{display:flex;justify-content:space-between;align-items:baseline;gap:1rem}
+.hero-facts dt{font-size:.85rem;font-weight:700;color:var(--ink-faint)}
+.hero-facts dd{font-weight:700;text-align:right}
+.hero-facts .unit{white-space:nowrap}
+@media (min-width:560px){
+  .hero-cta .btn{flex:0 1 auto}
+  .hero-facts{grid-template-columns:repeat(3,auto);justify-content:start;gap:0}
+  .hero-facts div{display:block;padding-right:1rem}
+  .hero-facts div + div{padding-left:1.1rem;border-left:1px solid var(--line)}
+  .hero-facts dd{margin-top:.2rem;text-align:left}
+}
+.hero-art{display:grid;gap:.9rem;order:-1}
+.hero-art figcaption{display:none;font-size:.88rem;line-height:1.6;color:var(--ink-faint)}
+@media (min-width:960px){
+  .hero-grid{grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:3.5rem}
+  .hero-art{order:0;justify-self:end;width:100%;max-width:440px}
+  .hero-art figcaption{display:block}
+}
+
+/* 조각보: 이웃 조각과 3px씩 겹쳐서 곱하기 합성으로 솔기가 보이게 합니다. */
+.quilt{
+  position:relative;
+  display:grid;
+  grid-template-columns:repeat(8,minmax(0,1fr));
+  grid-template-rows:repeat(4,minmax(0,1fr));
+  grid-template-areas:
+    "p1 p1 p2 p4 p4 p3 p7 p7"
+    "p1 p1 p2 p4 p4 p3 p7 p7"
+    "p5 p8 p8 p6 p9 p10 p10 p10"
+    "p5 p8 p8 p11 p9 p10 p10 p10";
+  aspect-ratio:2/1;
+  width:100%;max-width:100%;
+  overflow:hidden;
+  isolation:isolate;
+  background:#FFFFFF;
+  border-radius:6px;
+  box-shadow:var(--quilt-shadow);
+}
+.quilt::after{
+  content:"";position:absolute;inset:9px;z-index:1;
+  border:1.5px dashed var(--stitch);border-radius:3px;
+  pointer-events:none;
+}
+.patch{
+  display:grid;place-items:center;
+  margin:-3px;
+  background-color:var(--c);
+  background-image:
+    repeating-linear-gradient(0deg,rgba(255,255,255,.13) 0 1px,transparent 1px 4px),
+    repeating-linear-gradient(90deg,rgba(29,42,63,.04) 0 1px,transparent 1px 5px);
+  color:var(--patch-ink);
+  mix-blend-mode:multiply;
+  animation:settle .9s cubic-bezier(.2,.7,.2,1) both;
+  animation-delay:calc(var(--i,0) * 55ms);
+}
+.patch svg{width:50%;max-width:92px;height:auto;aspect-ratio:1}
+.patch.inv{color:var(--patch-ink-inv)}
+.p1{grid-area:p1}.p2{grid-area:p2}.p3{grid-area:p3}.p4{grid-area:p4}.p5{grid-area:p5}.p6{grid-area:p6}
+.p7{grid-area:p7}.p8{grid-area:p8}.p9{grid-area:p9}.p10{grid-area:p10}.p11{grid-area:p11}
+@keyframes settle{from{transform:translateY(10px) scale(.97)}to{transform:none}}
+@media (prefers-reduced-motion:reduce){.patch{animation:none}}
+@media (min-width:960px){
+  .quilt{
+    grid-template-columns:repeat(6,minmax(0,1fr));
+    grid-template-rows:repeat(8,minmax(0,1fr));
+    grid-template-areas:
+      "p1 p1 p1 p2 p3 p3"
+      "p1 p1 p1 p2 p3 p3"
+      "p1 p1 p1 p4 p4 p4"
+      "p5 p5 p6 p4 p4 p4"
+      "p5 p5 p6 p7 p7 p7"
+      "p8 p8 p9 p7 p7 p7"
+      "p8 p8 p9 p10 p10 p10"
+      "p11 p11 p9 p10 p10 p10";
+    aspect-ratio:3/4;
+  }
+}
+
+/* 공통 구획 */
+.section{padding-block:clamp(3.5rem,7vw,6rem)}
+.section-alt{background:var(--bg-alt)}
+.section-head{display:grid;gap:.8rem;max-width:40rem;margin-bottom:clamp(2rem,4vw,3rem)}
+.section-head h2{font-size:clamp(1.7rem,1.25rem + 1.5vw,2.4rem)}
+.section-head p{font-size:1.05rem;color:var(--ink-soft)}
+
+/* 이런 고민 */
+.concerns{display:grid;gap:1.6rem 3rem}
+@media (min-width:760px){.concerns{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.concern{display:grid;grid-template-columns:auto minmax(0,1fr);gap:.3rem 1rem;padding-top:1.3rem;border-top:1px solid var(--line)}
+.concern::before{content:"";grid-row:span 2;width:.95rem;height:.95rem;margin-top:.45rem;border-radius:2px;background:var(--c)}
+.concern h3{font-size:1.22rem}
+.concern p{color:var(--ink-soft)}
+
+/* 서비스 */
+.svc-grid{display:grid;gap:1rem}
+@media (min-width:640px){.svc-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:1.25rem}}
+@media (min-width:1000px){.svc-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.svc{
+  display:grid;grid-template-columns:auto minmax(0,1fr);gap:.35rem 1rem;align-items:start;align-content:start;
+  padding:1.35rem;
+  background:var(--surface);border:1px solid var(--line);border-radius:16px;
+}
+.svc-ico{grid-row:span 2;display:grid;place-items:center;width:3.3rem;height:3.3rem;border-radius:12px;background:var(--c);color:var(--patch-ink)}
+.svc-ico svg{width:2.1rem;height:2.1rem}
+.svc h3{align-self:center;font-size:1.22rem}
+.svc p{color:var(--ink-soft)}
+@media (min-width:640px){
+  .svc{grid-template-columns:minmax(0,1fr);padding:1.6rem}
+  .svc-ico{grid-row:auto;margin-bottom:.7rem}
+}
+
+/* 하루 일과 */
+.daybar{position:relative;margin-bottom:2.25rem;padding-bottom:1.9rem}
+.daybar-track{display:flex;height:2.8rem;overflow:hidden;border-radius:6px;box-shadow:var(--card-shadow)}
+.daybar-track span{flex-basis:0;min-width:0;background:var(--c);box-shadow:inset -2px 0 0 var(--bg)}
+.daybar-track span:last-child{box-shadow:none}
+.daybar-ticks{position:absolute;left:0;right:0;bottom:0;height:1.5rem;font-size:.8rem;color:var(--ink-faint);font-variant-numeric:tabular-nums}
+.daybar-ticks span{position:absolute;top:0;transform:translateX(-50%);white-space:nowrap}
+.daybar-ticks span::before{content:"";position:absolute;left:50%;top:-.4rem;width:1px;height:.3rem;background:var(--line-strong)}
+.daybar-ticks span:first-child{transform:none}
+.daybar-ticks span:first-child::before{left:0}
+.daybar-ticks span:last-child{transform:translateX(-100%)}
+.daybar-ticks span:last-child::before{left:auto;right:0}
+.timeline{display:grid;column-gap:3.5rem}
+@media (min-width:880px){.timeline{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(4,auto);grid-auto-flow:column}}
+.timeline li{display:grid;grid-template-columns:4.1rem minmax(0,1fr);gap:1rem;padding-block:1.1rem;border-top:1px solid var(--line)}
+.timeline time{font-size:1.05rem;font-weight:800;font-variant-numeric:tabular-nums}
+.timeline h3{display:flex;align-items:center;gap:.55rem;font-family:var(--font-body);font-size:1.08rem;font-weight:800}
+.timeline h3::before{content:"";flex:none;width:.8rem;height:.8rem;border-radius:2px;background:var(--c)}
+.timeline p{margin-top:.2rem;color:var(--ink-soft)}
+
+/* 보호자 알림 */
+.care-grid{display:grid;gap:3rem;align-items:center}
+@media (min-width:920px){.care-grid{grid-template-columns:minmax(0,1fr) minmax(0,27rem);gap:4.5rem}}
+.care-grid .section-head{margin-bottom:0}
+.checks{display:grid;gap:1.2rem;margin-top:2rem}
+.checks li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:.85rem}
+.checks .ico{margin-top:.3rem;color:var(--jade)}
+.checks strong{display:block}
+.checks span{color:var(--ink-soft)}
+.notebook{
+  position:relative;
+  padding:1.7rem 1.4rem 1.35rem;
+  background:var(--paper);border:1px solid var(--line);border-radius:14px;
+  box-shadow:var(--card-shadow);
+}
+.notebook-tag{
+  position:absolute;top:-.85rem;left:1.2rem;
+  padding:.2rem .75rem;border-radius:999px;
+  background:var(--ink);color:var(--bg);
+  font-size:.78rem;font-weight:700;letter-spacing:.04em;
+}
+.notebook-head{display:flex;justify-content:space-between;align-items:baseline;gap:1rem;padding-bottom:.8rem;border-bottom:2px solid var(--ink)}
+.notebook-head strong{font-family:var(--font-display);font-size:1.25rem}
+.notebook-head span{font-size:.88rem;color:var(--ink-faint)}
+.notebook-rows div{display:grid;grid-template-columns:3rem minmax(0,1fr);gap:.8rem;padding-block:.6rem;border-bottom:1px solid var(--line)}
+.notebook-rows dt{padding-top:.1rem;font-size:.88rem;font-weight:700;color:var(--ink-faint)}
+.notebook-rows dd{font-size:.97rem}
+.notebook-rows em{font-style:normal;font-weight:700;color:var(--jade)}
+.notebook-note{
+  margin-top:.9rem;
+  font-family:var(--font-hand);font-size:1.62rem;line-height:2.15rem;
+  background-image:repeating-linear-gradient(to bottom,transparent 0 calc(2.15rem - 1px),var(--rule) calc(2.15rem - 1px) 2.15rem);
+}
+.notebook-sign{margin-top:.2rem;text-align:right;font-family:var(--font-hand);font-size:1.4rem;color:var(--ink-soft)}
+
+/* 비용 */
+.cost-grid{display:grid;gap:2rem}
+@media (min-width:920px){.cost-grid{grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:3.5rem;align-items:start}}
+.share{padding:clamp(1.25rem,3vw,1.9rem);background:var(--surface);border:1px solid var(--line);border-radius:16px}
+.share-legend{display:flex;flex-wrap:wrap;gap:.4rem 1.3rem;margin-bottom:1.3rem;font-size:.86rem;color:var(--ink-soft)}
+.share-legend span{display:inline-flex;align-items:center;gap:.45rem}
+.share-legend i{width:.85rem;height:.85rem;border-radius:2px;background:var(--jade)}
+.share-legend i.gov{background:var(--jade-tint)}
+.share-list{display:grid;gap:1.25rem}
+.share-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:baseline;gap:.4rem 1rem}
+.share-row .who{font-weight:700}
+.share-row .who small{margin-left:.35rem;font-size:.84rem;font-weight:500;color:var(--ink-faint)}
+.share-row .pct{font-size:1.4rem;font-weight:800;font-variant-numeric:tabular-nums;color:var(--jade)}
+.share-bar{grid-column:1/-1;height:.9rem;overflow:hidden;border-radius:999px;background:var(--jade-tint)}
+.share-bar span{display:block;height:100%;background:var(--jade)}
+.share-foot{margin-top:1.3rem;padding-top:1rem;border-top:1px solid var(--line);font-size:.86rem;color:var(--ink-faint)}
+.notes{display:grid;gap:1.25rem}
+.notes li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:.85rem}
+.notes .ico{margin-top:.3rem;color:var(--jade)}
+.notes strong{display:block}
+.notes span{color:var(--ink-soft)}
+
+/* 이용 절차 */
+.steps{display:grid;gap:1rem}
+@media (min-width:720px){.steps{grid-template-columns:repeat(2,minmax(0,1fr));gap:1.25rem}}
+@media (min-width:1080px){.steps{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.step{padding:1.5rem 1.4rem;background:var(--surface);border:1px solid var(--line);border-radius:16px}
+.step-num{display:block;font-family:var(--font-display);font-size:2.3rem;font-weight:700;line-height:1;color:var(--jade)}
+.step h3{margin-top:.85rem;font-size:1.22rem}
+.step p{margin-top:.4rem;color:var(--ink-soft)}
+.grade{
+  display:grid;gap:1.5rem;margin-top:1.5rem;
+  padding:clamp(1.4rem,3vw,2.25rem);
+  background:var(--surface);border:1.5px dashed var(--line-strong);border-radius:16px;
+}
+@media (min-width:920px){.grade{grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);gap:3.5rem}}
+.grade h3{font-size:1.4rem}
+.grade > div > p{margin-top:.7rem;color:var(--ink-soft)}
+.grade ol{display:grid;gap:1rem}
+.grade li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:.9rem}
+.grade .n{
+  display:grid;place-items:center;width:1.9rem;height:1.9rem;margin-top:.1rem;
+  border-radius:50%;background:var(--jade-tint);color:var(--jade);
+  font-size:.9rem;font-weight:800;
+}
+.grade li strong{display:block}
+.grade li span{color:var(--ink-soft)}
+.grade a{color:var(--jade);font-weight:700}
+
+/* 자주 묻는 질문 */
+.faq{display:grid;gap:.75rem;max-width:52rem}
+.faq details{background:var(--surface);border:1px solid var(--line);border-radius:14px}
+.faq summary{
+  display:flex;justify-content:space-between;align-items:center;gap:1rem;
+  padding:1.1rem 1.3rem;
+  font-size:1.06rem;font-weight:700;
+  list-style:none;cursor:pointer;
+}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:"+";flex:none;font-size:1.5rem;font-weight:500;line-height:1;color:var(--jade)}
+.faq details[open] summary::after{content:"−"}
+.faq .answer{padding:0 1.3rem 1.3rem;color:var(--ink-soft)}
+.faq .answer p + p{margin-top:.6rem}
+
+/* 상담·오시는 길 */
+.contact-grid{display:grid;gap:3rem}
+@media (min-width:980px){.contact-grid{grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:4rem;align-items:start}}
+.label{font-size:.9rem;font-weight:700;color:var(--ink-faint)}
+.big-phone{
+  display:inline-block;margin-top:.2rem;
+  font-size:clamp(2.1rem,1.5rem + 2.6vw,3rem);font-weight:800;line-height:1.2;letter-spacing:-.01em;
+  font-variant-numeric:tabular-nums;color:var(--ink);text-decoration:none;
+}
+.phone-note{margin-top:.3rem;color:var(--ink-soft)}
+.btn-row{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:1.3rem}
+.info-list{display:grid;gap:1.1rem;margin-top:2.25rem;padding-top:1.75rem;border-top:1px solid var(--line)}
+.info-list div{display:grid;grid-template-columns:auto minmax(0,1fr);gap:.15rem .85rem}
+.info-list .ico{grid-row:span 2;margin-top:.3rem;color:var(--jade)}
+.info-list dt{font-weight:700}
+.info-list dd{color:var(--ink-soft)}
+.form{
+  padding:clamp(1.3rem,3vw,2.25rem);
+  background:var(--surface);border:1px solid var(--line);border-radius:18px;
+  box-shadow:var(--card-shadow);
+}
+.form h3{font-size:1.45rem}
+.form-intro{margin-top:.35rem;color:var(--ink-soft)}
+.fields{display:grid;gap:1.1rem;margin-top:1.5rem}
+@media (min-width:640px){
+  .fields{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .field-full{grid-column:1/-1}
+}
+.field{display:grid;gap:.4rem;align-content:start}
+.field label{font-size:.95rem;font-weight:700}
+.field .opt{margin-left:.3rem;font-size:.82rem;font-weight:500;color:var(--ink-faint)}
+.input{
+  width:100%;min-height:3.2rem;padding:.7rem .9rem;
+  font:inherit;font-size:1rem;color:var(--ink);
+  background:var(--bg);border:1.5px solid var(--line-strong);border-radius:10px;
+}
+.input::placeholder{color:var(--ink-faint);opacity:1}
+.input:focus{outline:none;border-color:var(--jade);box-shadow:0 0 0 3px var(--jade-tint)}
+select.input{
+  -webkit-appearance:none;appearance:none;padding-right:2.6rem;
+  background-image:var(--select-arrow);background-repeat:no-repeat;background-position:right .85rem center;background-size:1.15rem;
+}
+textarea.input{min-height:7.5rem;resize:vertical;line-height:1.6}
+.consent{display:grid;grid-template-columns:auto minmax(0,1fr);gap:.35rem .75rem;margin-top:1.25rem;padding:1rem 1.1rem;border-radius:12px;background:var(--bg-alt)}
+.consent input{width:1.35rem;height:1.35rem;margin:.22rem 0 0;accent-color:var(--jade)}
+.consent label{font-weight:700}
+.consent details{grid-column:2;font-size:.88rem;color:var(--ink-soft)}
+.consent summary{width:max-content;font-weight:700;color:var(--jade);cursor:pointer}
+.consent details p{margin-top:.4rem}
+.form-submit{width:100%;margin-top:1.25rem}
+.form-hint{margin-top:.7rem;font-size:.88rem;color:var(--ink-faint)}
+.consult-result{margin-top:1.5rem;padding:1.25rem;border:1.5px solid var(--jade);border-radius:14px;background:var(--bg)}
+.consult-result:focus{outline:none}
+.result-title{font-weight:800;color:var(--jade)}
+.consult-result > p{margin-top:.4rem;color:var(--ink-soft)}
+.result-text{
+  margin:1rem 0;padding:.9rem 1rem;
+  font-family:inherit;font-size:.95rem;line-height:1.65;white-space:pre-wrap;word-break:break-all;
+  background:var(--surface);border:1px solid var(--line);border-radius:10px;
+}
+.result-actions{display:flex;flex-wrap:wrap;gap:.6rem}
+
+/* 바닥글 */
+.site-footer{padding-block:0 3rem;background:var(--footer-bg);color:var(--footer-ink);font-size:.9rem}
+.footer-strip{display:flex;height:8px}
+.footer-strip span{flex:1;background:var(--c)}
+.footer-inner{display:grid;gap:1rem;padding-top:2.5rem}
+.footer-brand{display:flex;align-items:center;gap:.6rem;font-family:var(--font-display);font-size:1.15rem;font-weight:700;color:var(--footer-ink)}
+.footer-brand svg{width:1.8rem;height:1.8rem;isolation:isolate}
+.footer-info{display:grid;gap:.25rem;color:var(--footer-faint)}
+.footer-info a{color:var(--footer-ink)}
+.copyright{color:var(--footer-faint)}
+
+/* 휴대폰 하단 고정 버튼 */
+.actionbar{
+  position:fixed;left:0;right:0;bottom:0;z-index:50;
+  display:grid;grid-template-columns:1.3fr 1fr;gap:.5rem;
+  padding:.6rem max(12px,env(safe-area-inset-right,0px)) calc(.6rem + env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px));
+  background:var(--surface);
+  background:color-mix(in srgb,var(--surface) 94%,transparent);
+  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
+  border-top:1px solid var(--line);
+}
+.actionbar .btn{min-height:3.2rem;padding-inline:.8em;font-size:1rem}
+@media (max-width:759px){.site-footer{padding-bottom:6rem}}
+@media (min-width:760px){.actionbar{display:none}}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">본문 바로가기</a>
+
+<!-- 아이콘: 전화·말풍선·위치·시계·복사·체크·외부 링크는 Feather Icons(MIT), 나머지는 이 페이지용으로 그렸습니다. -->
+<svg class="sprite" aria-hidden="true" focusable="false">
+  <symbol id="brand" viewBox="0 0 32 32">
+    <clipPath id="brand-clip"><rect width="32" height="32" rx="8"/></clipPath>
+    <g clip-path="url(#brand-clip)">
+      <rect width="32" height="32" fill="#FFFFFF"/>
+      <rect width="17.5" height="19" fill="#A9CCE7" style="mix-blend-mode:multiply"/>
+      <rect x="15.5" width="16.5" height="12.5" fill="#F2C660" style="mix-blend-mode:multiply"/>
+      <rect x="15.5" y="10.5" width="16.5" height="21.5" fill="#8FCBB7" style="mix-blend-mode:multiply"/>
+      <rect y="17" width="17.5" height="15" fill="#F3B7B5" style="mix-blend-mode:multiply"/>
+    </g>
+  </symbol>
+  <symbol id="i-sun" viewBox="0 0 48 48"><g fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="24" cy="24" r="8.5"/><path d="M24 5v5M24 38v5M5 24h5M38 24h5M10.6 10.6l3.5 3.5M33.9 33.9l3.5 3.5M10.6 37.4l3.5-3.5M33.9 14.1l3.5-3.5"/></g></symbol>
+  <symbol id="i-van" viewBox="0 0 48 48"><g fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11 34H7a1 1 0 0 1-1-1V18a3 3 0 0 1 3-3h22.6a3 3 0 0 1 2.3 1.1L40 24l2.6 1.3a2 2 0 0 1 1.1 1.8V33a1 1 0 0 1-1 1H38M19 34h11"/><path d="M10 19h7v5h-7zM21 19h7v5h-7zM31.5 19h1.6l3.8 5h-5.4z"/><circle cx="15" cy="34" r="4"/><circle cx="34" cy="34" r="4"/></g></symbol>
+  <symbol id="i-bowl" viewBox="0 0 48 48"><g fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 25h36a18 14 0 0 1-36 0z"/><path d="M19 38.4l1 3.6h8l1-3.6"/><path d="M11 25c1.8-5.5 7-8.5 13-8.5s11.2 3 13 8.5"/><path d="M18 12c-1.6-1.8 1.6-3.6 0-5.4M24 11.5c-1.6-1.8 1.6-3.6 0-5.4M30 12c-1.6-1.8 1.6-3.6 0-5.4"/></g></symbol>
+  <symbol id="i-note" viewBox="0 0 48 48"><g fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M19 35V13l19-4.5v22M19 19l19-4.5"/><ellipse cx="14" cy="35" rx="5" ry="4" fill="currentColor"/><ellipse cx="33" cy="30.5" rx="5" ry="4" fill="currentColor"/></g></symbol>
+  <symbol id="i-home" viewBox="0 0 48 48"><g fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 25L22 12l16 13"/><path d="M10 22v18h24V22"/><path d="M19 40v-9h6v9"/><path d="M40.5 4.5A6 6 0 1 0 46 13a5.2 5.2 0 0 1-5.5-8.5z"/></g></symbol>
+  <symbol id="i-health" viewBox="0 0 48 48"><g fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M24 41S6.5 31 6.5 18.5a9.5 9.5 0 0 1 17.5-5.1 9.5 9.5 0 0 1 17.5 5.1C41.5 31 24 41 24 41z"/><path d="M12 24.5h7l2.5-4.5 4 9 2.5-4.5H36"/></g></symbol>
+  <symbol id="i-puzzle" viewBox="0 0 48 48"><path fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" d="M7 15h11a5 5 0 1 1 7 0h11v11a5 5 0 1 1 0 7v11H7z"/></symbol>
+  <symbol id="i-stretch" viewBox="0 0 48 48"><g fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="24" cy="10" r="4.5"/><path d="M24 17v13M24 20l-9-8M24 20l9-8M24 30l-7 12M24 30l7 12"/></g></symbol>
+  <symbol id="i-bath" viewBox="0 0 48 48"><g fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 25h38"/><path d="M8 25v4a9 9 0 0 0 9 9h14a9 9 0 0 0 9-9v-4"/><path d="M14 38l-2 4M34 38l2 4"/><path d="M11 25V12.5a4.5 4.5 0 0 1 9 0"/><circle cx="29" cy="16" r="2.5"/><circle cx="36" cy="11" r="3"/><circle cx="37" cy="19" r="2"/></g></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></symbol>
+  <symbol id="i-msg" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></g></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></g></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></g></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" d="M20 6L9 17l-5-5"/></symbol>
+  <symbol id="i-ext" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/></g></symbol>
+</svg>
+
+<header class="site-header">
+  <div class="wrap header-row">
+    <a class="brand" href="#top">
+      <svg class="brand-mark" aria-hidden="true"><use href="#brand"/></svg>
+      <span class="brand-name">메모리즈<small>주간보호센터</small></span>
+    </a>
+    <nav class="nav" aria-label="페이지 안내">
+      <a href="#services">서비스</a>
+      <a href="#day">하루 일과</a>
+      <a href="#cost">비용</a>
+      <a href="#steps">이용 절차</a>
+      <a href="#faq">자주 묻는 질문</a>
+      <a href="#contact">오시는 길</a>
+    </nav>
+    <div class="header-actions">
+      <button type="button" class="text-size" id="text-size" aria-pressed="false">
+        <span class="ts-glyph" aria-hidden="true">가<small>+</small></span><span class="ts-label">글자 크게</span>
+      </button>
+      <a class="btn btn-primary btn-sm header-call" href="tel:020000000"><svg class="ico" aria-hidden="true"><use href="#i-phone"/></svg><span class="num">02-000-0000</span></a>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+  <section class="hero" id="top">
+    <div class="wrap hero-grid">
+      <div class="hero-copy">
+        <p class="hero-kicker">장기요양 1~5등급 · 인지지원등급 어르신 주간보호</p>
+        <h1>낮에는 즐겁게,<br><span class="mark">저녁엔 가족 곁으로</span></h1>
+        <p class="lead">메모리즈 주간보호센터는 어르신이 낮 동안 머무르시며 식사와 건강 관리, 인지·신체 활동을 받으시고 저녁이면 댁으로 돌아가시는 곳입니다. 아침저녁으로 차량이 댁 앞까지 모시러 갑니다.</p>
+        <div class="hero-cta">
+          <a class="btn btn-primary btn-lg" href="tel:020000000"><svg class="ico" aria-hidden="true"><use href="#i-phone"/></svg>전화 상담 <span class="num">02-000-0000</span></a>
+          <a class="btn btn-ghost btn-lg" href="#contact">상담 신청하기</a>
+        </div>
+        <dl class="hero-facts">
+          <div><dt>송영</dt><dd>댁 앞까지 차량으로</dd></div>
+          <div><dt>운영</dt><dd><span class="unit">월~토</span> <span class="unit num">08:00~20:00</span></dd></div>
+          <div><dt>본인부담</dt><dd><span class="unit num">15%</span> <span class="unit num">(감경 시 6~9%)</span></dd></div>
+        </dl>
+      </div>
+      <figure class="hero-art">
+        <div class="quilt" aria-hidden="true">
+          <div class="patch p1" style="--c:var(--p-sky);--i:0"><svg><use href="#i-sun"/></svg></div>
+          <div class="patch p2" style="--c:var(--p-gardenia);--i:3"></div>
+          <div class="patch p3" style="--c:var(--p-pink);--i:5"></div>
+          <div class="patch p4" style="--c:var(--p-jade);--i:2"><svg><use href="#i-van"/></svg></div>
+          <div class="patch p5" style="--c:var(--p-lavender);--i:4"></div>
+          <div class="patch p6" style="--c:var(--p-persimmon);--i:7"></div>
+          <div class="patch p7" style="--c:var(--p-gardenia);--i:6"><svg><use href="#i-bowl"/></svg></div>
+          <div class="patch p8" style="--c:var(--p-mugwort);--i:8"><svg><use href="#i-note"/></svg></div>
+          <div class="patch p9" style="--c:var(--p-sky);--i:9"></div>
+          <div class="patch p10 inv" style="--c:var(--p-indigo);--i:10"><svg><use href="#i-home"/></svg></div>
+          <div class="patch p11" style="--c:var(--p-pink);--i:11"></div>
+        </div>
+        <figcaption>자투리 천을 이어 만든 조각보처럼, 어르신의 하루를 한 조각씩 정성껏 이어 갑니다.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="section" id="why" aria-labelledby="why-title">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 id="why-title">이런 고민이 있으신가요?</h2>
+        <p>주간보호센터는 어르신이 익숙한 집에서 생활하시면서 낮 동안 돌봄을 받으시는 곳입니다. 이럴 때 많이 찾으십니다.</p>
+      </div>
+      <ul class="concerns">
+        <li class="concern" style="--c:var(--p-sky)">
+          <h3>낮에 혼자 계신 부모님이 걱정될 때</h3>
+          <p>식사는 제때 하시는지, 넘어지시지는 않을지 마음이 쓰인다면 낮 시간을 센터에서 함께 보내세요.</p>
+        </li>
+        <li class="concern" style="--c:var(--p-gardenia)">
+          <h3>기억력이 예전 같지 않으실 때</h3>
+          <p>치매 진단을 받으셨거나 깜빡하시는 일이 잦아졌다면, 매일 하는 인지 활동이 도움이 됩니다.</p>
+        </li>
+        <li class="concern" style="--c:var(--p-jade)">
+          <h3>퇴원 후 기력을 되찾으셔야 할 때</h3>
+          <p>규칙적인 식사와 가벼운 운동으로 걷는 힘과 생활 리듬을 다시 만들어 갑니다.</p>
+        </li>
+        <li class="concern" style="--c:var(--p-pink)">
+          <h3>가족에게도 쉼이 필요할 때</h3>
+          <p>돌봄은 오래 이어지는 일입니다. 낮 동안 믿고 맡기시고 보호자의 일상과 휴식도 지키세요.</p>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="section section-alt" id="services" aria-labelledby="services-title">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 id="services-title">센터에서 받으시는 돌봄</h2>
+        <p>첫 상담에서 어르신의 건강 상태와 생활 습관을 꼼꼼히 여쭙고, 그에 맞춰 돌봄 계획을 세웁니다.</p>
+      </div>
+      <ul class="svc-grid">
+        <li class="svc">
+          <span class="svc-ico" style="--c:var(--p-sky)"><svg aria-hidden="true"><use href="#i-van"/></svg></span>
+          <h3>송영 서비스</h3>
+          <p>아침저녁으로 센터 차량이 댁 앞까지 모시러 가고 모셔다 드립니다. 타고 내리실 때는 직원이 곁에서 부축합니다.</p>
+        </li>
+        <li class="svc">
+          <span class="svc-ico" style="--c:var(--p-jade)"><svg aria-hidden="true"><use href="#i-health"/></svg></span>
+          <h3>건강 관리</h3>
+          <p>매일 혈압과 체온을 재고, 드시는 약을 시간에 맞춰 챙깁니다. 평소와 다르시면 보호자께 바로 알려 드립니다.</p>
+        </li>
+        <li class="svc">
+          <span class="svc-ico" style="--c:var(--p-gardenia)"><svg aria-hidden="true"><use href="#i-bowl"/></svg></span>
+          <h3>식사와 간식</h3>
+          <p>점심과 간식을 드리고, 원하시면 저녁도 드십니다. 씹고 삼키기 편하도록 다진 식사나 죽으로도 준비합니다.</p>
+        </li>
+        <li class="svc">
+          <span class="svc-ico" style="--c:var(--p-lavender)"><svg aria-hidden="true"><use href="#i-puzzle"/></svg></span>
+          <h3>인지 활동</h3>
+          <p>옛이야기 나누기, 두뇌 퍼즐, 만들기, 노래 부르기로 기억력과 표현력을 꾸준히 지켜 갑니다.</p>
+        </li>
+        <li class="svc">
+          <span class="svc-ico" style="--c:var(--p-mugwort)"><svg aria-hidden="true"><use href="#i-stretch"/></svg></span>
+          <h3>신체 활동</h3>
+          <p>체조와 걷기, 소도구 운동으로 근력과 균형 감각을 지켜 넘어지는 일을 줄입니다.</p>
+        </li>
+        <li class="svc">
+          <span class="svc-ico" style="--c:var(--p-pink)"><svg aria-hidden="true"><use href="#i-bath"/></svg></span>
+          <h3>목욕과 위생</h3>
+          <p>안전하게 목욕하시도록 직원이 곁에서 돕고, 옷 갈아입기와 몸단장도 챙깁니다.</p>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="section" id="day" aria-labelledby="day-title">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 id="day-title">센터에서 보내시는 하루</h2>
+        <p>아침에 모시러 가서 저녁에 모셔다 드리기까지, 평일 하루는 이렇게 흘러갑니다. 오후 프로그램은 요일마다 바뀝니다.</p>
+      </div>
+      <div class="daybar">
+        <div class="daybar-track" role="img" aria-label="오전 8시부터 오후 8시까지의 하루 일과. 시간 길이에 비례해 색 띠로 나타냈습니다.">
+          <span style="--c:var(--p-sky);flex-grow:90"></span>
+          <span style="--c:var(--p-jade);flex-grow:30"></span>
+          <span style="--c:var(--p-gardenia);flex-grow:120"></span>
+          <span style="--c:var(--p-persimmon);flex-grow:60"></span>
+          <span style="--c:var(--p-lavender);flex-grow:60"></span>
+          <span style="--c:var(--p-pink);flex-grow:90"></span>
+          <span style="--c:var(--p-mugwort);flex-grow:90"></span>
+          <span style="--c:var(--p-indigo);flex-grow:180"></span>
+        </div>
+        <div class="daybar-ticks" aria-hidden="true">
+          <span style="left:0%">8시</span>
+          <span style="left:16.667%">10시</span>
+          <span style="left:33.333%">12시</span>
+          <span style="left:50%">14시</span>
+          <span style="left:66.667%">16시</span>
+          <span style="left:83.333%">18시</span>
+          <span style="left:100%">20시</span>
+        </div>
+      </div>
+      <ol class="timeline">
+        <li style="--c:var(--p-sky)"><time datetime="08:00">08:00</time><div><h3>모시러 갑니다</h3><p>차량이 댁 앞까지 가서 모셔 옵니다. 계단과 승하차는 직원이 도와드립니다.</p></div></li>
+        <li style="--c:var(--p-jade)"><time datetime="09:30">09:30</time><div><h3>건강 체크</h3><p>혈압과 체온을 재고 오늘 컨디션과 드실 약을 확인합니다.</p></div></li>
+        <li style="--c:var(--p-gardenia)"><time datetime="10:00">10:00</time><div><h3>오전 활동</h3><p>국민체조로 몸을 깨우고 옛이야기 나누기, 두뇌 퍼즐 같은 인지 활동을 합니다.</p></div></li>
+        <li style="--c:var(--p-persimmon)"><time datetime="12:00">12:00</time><div><h3>점심 식사</h3><p>따뜻한 점심을 드시고 양치까지 챙겨 드립니다.</p></div></li>
+        <li style="--c:var(--p-lavender)"><time datetime="13:00">13:00</time><div><h3>쉬는 시간</h3><p>낮잠을 주무시거나 담소를 나누며 편히 쉬십니다.</p></div></li>
+        <li style="--c:var(--p-pink)"><time datetime="14:00">14:00</time><div><h3>오후 활동</h3><p>노래 교실, 미술, 원예처럼 요일마다 다른 프로그램을 합니다.</p></div></li>
+        <li style="--c:var(--p-mugwort)"><time datetime="15:30">15:30</time><div><h3>간식과 개별 돌봄</h3><p>간식을 드신 뒤 걷기 운동, 목욕 등 어르신별 돌봄을 받으십니다.</p></div></li>
+        <li style="--c:var(--p-indigo)"><time datetime="17:00">17:00</time><div><h3>저녁 식사와 귀가</h3><p>원하시면 저녁을 드시고, 오후 5시부터 8시 사이 원하시는 시간에 댁까지 모셔다 드립니다.</p></div></li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="section section-alt" id="care" aria-labelledby="care-title">
+    <div class="wrap care-grid">
+      <div>
+        <div class="section-head">
+          <h2 id="care-title">센터에서의 하루, 매일 알려 드립니다</h2>
+          <p>부모님이 오늘 무엇을 드시고 어떻게 지내셨는지 궁금하실 때가 많지요. 알림장과 전화로 꼼꼼히 전해 드립니다.</p>
+        </div>
+        <ul class="checks">
+          <li><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg><div><strong>매일 알림장</strong><span>식사량과 건강 수치, 그날의 활동을 적어 보내 드립니다.</span></div></li>
+          <li><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg><div><strong>바로 연락</strong><span>컨디션이 평소와 다르시면 기다리지 않고 바로 전화드립니다.</span></div></li>
+          <li><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg><div><strong>정기 상담</strong><span>어르신의 변화에 맞춰 돌봄 계획을 보호자와 함께 조정합니다.</span></div></li>
+        </ul>
+      </div>
+      <figure class="notebook">
+        <figcaption class="notebook-tag">알림장 예시</figcaption>
+        <div class="notebook-head"><strong>김○○ 어르신</strong><span>목요일</span></div>
+        <dl class="notebook-rows">
+          <div><dt>건강</dt><dd><span class="num">혈압 126/80 · 체온 36.4℃</span></dd></div>
+          <div><dt>점심</dt><dd>잡곡밥, 소고기뭇국, 가자미조림<br><em>한 그릇 다 드셨어요</em></dd></div>
+          <div><dt>간식</dt><dd>찐 고구마, 두유</dd></div>
+          <div><dt>활동</dt><dd>두뇌 퍼즐, 노래 교실</dd></div>
+        </dl>
+        <p class="notebook-note">오늘 노래 교실에서 ‘고향의 봄’을 끝까지 부르셔서 박수를 많이 받으셨어요. 저녁에 칭찬 한마디 부탁드려요!</p>
+        <p class="notebook-sign">요양보호사 이○○</p>
+      </figure>
+    </div>
+  </section>
+
+  <section class="section" id="cost" aria-labelledby="cost-title">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 id="cost-title">비용은 이렇게 정해집니다</h2>
+        <p>주간보호는 노인장기요양보험이 적용되어 이용료 대부분을 국민건강보험공단이 부담합니다. 어르신이 내시는 몫은 아래 비율로 정해집니다.</p>
+      </div>
+      <div class="cost-grid">
+        <div class="share">
+          <div class="share-legend" aria-hidden="true">
+            <span><i></i>본인 부담</span>
+            <span><i class="gov"></i>장기요양보험 부담</span>
+          </div>
+          <ul class="share-list">
+            <li class="share-row">
+              <span class="who">일반</span>
+              <span class="pct">15%</span>
+              <div class="share-bar" role="img" aria-label="본인 부담 15%, 보험 부담 85%"><span style="width:15%"></span></div>
+            </li>
+            <li class="share-row">
+              <span class="who">감경 대상자<small>40% 감경</small></span>
+              <span class="pct">9%</span>
+              <div class="share-bar" role="img" aria-label="본인 부담 9%, 보험 부담 91%"><span style="width:9%"></span></div>
+            </li>
+            <li class="share-row">
+              <span class="who">감경 대상자<small>60% 감경</small></span>
+              <span class="pct">6%</span>
+              <div class="share-bar" role="img" aria-label="본인 부담 6%, 보험 부담 94%"><span style="width:6%"></span></div>
+            </li>
+            <li class="share-row">
+              <span class="who">국민기초생활수급자</span>
+              <span class="pct">0%</span>
+              <div class="share-bar" role="img" aria-label="본인 부담 없음, 보험 부담 100%"><span style="width:0%"></span></div>
+            </li>
+          </ul>
+          <p class="share-foot">감경 대상인지 잘 모르시면 상담 때 함께 확인해 드립니다.</p>
+        </div>
+        <ul class="notes">
+          <li><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg><div><strong>식사·간식비는 따로 받습니다</strong><span>식재료비는 장기요양보험이 적용되지 않아 실비로 받습니다.</span></div></li>
+          <li><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg><div><strong>등급마다 월 한도액이 있습니다</strong><span>한 달 한도액 안에서 보험이 적용되고, 한도를 넘는 이용분은 전액 본인 부담입니다.</span></div></li>
+          <li><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg><div><strong>월 예상 비용을 미리 계산해 드립니다</strong><span>하루 비용은 등급과 이용 시간에 따라 달라집니다. 상담 때 어르신 조건에 맞춰 정확히 알려 드립니다.</span></div></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section-alt" id="steps" aria-labelledby="steps-title">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 id="steps-title">이용은 이렇게 시작합니다</h2>
+        <p>전화 한 통이면 시작할 수 있습니다. 준비할 서류와 절차는 하나씩 안내해 드립니다.</p>
+      </div>
+      <ol class="steps">
+        <li class="step"><span class="step-num">1</span><h3>전화 상담</h3><p>어르신 상태와 필요한 도움을 여쭙고 이용 가능 여부를 알려 드립니다.</p></li>
+        <li class="step"><span class="step-num">2</span><h3>방문 상담</h3><p>센터를 직접 둘러보시고, 어르신의 건강 상태와 생활 습관을 함께 확인합니다.</p></li>
+        <li class="step"><span class="step-num">3</span><h3>이용 계약</h3><p>장기요양인정서와 개인별 장기요양 이용계획서를 확인하고 계약서를 작성합니다.</p></li>
+        <li class="step"><span class="step-num">4</span><h3>첫 등원</h3><p>이용 요일과 송영 시간을 정하고, 첫날부터 적응하시도록 곁에서 돕습니다.</p></li>
+      </ol>
+      <div class="grade">
+        <div>
+          <h3>장기요양등급이 아직 없으신가요?</h3>
+          <p>만 65세 이상이시거나, 65세 미만이라도 치매·뇌혈관질환·파킨슨병 같은 노인성 질병이 있으시면 신청하실 수 있습니다. 신청서 작성부터 필요한 서류까지 센터에서 도와드립니다.</p>
+        </div>
+        <ol>
+          <li><span class="n">1</span><div><strong>신청</strong><span>국민건강보험공단 지사를 방문하시거나 전화(<a href="tel:15771000">1577-1000</a>), <a href="https://www.longtermcare.or.kr" target="_blank" rel="noopener">노인장기요양보험 누리집</a>으로 신청합니다.</span></div></li>
+          <li><span class="n">2</span><div><strong>방문 조사</strong><span>공단 직원이 댁으로 찾아와 어르신 상태를 살핍니다. 의사소견서도 함께 제출합니다.</span></div></li>
+          <li><span class="n">3</span><div><strong>등급 판정</strong><span>신청일로부터 30일 안에 결과를 알려 줍니다.</span></div></li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="faq" aria-labelledby="faq-title">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 id="faq-title">자주 묻는 질문</h2>
+      </div>
+      <div class="faq">
+        <details>
+          <summary>요양원과 무엇이 다른가요?</summary>
+          <div class="answer"><p>요양원은 입소해서 생활하시는 시설이고, 주간보호센터는 낮 동안만 이용하시고 매일 댁으로 돌아가시는 곳입니다. 익숙한 집과 가족 곁에서 지내시면서 낮 시간의 돌봄과 활동을 받으실 수 있습니다.</p></div>
+        </details>
+        <details>
+          <summary>비용은 어느 정도 드나요?</summary>
+          <div class="answer"><p>장기요양보험이 적용되어 급여 비용의 15%만 내시고, 감경 대상자는 9% 또는 6%, 국민기초생활수급자는 본인 부담이 없습니다. 식사·간식비는 따로 받습니다.</p><p>등급과 이용 시간에 따라 금액이 달라지므로 상담 때 월 예상 비용을 계산해 드립니다.</p></div>
+        </details>
+        <details>
+          <summary>매일 다니셔야 하나요?</summary>
+          <div class="answer"><p>아닙니다. 주 2~3회처럼 필요한 요일만 이용하셔도 됩니다. 등급별 월 한도액 안에서 방문요양 같은 다른 재가 서비스와 함께 이용하실 수도 있습니다.</p></div>
+        </details>
+        <details>
+          <summary>치매가 있으셔도 다닐 수 있나요?</summary>
+          <div class="answer"><p>네. 장기요양등급이나 인지지원등급을 받으신 어르신이라면 이용하실 수 있습니다. 치매 어르신을 위한 인지 활동을 매일 진행하고, 어르신마다 익숙한 방식으로 돌봐 드립니다.</p></div>
+        </details>
+        <details>
+          <summary>차량은 어디까지 오나요?</summary>
+          <div class="answer"><p>○○구 전 지역과 가까운 이웃 동네를 운행합니다. 댁 주소를 알려 주시면 송영이 가능한지 바로 확인해 드립니다.</p></div>
+        </details>
+        <details>
+          <summary>센터에 계시다가 편찮으시면 어떻게 하나요?</summary>
+          <div class="answer"><p>매일 건강 상태를 확인하고, 평소와 다르시면 보호자께 바로 연락드립니다. 응급 상황에는 119에 신고하고 가까운 병원으로 모시면서 보호자께 알립니다.</p></div>
+        </details>
+        <details>
+          <summary>미리 둘러볼 수 있나요?</summary>
+          <div class="answer"><p>네. 전화로 방문 시간을 정하시면 센터를 둘러보시고 상담도 받으실 수 있습니다. 어르신과 함께 오셔도 좋습니다.</p></div>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section-alt" id="contact" aria-labelledby="contact-title">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 id="contact-title">상담 신청 · 오시는 길</h2>
+        <p>궁금한 점은 편하게 전화 주세요. 센터 견학도 언제든 환영합니다.</p>
+      </div>
+      <div class="contact-grid">
+        <div>
+          <p class="label">전화 상담</p>
+          <a class="big-phone" href="tel:020000000" id="center-phone">02-000-0000</a>
+          <p class="phone-note">월~토 오전 8시~오후 8시에 전화 받습니다.</p>
+          <div class="btn-row">
+            <a class="btn btn-primary" href="tel:020000000"><svg class="ico" aria-hidden="true"><use href="#i-phone"/></svg>전화 걸기</a>
+            <button type="button" class="btn btn-ghost" data-copy="02-000-0000"><svg class="ico" aria-hidden="true"><use href="#i-copy"/></svg><span class="copy-label">번호 복사</span></button>
+            <a class="btn btn-ghost" href="sms:01000000000"><svg class="ico" aria-hidden="true"><use href="#i-msg"/></svg>문자 보내기</a>
+          </div>
+          <dl class="info-list">
+            <div><svg class="ico" aria-hidden="true"><use href="#i-pin"/></svg><dt>주소</dt><dd>서울특별시 ○○구 ○○로 00, 0층</dd></div>
+            <div><svg class="ico" aria-hidden="true"><use href="#i-clock"/></svg><dt>운영 시간</dt><dd>월~토 오전 8시~오후 8시 (일요일 휴무)</dd></div>
+            <div><svg class="ico" aria-hidden="true"><use href="#i-van"/></svg><dt>송영 지역</dt><dd>○○구 전 지역 (이웃 동네는 문의해 주세요)</dd></div>
+          </dl>
+          <div class="btn-row">
+            <a class="btn btn-ghost" href="https://map.naver.com/p/search/서울특별시%20○○구%20○○로%2000" target="_blank" rel="noopener"><svg class="ico" aria-hidden="true"><use href="#i-ext"/></svg>네이버 지도</a>
+            <a class="btn btn-ghost" href="https://map.kakao.com/link/search/서울특별시%20○○구%20○○로%2000" target="_blank" rel="noopener"><svg class="ico" aria-hidden="true"><use href="#i-ext"/></svg>카카오맵</a>
+            <button type="button" class="btn btn-ghost" data-copy="서울특별시 ○○구 ○○로 00, 0층"><svg class="ico" aria-hidden="true"><use href="#i-copy"/></svg><span class="copy-label">주소 복사</span></button>
+          </div>
+        </div>
+
+        <form class="form" id="consult-form" data-sms="01000000000" data-center="메모리즈 주간보호센터">
+          <h3>문자로 상담 신청</h3>
+          <p class="form-intro">남겨 주신 내용으로 상담 문자가 작성됩니다. 확인 후 편하신 시간에 전화드립니다.</p>
+          <div class="fields">
+            <div class="field">
+              <label for="f-name">보호자 성함</label>
+              <input class="input" id="f-name" name="name" type="text" autocomplete="name" required placeholder="홍길동">
+            </div>
+            <div class="field">
+              <label for="f-phone">연락처</label>
+              <input class="input" id="f-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" required placeholder="010-1234-5678">
+            </div>
+            <div class="field">
+              <label for="f-grade">어르신 장기요양등급</label>
+              <select class="input" id="f-grade" name="grade" required>
+                <option value="">선택해 주세요</option>
+                <option>1등급</option>
+                <option>2등급</option>
+                <option>3등급</option>
+                <option>4등급</option>
+                <option>5등급</option>
+                <option>인지지원등급</option>
+                <option>아직 없음 (신청 예정)</option>
+                <option>잘 모르겠음</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="f-time">통화하기 편한 시간</label>
+              <select class="input" id="f-time" name="time">
+                <option>언제든 괜찮아요</option>
+                <option>오전 (9시~12시)</option>
+                <option>오후 (12시~6시)</option>
+                <option>저녁 (6시 이후)</option>
+              </select>
+            </div>
+            <div class="field field-full">
+              <label for="f-msg">궁금하신 점<span class="opt">(선택)</span></label>
+              <textarea class="input" id="f-msg" name="message" rows="4" placeholder="예) 어머니가 치매 초기이신데 주 3회 이용할 수 있을까요?"></textarea>
+            </div>
+          </div>
+          <div class="consent">
+            <input id="f-agree" name="agree" type="checkbox" required>
+            <label for="f-agree">상담을 위한 개인정보 수집·이용에 동의합니다</label>
+            <details>
+              <summary>자세히 보기</summary>
+              <p>수집 항목: 보호자 성함, 연락처, 어르신 등급, 문의 내용<br>이용 목적: 이용 상담과 안내<br>보유 기간: 상담이 끝나면 지체 없이 파기합니다. 동의하지 않으셔도 전화로 상담받으실 수 있습니다.</p>
+            </details>
+          </div>
+          <button type="submit" class="btn btn-primary btn-lg form-submit"><svg class="ico" aria-hidden="true"><use href="#i-msg"/></svg>문자로 상담 신청하기</button>
+          <p class="form-hint">휴대폰에서는 문자 앱이 열립니다. 내용을 확인하고 [전송]을 눌러 주세요.</p>
+          <div class="consult-result" id="consult-result" tabindex="-1" role="status" hidden>
+            <p class="result-title">문자 앱에서 [전송]을 누르면 신청이 끝납니다</p>
+            <p>문자 앱이 열리지 않았다면 아래 내용을 복사해 <b class="num">010-0000-0000</b>으로 보내 주시거나 <b class="num">02-000-0000</b>으로 전화 주세요.</p>
+            <pre class="result-text" id="result-text"></pre>
+            <div class="result-actions">
+              <a class="btn btn-primary" id="result-sms" href="sms:01000000000"><svg class="ico" aria-hidden="true"><use href="#i-msg"/></svg>문자 앱 열기</a>
+              <button type="button" class="btn btn-ghost" id="result-copy" data-copy=""><svg class="ico" aria-hidden="true"><use href="#i-copy"/></svg><span class="copy-label">내용 복사</span></button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="footer-strip" aria-hidden="true">
+    <span style="--c:var(--p-sky)"></span><span style="--c:var(--p-jade)"></span><span style="--c:var(--p-gardenia)"></span><span style="--c:var(--p-persimmon)"></span><span style="--c:var(--p-lavender)"></span><span style="--c:var(--p-pink)"></span><span style="--c:var(--p-mugwort)"></span><span style="--c:var(--p-indigo)"></span>
+  </div>
+  <div class="wrap footer-inner">
+    <p class="footer-brand"><svg aria-hidden="true"><use href="#brand"/></svg>메모리즈 주간보호센터</p>
+    <div class="footer-info">
+      <p>노인장기요양기관(주야간보호) · 대표 ○○○ · 사업자등록번호 ○○○-○○-○○○○○</p>
+      <p>서울특별시 ○○구 ○○로 00, 0층 · 전화 <a class="nowrap" href="tel:020000000">02-000-0000</a></p>
+    </div>
+    <p class="copyright">© 2026 메모리즈 주간보호센터</p>
+  </div>
+</footer>
+
+<nav class="actionbar" aria-label="빠른 상담">
+  <a class="btn btn-primary" href="tel:020000000"><svg class="ico" aria-hidden="true"><use href="#i-phone"/></svg>전화 상담</a>
+  <a class="btn btn-ghost" href="#contact">상담 신청</a>
+</nav>
+
+<script>
+(function () {
+  var root = document.documentElement;
+
+  // 글자 크게: 기기마다 따로 기억합니다.
+  var sizeBtn = document.getElementById('text-size');
+  function applySize(large) {
+    root.classList.toggle('text-lg', large);
+    sizeBtn.setAttribute('aria-pressed', large ? 'true' : 'false');
+  }
+  applySize(root.classList.contains('text-lg'));
+  sizeBtn.addEventListener('click', function () {
+    var large = !root.classList.contains('text-lg');
+    applySize(large);
+    try { localStorage.setItem('daycare-text-lg', large ? '1' : '0'); } catch (e) {}
+  });
+
+  // 복사 버튼
+  function flash(btn, text) {
+    var label = btn.querySelector('.copy-label');
+    if (!label) return;
+    if (!btn.dataset.label) btn.dataset.label = label.textContent;
+    label.textContent = text;
+    clearTimeout(btn._t);
+    btn._t = setTimeout(function () { label.textContent = btn.dataset.label; }, 2200);
+  }
+  function legacyCopy(text) {
+    var area = document.createElement('textarea');
+    area.value = text;
+    area.setAttribute('readonly', '');
+    area.style.position = 'fixed';
+    area.style.opacity = '0';
+    document.body.appendChild(area);
+    area.select();
+    var ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) {}
+    document.body.removeChild(area);
+    return ok;
+  }
+  document.addEventListener('click', function (event) {
+    var btn = event.target.closest('[data-copy]');
+    if (!btn) return;
+    var text = btn.getAttribute('data-copy');
+    if (!text) return;
+    function fallback() { flash(btn, legacyCopy(text) ? '복사했어요' : '길게 눌러 복사해 주세요'); }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () { flash(btn, '복사했어요'); }, fallback);
+    } else {
+      fallback();
+    }
+  });
+
+  // 상담 신청: 입력한 내용으로 문자를 작성합니다. 전송은 보호자가 문자 앱에서 직접 합니다.
+  var form = document.getElementById('consult-form');
+  var result = document.getElementById('consult-result');
+  form.addEventListener('submit', function (event) {
+    event.preventDefault();
+    var data = new FormData(form);
+    var lines = [
+      '[' + form.dataset.center + ' 상담 신청]',
+      '보호자: ' + data.get('name').trim(),
+      '연락처: ' + data.get('phone').trim(),
+      '어르신 등급: ' + data.get('grade'),
+      '통화 편한 시간: ' + data.get('time')
+    ];
+    var message = (data.get('message') || '').trim();
+    if (message) lines.push('문의: ' + message);
+    var text = lines.join('\n');
+    var href = 'sms:' + form.dataset.sms + '?&body=' + encodeURIComponent(text);
+
+    document.getElementById('result-text').textContent = text;
+    document.getElementById('result-sms').href = href;
+    document.getElementById('result-copy').setAttribute('data-copy', text);
+    result.hidden = false;
+    result.focus({ preventScroll: true });
+    result.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+
+    // 터치 기기에서만 문자 앱을 바로 엽니다. 컴퓨터에서는 위 안내로 대신합니다.
+    if (window.matchMedia('(pointer: coarse)').matches) {
+      window.location.href = href;
+    }
+  });
+})();
+</script>
+</body>
+</html>
