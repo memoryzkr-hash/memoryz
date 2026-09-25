@@ -351,7 +351,8 @@ textarea {
         </section>
         <section>
           <h3>이 페이지는</h3>
-          <p class="foot-note">멤버 세 명은 모두 Claude이고, 답할 때 지금 보고 있는 분의 Claude 사용량을 써요. 대화와 멤버 설정은 이 기기의 브라우저에만 저장돼서, 다른 기기에서 열면 새 방으로 시작해요.</p>
+          <p class="foot-note" id="syncNote">대화와 설정은 이 브라우저에 저장돼요.</p>
+          <p class="foot-note">멤버 세 명은 모두 Claude이고, 답할 때 지금 보고 있는 분의 Claude 사용량을 써요. 이 페이지는 바깥 서비스에 연결할 수 없어서 지피티는 초대할 수 없어요. 지피티까지 쓰려면 컴퓨터에서 켜는 서버 버전을 쓰세요.</p>
         </section>
       </div>
       <div id="resetConfirm" class="confirm" hidden><span>대화를 모두 지울까요? 멤버 설정과 직급은 남아요.</span>
@@ -988,18 +989,107 @@ function bindSheet(m) {
 }
 
 // ─── 방 · 저장 ──────────────────────────────────────────────
-
+// 저장소: claude.ai 의 이 페이지 전용 DB (모든 기기에서 같은 방). DB 를 못 쓰면 이 브라우저에만 저장.
 const STORE = 'ai-room-v1';
+const CHUNK = 50; // 메시지 50개씩 한 문서
 let sampleFn = null;
 let room;
+let db = null;
+const written = { state: '', chunks: [] };
+const queues = new Map();
+const serial = (key, job) => {
+  const next = (queues.get(key) ?? Promise.resolve()).then(job).catch((e) => console.warn('db', key, e?.code ?? e));
+  queues.set(key, next);
+  return next;
+};
+const chunkId = (i) => String(i).padStart(4, '0');
 
-function load() {
+function loadLocal() {
   try { return JSON.parse(localStorage.getItem(STORE) || 'null'); } catch { return null; }
 }
-function save() {
+function saveLocal() {
   try {
     localStorage.setItem(STORE, JSON.stringify({ members: room.members, settings: room.settings, messages: room.messages.slice(-400) }));
   } catch { /* 저장이 막힌 브라우저에서는 이번 방문 동안만 유지 */ }
+}
+
+/** 바뀐 것만 DB 에 쓴다 (문서마다 한 번에 하나씩) */
+function saveDb() {
+  const stateJson = JSON.stringify({ members: room.members, settings: room.settings });
+  if (stateJson !== written.state) {
+    written.state = stateJson;
+    serial('state', () => db.doc('room/state').set(JSON.parse(stateJson)));
+  }
+  const count = Math.ceil(room.messages.length / CHUNK);
+  for (let i = 0; i < count; i++) {
+    const json = JSON.stringify(room.messages.slice(i * CHUNK, (i + 1) * CHUNK));
+    if (written.chunks[i] === json) continue;
+    written.chunks[i] = json;
+    serial(`chunk${i}`, () => db.doc(`chunks/${chunkId(i)}`).set({ n: i, messages: JSON.parse(json) }));
+  }
+  for (let i = count; i < written.chunks.length; i++) {
+    if (written.chunks[i] === undefined) continue;
+    written.chunks[i] = undefined;
+    serial(`chunk${i}`, () => db.doc(`chunks/${chunkId(i)}`).delete());
+  }
+}
+
+function save() {
+  saveLocal();
+  if (db) saveDb();
+}
+
+/** 다른 기기에서 바뀐 내용을 받아들인다 (이 기기에서 답하는 중이면 끝난 뒤에) */
+let pending = null;
+function applyRemote() {
+  if (!pending) return;
+  if (room.busy) return;
+  const { state: st, chunks } = pending;
+  pending = null;
+  let changed = false;
+  if (st) {
+    const json = JSON.stringify({ members: st.members, settings: st.settings });
+    if (json !== written.state) {
+      written.state = json;
+      room.members = DEFAULT_MEMBERS.map((d) => ({ ...d, ...(st.members ?? []).find((m) => m.id === d.id) }));
+      Object.assign(room.settings, st.settings);
+      changed = true;
+    }
+  }
+  if (chunks) {
+    const messages = chunks.flatMap((c) => c.messages ?? []);
+    const json = JSON.stringify(messages);
+    if (json !== JSON.stringify(room.messages)) {
+      room.messages = messages;
+      written.chunks = chunks.map((c) => JSON.stringify(c.messages ?? []));
+      state.passes = [];
+      changed = true;
+    }
+  }
+  if (changed) { syncState(); renderMembers(); renderLog(); saveLocal(); }
+}
+
+async function connectDb() {
+  db = await window.claude?.use?.('db').catch(() => null);
+  if (!db) return;
+  const first = { state: false, chunks: false };
+  db.doc('room/state').onSnapshot((snap) => {
+    pending = { ...pending, state: snap.exists ? snap.data() : null };
+    if (!snap.exists && !first.state) {
+      // DB 가 비어 있으면 이 기기의 내용을 올린다
+      written.state = ''; written.chunks = [];
+      saveDb();
+    }
+    first.state = true;
+    applyRemote();
+  }, (e) => console.warn('db state', e.code));
+  db.collection('chunks').orderBy('n').onSnapshot((snap) => {
+    const chunks = snap.docs.filter((d) => d.exists).map((d) => d.data());
+    if (!snap.empty || first.chunks) pending = { ...pending, chunks };
+    first.chunks = true;
+    applyRemote();
+  }, (e) => console.warn('db chunks', e.code));
+  $('syncNote').textContent = '대화와 설정은 사용자님의 claude.ai 계정에 저장돼서, 어느 기기에서 열어도 같은 방이 이어져요. 서랍의 "대화 내용 지우기"를 누르기 전까지 남아요.';
 }
 
 function syncState() {
@@ -1062,6 +1152,7 @@ function handle(e) {
       state.unread.clear();
       setBusy(false);
       renderLog();
+      applyRemote();
       break;
     case 'members':
       syncState();
@@ -1152,6 +1243,8 @@ $('resetNo').onclick = () => { $('resetConfirm').hidden = true; };
 $('resetYes').onclick = () => {
   $('resetConfirm').hidden = true;
   room.reset();
+  if (db) for (let i = 0; i < written.chunks.length; i++) { written.chunks[i] = undefined; serial(`chunk${i}`, () => db.doc(`chunks/${chunkId(i)}`).delete()); }
+  written.chunks = [];
   state.passes = [];
   state.live.clear();
   syncState();
@@ -1211,7 +1304,7 @@ log.addEventListener('scroll', closePop);
 // ─── 시작 ───────────────────────────────────────────────────
 
 function start() {
-  const saved = load();
+  const saved = loadLocal();
   const members = DEFAULT_MEMBERS.map((d) => ({ ...d, ...(saved?.members ?? []).find((m) => m.id === d.id) }));
   room = new Room(members, { ready: () => sampleFn !== null, respond, emit: handle, onChange: save });
   room.messages = saved?.messages ?? [];
@@ -1233,5 +1326,6 @@ start();
   renderMembers();
   renderLog();
 })();
+connectDb();
 
 </script>
