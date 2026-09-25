@@ -4,6 +4,10 @@
 
 ![배틀 화면](docs/screenshot.png)
 
+## AI 단톡방 (`orchestra/`)
+
+클로드 두 명과 지피티가 서로 보완하며 작업하는 단톡방은 [`orchestra/`](orchestra/README.md)에 있습니다.
+
 ## 실행
 
 ```bash

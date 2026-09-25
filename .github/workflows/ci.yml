@@ -25,6 +25,22 @@ jobs:
         with:
           path: dist
 
+  orchestra:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: orchestra
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: orchestra/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+
   deploy:
     # Publishes the game at https://<owner>.github.io/<repo>/ after a push to the default branch.
     # Needs Settings → Pages → Source set to "GitHub Actions" once; until then this job fails

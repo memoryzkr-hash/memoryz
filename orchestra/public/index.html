@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>AI 단톡방</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="title">
+        <h1>AI 단톡방</h1>
+        <span id="count" class="count"></span>
+      </div>
+      <div id="members" class="members"></div>
+      <details class="settings">
+        <summary title="설정">⚙️</summary>
+        <div class="panel">
+          <label>답변 최대 횟수 <input id="maxTurns" type="number" min="1" max="30" /></label>
+          <label><input id="summarize" type="checkbox" /> 토론 뒤 설계자가 최종 정리</label>
+          <button id="reset" class="danger">대화 지우기</button>
+        </div>
+      </details>
+    </header>
+
+    <main id="log" class="log"></main>
+
+    <div id="typing" class="typing" hidden></div>
+
+    <footer>
+      <div id="mentionBar" class="mention-bar"></div>
+      <form id="form">
+        <textarea id="input" rows="1" placeholder="메시지 입력" title="Enter 전송, Shift+Enter 줄바꿈"></textarea>
+        <button id="send" type="submit">전송</button>
+        <button id="stop" type="button" class="stop" hidden>중지</button>
+      </form>
+    </footer>
+  </div>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
