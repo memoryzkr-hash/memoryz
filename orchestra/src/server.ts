@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createAgents } from './agents.js';
+import { DEFAULT_MEMBERS, MODEL_OPTIONS, makeAgent, providerReady } from './agents.js';
 import { Room, type RoomEvent } from './orchestrator.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -26,25 +26,24 @@ const broadcast = (e: RoomEvent) => {
 let room: Room;
 const save = () => {
   mkdirSync(path.dirname(dataFile), { recursive: true });
-  writeFileSync(dataFile, JSON.stringify({ messages: room.messages, settings: room.settings }, null, 2));
+  writeFileSync(
+    dataFile,
+    JSON.stringify({ members: room.members, settings: room.settings, messages: room.messages }, null, 2),
+  );
 };
-room = new Room(createAgents({ nameOf: (a) => room.nameOf(a) }), broadcast, save);
-if (existsSync(dataFile)) {
-  const saved = JSON.parse(readFileSync(dataFile, 'utf8'));
-  room.messages = saved.messages ?? [];
-  Object.assign(room.settings, saved.settings);
-}
+const saved = existsSync(dataFile) ? JSON.parse(readFileSync(dataFile, 'utf8')) : {};
+// 저장된 멤버 설정을 기본값 위에 덮는다 (새로 생긴 필드는 기본값 유지)
+const members = DEFAULT_MEMBERS.map((d) => ({ ...d, ...(saved.members ?? []).find((m: { id: string }) => m.id === d.id) }));
+room = new Room(members, { makeAgent, ready: providerReady, emit: broadcast, onChange: save });
+room.messages = saved.messages ?? [];
+Object.assign(room.settings, saved.settings);
 
 const state = () => ({
   messages: room.messages,
   settings: room.settings,
   busy: room.busy,
-  members: room.agents.map((a) => ({
-    ...a.persona,
-    model: a.model,
-    ready: a.ready,
-    present: room.present.has(a.persona.id),
-  })),
+  members: room.views(),
+  modelOptions: MODEL_OPTIONS,
 });
 
 async function body(req: IncomingMessage): Promise<any> {
@@ -76,9 +75,9 @@ const server = createServer(async (req, res) => {
     }
     if (req.method === 'GET' && url.pathname === '/api/state') return json(res, state());
     if (req.method === 'POST' && url.pathname === '/api/message') {
-      const { text } = await body(req);
+      const { text, to } = await body(req);
       if (typeof text !== 'string' || !text.trim()) return json(res, { error: '빈 메시지' }, 400);
-      room.post(text.trim());
+      room.post(text.trim(), typeof to === 'string' ? to : undefined);
       return json(res, { ok: true });
     }
     if (req.method === 'POST' && url.pathname === '/api/stop') {
@@ -91,14 +90,29 @@ const server = createServer(async (req, res) => {
       return json(res, { ok: true });
     }
     if (req.method === 'POST' && url.pathname === '/api/member') {
-      const { id, present } = await body(req);
-      room.setPresent(String(id), Boolean(present));
+      const { id, ...patch } = await body(req);
+      if (patch.provider !== undefined && !['claude', 'gpt'].includes(patch.provider))
+        return json(res, { error: '알 수 없는 제공자' }, 400);
+      if (patch.effort !== undefined && !['low', 'medium', 'high', 'xhigh', 'max'].includes(patch.effort))
+        return json(res, { error: '알 수 없는 생각 깊이' }, 400);
+      for (const key of ['name', 'emoji', 'model', 'specialty'] as const)
+        if (patch[key] !== undefined) patch[key] = String(patch[key]).slice(0, 200);
+      if (patch.present !== undefined) patch.present = Boolean(patch.present);
+      if (patch.score !== undefined && !Number.isFinite(Number(patch.score)))
+        return json(res, { error: '점수는 숫자여야 합니다' }, 400);
+      room.configure(String(id), patch);
+      return json(res, { ok: true });
+    }
+    if (req.method === 'POST' && url.pathname === '/api/react') {
+      const { id, value } = await body(req);
+      room.react(String(id), value === 'up' || value === 'down' ? value : null);
       return json(res, { ok: true });
     }
     if (req.method === 'POST' && url.pathname === '/api/settings') {
-      const { maxTurns, summarize } = await body(req);
+      const { maxTurns, summarize, autoRank } = await body(req);
       if (Number.isFinite(maxTurns)) room.settings.maxTurns = Math.max(1, Math.min(30, Math.round(maxTurns)));
       if (typeof summarize === 'boolean') room.settings.summarize = summarize;
+      if (typeof autoRank === 'boolean') room.settings.autoRank = autoRank;
       save();
       broadcast({ type: 'members' });
       return json(res, { ok: true });
@@ -124,7 +138,7 @@ setInterval(() => {
 
 server.listen(PORT, () => {
   console.log(`AI 단톡방: http://localhost:${PORT}`);
-  for (const a of room.agents) {
-    console.log(`  ${a.persona.emoji} ${a.persona.name} (${a.model}) ${a.ready ? '준비됨' : '— API 키 없음'}`);
+  for (const m of room.views()) {
+    console.log(`  ${m.emoji} ${m.name} ${m.rank}·${m.position} (${m.model}) ${m.ready ? '준비됨' : '— API 키 없음'}`);
   }
 });

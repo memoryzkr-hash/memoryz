@@ -3,39 +3,84 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#bacee0" />
   <title>AI 단톡방</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="app">
-    <header>
-      <div class="title">
-        <h1>AI 단톡방</h1>
-        <span id="count" class="count"></span>
-      </div>
-      <div id="members" class="members"></div>
-      <details class="settings">
-        <summary title="설정">⚙️</summary>
-        <div class="panel">
-          <label>답변 최대 횟수 <input id="maxTurns" type="number" min="1" max="30" /></label>
-          <label><input id="summarize" type="checkbox" /> 토론 뒤 설계자가 최종 정리</label>
-          <button id="reset" class="danger">대화 지우기</button>
-        </div>
-      </details>
+  <div class="app" id="app">
+    <header class="topbar">
+      <button class="icon-btn" id="back" aria-label="뒤로" title="맨 위로">
+        <svg viewBox="0 0 24 24"><path d="M15 4 7 12l8 8" /></svg>
+      </button>
+      <div class="room-title"><span>AI 단톡방</span><span id="count" class="count"></span></div>
+      <button class="icon-btn" id="searchBtn" aria-label="대화 검색">
+        <svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5" /><path d="m15.5 15.5 5 5" /></svg>
+      </button>
+      <button class="icon-btn" id="menuBtn" aria-label="채팅방 서랍">
+        <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
+      </button>
     </header>
+    <div class="searchbar" id="searchbar" hidden>
+      <input id="searchInput" type="search" placeholder="대화 내용 검색" />
+      <span id="searchCount"></span>
+      <button id="searchClose" class="text-btn">닫기</button>
+    </div>
 
     <main id="log" class="log"></main>
 
-    <div id="typing" class="typing" hidden></div>
-
-    <footer>
-      <div id="mentionBar" class="mention-bar"></div>
-      <form id="form">
-        <textarea id="input" rows="1" placeholder="메시지 입력" title="Enter 전송, Shift+Enter 줄바꿈"></textarea>
-        <button id="send" type="submit">전송</button>
-        <button id="stop" type="button" class="stop" hidden>중지</button>
-      </form>
+    <footer class="composer">
+      <div id="mentionPop" class="mention-pop" hidden></div>
+      <div id="directBar" class="direct-bar" hidden></div>
+      <div class="input-row">
+        <button class="icon-btn plus" id="plusBtn" aria-label="직접 호출 메뉴">
+          <svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="4" /><path d="M12 8v8M8 12h8" /></svg>
+        </button>
+        <textarea id="input" rows="1" placeholder="메시지 입력"></textarea>
+        <button class="icon-btn" id="mentionBtn" aria-label="멤버 부르기" title="@ 멤버 부르기">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.5" /><path d="M15.5 12v1.5a2.5 2.5 0 0 0 5 0V12a8.5 8.5 0 1 0-3.5 6.9" /></svg>
+        </button>
+        <button id="send" class="send" aria-label="전송" disabled>
+          <svg viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6" /></svg>
+        </button>
+        <button id="stop" class="send stop" aria-label="중지" hidden>
+          <svg viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="1.5" /></svg>
+        </button>
+      </div>
+      <div id="plusMenu" class="plus-menu" hidden></div>
     </footer>
+
+    <!-- 채팅방 서랍 -->
+    <div id="drawerDim" class="dim" hidden></div>
+    <aside id="drawer" class="drawer" aria-hidden="true">
+      <div class="drawer-head">
+        <strong>채팅방 서랍</strong>
+        <button class="icon-btn" id="drawerClose" aria-label="닫기">
+          <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18" /></svg>
+        </button>
+      </div>
+      <div class="drawer-body">
+        <section>
+          <h3>대화상대 <span id="memberCount"></span></h3>
+          <div id="memberList"></div>
+        </section>
+        <section>
+          <h3>채팅방 설정</h3>
+          <label class="row-setting">답변 최대 횟수 <input id="maxTurns" type="number" min="1" max="30" /></label>
+          <label class="row-setting">토론 뒤 메인이 최종 정리 <input id="summarize" type="checkbox" class="switch" /></label>
+          <label class="row-setting">실적으로 직급 자동 변동 <input id="autoRank" type="checkbox" class="switch" /></label>
+        </section>
+        <section>
+          <h3>직급 체계</h3>
+          <div id="rankTable" class="rank-table"></div>
+          <p class="hint">👍 공감 +3 · 👎 −3 · 최종 정리에서 채택 +2 · 정정당함 −2<br />점수가 가장 높은 멤버가 👑 메인, 다음부터 서브1·서브2가 됩니다.</p>
+        </section>
+      </div>
+      <button id="reset" class="drawer-foot">대화 내용 지우기</button>
+    </aside>
+
+    <!-- 프로필 -->
+    <div id="profile" class="profile" hidden></div>
   </div>
   <script type="module" src="app.js"></script>
 </body>

@@ -1,67 +1,87 @@
 import Anthropic from '@anthropic-ai/sdk';
 import OpenAI from 'openai';
 import { toTurns } from './prompts.js';
-import type { Agent, Persona, RespondArgs } from './types.js';
+import type { Agent, MemberConfig, Provider, RespondArgs } from './types.js';
 
-export const PERSONAS: Persona[] = [
+/** 처음 방을 만들 때의 멤버: 메인·서브1은 클로드, 서브2는 지피티. 이후엔 점수에 따라 자리가 바뀐다. */
+export const DEFAULT_MEMBERS: MemberConfig[] = [
   {
     id: 'claude-a',
-    name: '클로드 설계자',
+    name: '클로드A',
     emoji: '🧠',
-    role: '리드. 사용자의 요청에 가장 먼저 답하고, 전체 방향·설계·구현 초안을 잡습니다. 토론이 끝나면 최종 정리를 맡습니다.',
-    aliases: ['설계자', '클로드A', 'claudeA', 'claude-a'],
-    color: '#f3d9c4',
+    color: '#f6c9a8',
+    provider: 'claude',
+    model: 'claude-opus-5',
+    effort: 'medium',
+    specialty: '설계와 구현',
+    score: 35,
+    present: true,
   },
   {
     id: 'claude-b',
-    name: '클로드 검증자',
+    name: '클로드B',
     emoji: '🔍',
-    role: '검토자. 다른 멤버의 답을 꼼꼼히 검증해 버그, 빠진 요구사항, 엣지 케이스, 보안·성능 문제를 찾아 구체적인 수정안을 냅니다.',
-    aliases: ['검증자', '클로드B', 'claudeB', 'claude-b'],
-    color: '#d9e4f7',
+    color: '#b9d3f5',
+    provider: 'claude',
+    model: 'claude-opus-5',
+    effort: 'medium',
+    specialty: '코드 리뷰와 검증',
+    score: 20,
+    present: true,
   },
   {
     id: 'gpt',
     name: '지피티',
     emoji: '⚡',
-    role: '외부 시각. 클로드들과 다른 관점에서 대안적 접근, 반론, 실무 팁, 더 단순한 방법을 제시합니다. 동의만 할 거면 PASS 합니다.',
-    aliases: ['지피티', 'gpt', 'GPT', 'chatgpt'],
-    color: '#d6f0de',
+    color: '#bfe8cc',
+    provider: 'gpt',
+    model: 'gpt-5',
+    effort: 'medium',
+    specialty: '다른 관점의 아이디어',
+    score: 10,
+    present: true,
   },
 ];
 
-const byId = (id: string) => PERSONAS.find((p) => p.id === id)!;
+/** 화면의 모델 입력칸 추천 목록 (직접 입력도 가능) */
+export const MODEL_OPTIONS: Record<Provider, string[]> = {
+  claude: ['claude-opus-5', 'claude-opus-5-5', 'claude-fable-5-1', 'claude-sonnet-5', 'claude-haiku-4-5'],
+  gpt: ['gpt-5', 'gpt-5-mini'],
+};
 
-export interface AgentOptions {
-  nameOf: (author: string) => string;
+export const DEMO = process.env.ORCHESTRA_DEMO === '1';
+
+export function providerReady(provider: Provider): boolean {
+  if (DEMO) return true;
+  if (provider === 'claude')
+    return Boolean(process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN || process.env.ANTHROPIC_PROFILE);
+  return Boolean(process.env.OPENAI_API_KEY);
 }
 
-class ClaudeAgent implements Agent {
-  private client?: Anthropic;
-  readonly ready: boolean;
-  constructor(
-    readonly persona: Persona,
-    readonly model: string,
-    private readonly effort: 'low' | 'medium' | 'high' | 'xhigh' | 'max',
-    private readonly opts: AgentOptions,
-  ) {
-    // SDK는 ANTHROPIC_API_KEY / ANTHROPIC_AUTH_TOKEN / `ant auth login` 프로필을 순서대로 찾는다.
-    this.ready = Boolean(process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN || process.env.ANTHROPIC_PROFILE);
-    if (this.ready) this.client = new Anthropic();
-  }
+let anthropic: Anthropic | undefined;
+let openai: OpenAI | undefined;
 
-  async respond({ system, transcript, instruction, signal, onDelta }: RespondArgs): Promise<string> {
-    if (!this.client) throw new Error('ANTHROPIC_API_KEY 가 설정되지 않았습니다');
-    const stream = this.client.beta.messages.stream(
+// 서버 측 거절 폴백(fallbacks: "default")을 받는 모델
+const FALLBACK_MODELS = new Set(['claude-opus-5', 'claude-fable-5-1']);
+
+class ClaudeAgent implements Agent {
+  constructor(private readonly m: MemberConfig) {}
+
+  async respond({ system, transcript, instruction, label, signal, onDelta }: RespondArgs): Promise<string> {
+    if (!providerReady('claude')) throw new Error('ANTHROPIC_API_KEY 가 설정되지 않았습니다');
+    anthropic ??= new Anthropic();
+    const stream = anthropic.beta.messages.stream(
       {
-        model: this.model,
+        model: this.m.model,
         max_tokens: 16000,
         system,
-        messages: toTurns(this.persona, transcript, this.opts.nameOf, instruction),
-        output_config: { effort: this.effort },
+        messages: toTurns(this.m.id, transcript, label, instruction),
+        // Haiku 4.5 는 effort 를 받지 않는다
+        ...(this.m.model.startsWith('claude-haiku') ? {} : { output_config: { effort: this.m.effort } }),
         // 안전 분류기가 거절하면 서버가 다른 모델로 자동 재시도한다.
-        betas: ['server-side-fallback-2026-07-01'],
-        fallbacks: 'default',
+        ...(FALLBACK_MODELS.has(this.m.model)
+          ? { betas: ['server-side-fallback-2026-07-01'], fallbacks: 'default' as const }
+          : {}),
       },
       { signal },
     );
@@ -78,27 +98,16 @@ class ClaudeAgent implements Agent {
 }
 
 class GptAgent implements Agent {
-  private client?: OpenAI;
-  readonly ready: boolean;
-  constructor(
-    readonly persona: Persona,
-    readonly model: string,
-    private readonly opts: AgentOptions,
-  ) {
-    this.ready = Boolean(process.env.OPENAI_API_KEY);
-    if (this.ready) this.client = new OpenAI();
-  }
+  constructor(private readonly m: MemberConfig) {}
 
-  async respond({ system, transcript, instruction, signal, onDelta }: RespondArgs): Promise<string> {
-    if (!this.client) throw new Error('OPENAI_API_KEY 가 설정되지 않았습니다');
-    const stream = await this.client.chat.completions.create(
+  async respond({ system, transcript, instruction, label, signal, onDelta }: RespondArgs): Promise<string> {
+    if (!providerReady('gpt')) throw new Error('OPENAI_API_KEY 가 설정되지 않았습니다');
+    openai ??= new OpenAI();
+    const stream = await openai.chat.completions.create(
       {
-        model: this.model,
+        model: this.m.model,
         stream: true,
-        messages: [
-          { role: 'system', content: system },
-          ...toTurns(this.persona, transcript, this.opts.nameOf, instruction),
-        ],
+        messages: [{ role: 'system', content: system }, ...toTurns(this.m.id, transcript, label, instruction)],
       },
       { signal },
     );
@@ -116,19 +125,22 @@ class GptAgent implements Agent {
 
 /** API 키 없이 화면과 진행 흐름을 확인하는 데모용 멤버 (ORCHESTRA_DEMO=1) */
 class DemoAgent implements Agent {
-  readonly ready = true;
-  readonly model = 'demo';
-  constructor(readonly persona: Persona) {}
+  constructor(private readonly m: MemberConfig) {}
 
-  async respond({ transcript, instruction, signal, onDelta }: RespondArgs): Promise<string> {
-    const lastUser = [...transcript].reverse().find((m) => m.author === 'user');
+  async respond({ transcript, instruction, peers, signal, onDelta }: RespondArgs): Promise<string> {
+    const lastUser = [...transcript].reverse().find((x) => x.author === 'user');
     const since = transcript.slice(transcript.lastIndexOf(lastUser!) + 1);
-    const spoke = since.some((m) => m.author === this.persona.id);
+    const spoke = since.some((x) => x.author === this.m.id);
+    const topic = lastUser?.text.replace(/@\S+\s*/g, '') ?? '';
     let text: string;
-    if (instruction.includes('최종 결론')) text = `정리하면: "${lastUser?.text}" 에 대해 설계안 + 검증 의견 + 대안을 모두 반영했습니다. (데모)`;
+    if (instruction.includes('최종 결론'))
+      text = `"${topic}" 최종안입니다.\n- 초안 구조 유지\n- 빈 입력 예외 처리 추가 (검증 의견)\n- 프로토타입부터 작게 시작 (대안 의견)\n[평가] 채택: ${peers.join(', ') || '없음'} / 오류: 없음`;
+    else if (instruction.includes('직접 호출')) text = `${this.m.name}입니다. "${topic}" 에 대한 제 답은 이렇습니다. (데모)`;
     else if (spoke && !instruction.includes('호출')) text = '[PASS]';
-    else if (this.persona.id === 'claude-a') text = `초안입니다: "${lastUser?.text}" 를 이렇게 풀어보죠.\n1. 요구사항 정리\n2. 구조 설계\n3. 구현\n@검증자 빠진 거 있나 봐줘요.`;
-    else if (this.persona.id === 'claude-b') text = '설계자님 2번에서 예외 처리가 빠졌어요. 입력이 비었을 때를 추가해야 합니다.';
+    else if (instruction.includes('먼저 답해'))
+      text = `"${topic}" 초안이에요.\n1. 요구사항 정리\n2. 구조 설계\n3. 구현\n${peers[0] ? `@${peers[0]} 빠진 거 있나 봐줘요.` : ''}`;
+    else if (!since.some((x) => x.author !== this.m.id && /예외/.test(x.text)))
+      text = '2번에서 예외 처리가 빠졌어요. 입력이 비었을 때를 추가해야 합니다.';
     else text = '다른 관점: 3단계를 더 작게 쪼개서 먼저 프로토타입을 만들면 빠릅니다.';
     for (const ch of text.match(/.{1,4}/gsu) ?? []) {
       if (signal.aborted) throw new Error('aborted');
@@ -139,12 +151,7 @@ class DemoAgent implements Agent {
   }
 }
 
-export function createAgents(opts: AgentOptions): Agent[] {
-  if (process.env.ORCHESTRA_DEMO === '1') return PERSONAS.map((p) => new DemoAgent(p));
-  const effort = (process.env.CLAUDE_EFFORT ?? 'medium') as 'low' | 'medium' | 'high' | 'xhigh' | 'max';
-  return [
-    new ClaudeAgent(byId('claude-a'), process.env.CLAUDE_A_MODEL ?? 'claude-opus-5', effort, opts),
-    new ClaudeAgent(byId('claude-b'), process.env.CLAUDE_B_MODEL ?? 'claude-opus-5', effort, opts),
-    new GptAgent(byId('gpt'), process.env.OPENAI_MODEL ?? 'gpt-5', opts),
-  ];
+export function makeAgent(m: MemberConfig): Agent {
+  if (DEMO) return new DemoAgent(m);
+  return m.provider === 'claude' ? new ClaudeAgent(m) : new GptAgent(m);
 }
