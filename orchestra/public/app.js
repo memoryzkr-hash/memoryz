@@ -186,7 +186,33 @@ function renderMembers() {
   $('autoRank').checked = state.settings.autoRank;
   renderDirectBar();
   renderPlusMenu();
+  renderSetup();
 }
+
+/** 연결 설정: 서버를 켠 컴퓨터의 브라우저에서만 */
+const isLocalHost = ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname);
+function renderSetup() {
+  const su = state.setup;
+  if (!su) return;
+  $('setupSection').hidden = !isLocalHost;
+  $('setupWhere').textContent = su.demo ? '데모 모드' : '';
+  const chip = (ok, label) => `<span class="${ok ? 'ok' : ''}">${ok ? '✅' : '⬜'} ${label}</span>`;
+  $('setupStatus').innerHTML = chip(su.claude, 'Claude 키') + chip(su.gpt, '지피티 키') + chip(su.password, '방 비밀번호');
+  const needKeys = !su.demo && !su.claude && !su.gpt;
+  $('setupBanner').hidden = !(needKeys && isLocalHost);
+}
+$('setupBanner').onclick = () => { openDrawer(true); $('setupSection').scrollIntoView(); $('k-anthropic').focus(); };
+$('setupForm').onsubmit = async (ev) => {
+  ev.preventDefault();
+  const f = $('setupForm');
+  const data = Object.fromEntries(new FormData(f));
+  $('setupMsg').textContent = '저장하는 중…';
+  const r = await fetch('api/setup', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(data) });
+  if (!r.ok) { $('setupMsg').textContent = (await r.json().catch(() => ({}))).error ?? '저장하지 못했어요.'; return; }
+  f.reset();
+  $('setupMsg').textContent = '저장했어요. 바로 적용됐어요.';
+  refresh();
+};
 
 function openDrawer(open) {
   $('drawer').classList.toggle('open', open);
@@ -415,6 +441,7 @@ async function refresh(full) {
   state.members = s.members;
   state.settings = s.settings;
   state.modelOptions = s.modelOptions;
+  state.setup = s.setup;
   if (full) {
     state.messages = s.messages;
     state.live.clear();

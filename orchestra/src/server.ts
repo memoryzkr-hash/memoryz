@@ -6,7 +6,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import qrcode from 'qrcode-terminal';
 import { Gate } from './auth.js';
-import { DEFAULT_MEMBERS, MODEL_OPTIONS, makeAgent, providerReady } from './agents.js';
+import { DEFAULT_MEMBERS, MODEL_OPTIONS, makeAgent, providerReady, resetClients } from './agents.js';
 import { Room, type RoomEvent } from './orchestrator.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -19,7 +19,8 @@ try {
 const PORT = Number(process.env.PORT ?? 8787);
 // 0.0.0.0 = 같은 와이파이의 휴대폰에서도 접속 가능. 이 컴퓨터에서만 쓰려면 HOST=127.0.0.1
 const HOST = process.env.HOST ?? '0.0.0.0';
-const gate = new Gate(process.env.ROOM_PASSWORD);
+let gate = new Gate(process.env.ROOM_PASSWORD);
+const envFile = path.join(root, '.env');
 const dataFile = path.join(root, 'data', 'room.json');
 const publicDir = path.join(root, 'public');
 
@@ -44,12 +45,40 @@ room = new Room(members, { makeAgent, ready: providerReady, emit: broadcast, onC
 room.messages = saved.messages ?? [];
 Object.assign(room.settings, saved.settings);
 
+const KEYS = ['ANTHROPIC_API_KEY', 'OPENAI_API_KEY', 'ROOM_PASSWORD'] as const;
+
+/** .env 의 해당 줄만 바꾸고 나머지는 그대로 둔다 */
+function writeEnv(values: Partial<Record<(typeof KEYS)[number], string>>) {
+  let text = existsSync(envFile) ? readFileSync(envFile, 'utf8') : '';
+  for (const [key, value] of Object.entries(values)) {
+    if (value === undefined) continue;
+    const line = `${key}=${value}`;
+    const re = new RegExp(`^#?\\s*${key}=.*$`, 'm');
+    text = re.test(text) ? text.replace(re, line) : `${text.trimEnd()}\n${line}\n`;
+    process.env[key] = value;
+  }
+  writeFileSync(envFile, text);
+}
+
+const isLocal = (req: IncomingMessage) => {
+  const ip = req.socket.remoteAddress ?? '';
+  return ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1';
+};
+
+const setupState = () => ({
+  claude: providerReady('claude'),
+  gpt: providerReady('gpt'),
+  password: gate.enabled,
+  demo: process.env.ORCHESTRA_DEMO === '1',
+});
+
 const state = () => ({
   messages: room.messages,
   settings: room.settings,
   busy: room.busy,
   members: room.views(),
   modelOptions: MODEL_OPTIONS,
+  setup: setupState(),
 });
 
 async function body(req: IncomingMessage): Promise<any> {
@@ -84,6 +113,24 @@ const server = createServer(async (req, res) => {
       const secure = req.headers['x-forwarded-proto'] === 'https';
       res.writeHead(200, { 'content-type': 'application/json', 'set-cookie': gate.cookie(result, secure) });
       return res.end('{"ok":true}');
+    }
+    // 키·비밀번호 설정: 이 컴퓨터에서 연 브라우저만 (휴대폰에서는 안 됨)
+    if (url.pathname === '/api/setup') {
+      if (!isLocal(req)) return json(res, { error: '설정은 서버를 켠 컴퓨터에서만 바꿀 수 있어요' }, 403);
+      if (req.method === 'GET') return json(res, setupState());
+      if (req.method === 'POST') {
+        const b = await body(req);
+        const values: Partial<Record<(typeof KEYS)[number], string>> = {};
+        for (const key of KEYS) {
+          const v = b[key];
+          if (typeof v === 'string' && v.trim()) values[key] = v.trim();
+        }
+        writeEnv(values);
+        resetClients();
+        if (values.ROOM_PASSWORD) gate = new Gate(values.ROOM_PASSWORD);
+        broadcast({ type: 'members' });
+        return json(res, setupState());
+      }
     }
     if (url.pathname.startsWith('/api/') && !gate.allowed(req)) return json(res, { error: '로그인이 필요해요', login: true }, 401);
     if (req.method === 'GET' && url.pathname === '/api/events') {

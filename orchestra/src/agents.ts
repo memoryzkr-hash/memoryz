@@ -61,6 +61,12 @@ export function providerReady(provider: Provider): boolean {
 let anthropic: Anthropic | undefined;
 let openai: OpenAI | undefined;
 
+/** 화면에서 API 키를 바꾸면 다음 호출부터 새 키를 쓴다 */
+export function resetClients() {
+  anthropic = undefined;
+  openai = undefined;
+}
+
 // 서버 측 거절 폴백(fallbacks: "default")을 받는 모델
 const FALLBACK_MODELS = new Set(['claude-opus-5', 'claude-fable-5-1']);
 

@@ -9,49 +9,19 @@
 <img src="../docs/orchestra-settings.png" width="260" alt="모델 설정" />
 </p>
 
-## 실행
+## 실행 (3단계)
 
-```bash
-cd orchestra
-npm install
-cp .env.example .env   # ANTHROPIC_API_KEY, OPENAI_API_KEY 입력
-npm start              # http://localhost:8787
-```
+1. **Node.js 설치** — https://nodejs.org 에서 LTS 버전을 받아 설치합니다 (한 번만).
+2. **더블클릭** — `orchestra` 폴더의 `start.command`(맥) 또는 `start.bat`(윈도우)를 더블클릭합니다.
+   처음엔 필요한 파일을 내려받느라 1~2분 걸리고, 끝나면 브라우저가 저절로 열립니다.
+   (맥에서 "확인되지 않은 개발자" 경고가 뜨면 파일을 **우클릭 → 열기**로 한 번만 열어 주세요.)
+3. **키 넣기** — 화면 위 노란 띠 "🔑 아직 API 키가 없어요"를 누르면 연결 설정이 열립니다.
+   - Claude API 키: https://console.anthropic.com/settings/keys
+   - 지피티(OpenAI) API 키: https://platform.openai.com/api-keys — ChatGPT 로그인 계정과는 별개이고, 결제 카드 등록이 필요합니다.
+   - 방 비밀번호: 휴대폰에서 들어올 때 쓸 비밀번호
+   **저장하고 적용**을 누르면 바로 됩니다. 키는 이 컴퓨터의 `orchestra/.env` 파일에만 저장되고 git에는 올라가지 않습니다.
 
-키 없이 화면과 흐름만 보려면 `ORCHESTRA_DEMO=1 npm start` 로 켜세요 (정해진 답을 하는 가짜 멤버).
-
-### API 키 준비
-
-- **Claude**: https://console.anthropic.com → API Keys 에서 키를 만들어 `ANTHROPIC_API_KEY` 에 넣습니다.
-- **지피티**: ChatGPT 로그인 계정(이메일·비밀번호, Plus 구독)으로는 연결할 수 없습니다.
-  https://platform.openai.com/api-keys 에서 **API 키**를 만들고 결제 수단(크레딧)을 등록한 뒤 `OPENAI_API_KEY` 에 넣으세요.
-  API 사용료는 ChatGPT 구독과 따로 청구됩니다.
-
-키는 `.env` 파일에만 두세요. `.env` 는 git 에 올라가지 않습니다.
-
-## 휴대폰에서 접속
-
-서버를 켠 컴퓨터와 **같은 와이파이**에 있는 휴대폰에서 바로 들어올 수 있습니다.
-
-1. `.env` 에 `ROOM_PASSWORD=원하는비밀번호` 를 정합니다 (없으면 같은 와이파이의 누구나 내 API 키로 대화할 수 있어요).
-2. `npm start` 를 하면 터미널에 `http://192.168.x.x:8787` 주소와 **QR 코드**가 나옵니다.
-3. 휴대폰 카메라로 QR 을 찍거나 주소를 열고 비밀번호를 입력합니다. 로그인은 30일 유지됩니다.
-4. **홈 화면에 추가**하면 앱처럼 전체 화면으로 열립니다
-   (아이폰: Safari 공유 버튼 → 홈 화면에 추가 / 안드로이드: Chrome 메뉴 → 홈 화면에 추가).
-
-접속이 안 되면 컴퓨터 방화벽에서 8787 포트(또는 Node.js)를 허용해 주세요. 윈도우는 처음 켤 때 뜨는 방화벽 창에서 "개인 네트워크 허용"을 누르면 됩니다.
-
-### 밖에서(LTE·다른 와이파이) 접속
-
-집 컴퓨터를 켜 둔 상태로 [Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/do-more-with-tunnels/trycloudflare/) 을 쓰면
-계정 없이 https 주소를 받을 수 있습니다.
-
-```bash
-cloudflared tunnel --url http://localhost:8787
-# → https://xxxx.trycloudflare.com 주소가 나옵니다
-```
-
-인터넷 어디서나 들어올 수 있는 주소이니 `ROOM_PASSWORD` 를 반드시 정하세요. 주소는 터널을 다시 켤 때마다 바뀝니다.
+터미널로 켜려면 `cd orchestra && npm install && npm start` 입니다. 키 없이 화면만 보려면 `ORCHESTRA_DEMO=1 npm start`.
 
 ## 멤버와 포지션
 
@@ -112,5 +82,7 @@ cloudflared tunnel --url http://localhost:8787
 - `src/agents.ts` — 처음 멤버 구성과 Claude(Anthropic SDK) / GPT(OpenAI SDK) 스트리밍 호출
 - `src/server.ts` — HTTP + SSE 서버 (`node:http`), 접속 주소·QR 출력
 - `src/auth.ts` — `ROOM_PASSWORD` 로그인 (쿠키, 10번 틀리면 10분 잠금)
+- `start.command` / `start.bat` — 더블클릭 실행 파일 (설치 → 서버 켜기 → 브라우저 열기)
+- `hosted/` — 서버 없이 claude.ai 안에서 도는 버전 (지피티 없음)
 - `public/` — 카카오톡 스타일 웹 UI
 - `test/` — 가짜 멤버로 진행 규칙과 직급 변동을 검증하는 테스트 (`npm test`)

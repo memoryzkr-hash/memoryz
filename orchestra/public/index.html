@@ -28,6 +28,7 @@
         <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
       </button>
     </header>
+    <button id="setupBanner" class="banner" hidden>🔑 아직 API 키가 없어요. 여기를 눌러 연결 설정을 열어 주세요.</button>
     <div class="searchbar" id="searchbar" hidden>
       <input id="searchInput" type="search" placeholder="대화 내용 검색" />
       <span id="searchCount"></span>
@@ -70,6 +71,21 @@
         <section>
           <h3>대화상대 <span id="memberCount"></span></h3>
           <div id="memberList"></div>
+        </section>
+        <section id="setupSection" hidden>
+          <h3>🔑 연결 설정 <small id="setupWhere"></small></h3>
+          <div id="setupStatus" class="setup-status"></div>
+          <form id="setupForm" class="setup-form">
+            <label class="field">Claude API 키 <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">발급받기 ↗</a>
+              <input id="k-anthropic" name="ANTHROPIC_API_KEY" type="password" placeholder="sk-ant-..." autocomplete="off" /></label>
+            <label class="field">지피티(OpenAI) API 키 <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">발급받기 ↗</a>
+              <input id="k-openai" name="OPENAI_API_KEY" type="password" placeholder="sk-..." autocomplete="off" /></label>
+            <label class="field">방 비밀번호 (휴대폰에서 들어올 때)
+              <input id="k-password" name="ROOM_PASSWORD" type="password" placeholder="원하는 비밀번호" autocomplete="new-password" /></label>
+            <p class="hint" style="margin:0 0 10px">비워 둔 칸은 지금 값이 유지돼요. 키는 이 컴퓨터의 <code>orchestra/.env</code> 파일에만 저장돼요.</p>
+            <button class="save-btn">저장하고 적용</button>
+            <div id="setupMsg" class="hint" style="margin-top:8px"></div>
+          </form>
         </section>
         <section>
           <h3>채팅방 설정</h3>
