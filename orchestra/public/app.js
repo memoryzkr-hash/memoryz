@@ -372,11 +372,46 @@ function bindSheet(m) {
 
 // ─── 서버 통신 ──────────────────────────────────────────────
 
+/** 401 이면 로그인 화면을 띄운다 */
+async function api(url, init) {
+  const r = await fetch(url, init);
+  if (r.status === 401) {
+    showLogin();
+    throw new Error('login required');
+  }
+  return r;
+}
+
 const post = (url, data) =>
-  fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(data ?? {}) });
+  api(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(data ?? {}) });
+
+let es;
+function showLogin() {
+  es?.close();
+  es = null;
+  $('login').hidden = false;
+  $('password').focus();
+}
+
+$('login').onsubmit = async (ev) => {
+  ev.preventDefault();
+  const r = await fetch('api/login', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ password: $('password').value }),
+  });
+  if (!r.ok) {
+    $('loginError').textContent = (await r.json().catch(() => ({}))).error ?? '입장하지 못했어요.';
+    return;
+  }
+  $('login').hidden = true;
+  $('password').value = '';
+  $('loginError').textContent = '';
+  start();
+};
 
 async function refresh(full) {
-  const s = await fetch('api/state').then((r) => r.json());
+  const s = await api('api/state').then((r) => r.json());
   state.members = s.members;
   state.settings = s.settings;
   state.modelOptions = s.modelOptions;
@@ -414,8 +449,10 @@ function markRead(author) {
 }
 
 function connect() {
-  const es = new EventSource('api/events');
-  es.onopen = () => refresh(true);
+  es = new EventSource('api/events');
+  es.onopen = () => refresh(true).catch(() => {});
+  // 휴대폰이 잠들었다 깨는 등으로 끊기면 브라우저가 알아서 다시 붙는다. 인증이 풀렸는지만 확인
+  es.onerror = () => api('api/state').catch(() => {});
   es.onmessage = (ev) => {
     const e = JSON.parse(ev.data);
     switch (e.type) {
@@ -469,7 +506,7 @@ function connect() {
         renderLog();
         break;
       case 'members':
-        refresh();
+        refresh().catch(() => {});
         break;
     }
   };
@@ -621,4 +658,13 @@ document.addEventListener('click', (ev) => {
 });
 log.addEventListener('scroll', closePop);
 
-connect();
+async function start() {
+  try {
+    await refresh(true);
+    connect();
+  } catch {
+    // 로그인 화면이 떠 있다
+  }
+}
+
+start();

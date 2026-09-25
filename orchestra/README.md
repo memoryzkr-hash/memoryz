@@ -20,6 +20,39 @@ npm start              # http://localhost:8787
 
 키 없이 화면과 흐름만 보려면 `ORCHESTRA_DEMO=1 npm start` 로 켜세요 (정해진 답을 하는 가짜 멤버).
 
+### API 키 준비
+
+- **Claude**: https://console.anthropic.com → API Keys 에서 키를 만들어 `ANTHROPIC_API_KEY` 에 넣습니다.
+- **지피티**: ChatGPT 로그인 계정(이메일·비밀번호, Plus 구독)으로는 연결할 수 없습니다.
+  https://platform.openai.com/api-keys 에서 **API 키**를 만들고 결제 수단(크레딧)을 등록한 뒤 `OPENAI_API_KEY` 에 넣으세요.
+  API 사용료는 ChatGPT 구독과 따로 청구됩니다.
+
+키는 `.env` 파일에만 두세요. `.env` 는 git 에 올라가지 않습니다.
+
+## 휴대폰에서 접속
+
+서버를 켠 컴퓨터와 **같은 와이파이**에 있는 휴대폰에서 바로 들어올 수 있습니다.
+
+1. `.env` 에 `ROOM_PASSWORD=원하는비밀번호` 를 정합니다 (없으면 같은 와이파이의 누구나 내 API 키로 대화할 수 있어요).
+2. `npm start` 를 하면 터미널에 `http://192.168.x.x:8787` 주소와 **QR 코드**가 나옵니다.
+3. 휴대폰 카메라로 QR 을 찍거나 주소를 열고 비밀번호를 입력합니다. 로그인은 30일 유지됩니다.
+4. **홈 화면에 추가**하면 앱처럼 전체 화면으로 열립니다
+   (아이폰: Safari 공유 버튼 → 홈 화면에 추가 / 안드로이드: Chrome 메뉴 → 홈 화면에 추가).
+
+접속이 안 되면 컴퓨터 방화벽에서 8787 포트(또는 Node.js)를 허용해 주세요. 윈도우는 처음 켤 때 뜨는 방화벽 창에서 "개인 네트워크 허용"을 누르면 됩니다.
+
+### 밖에서(LTE·다른 와이파이) 접속
+
+집 컴퓨터를 켜 둔 상태로 [Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/do-more-with-tunnels/trycloudflare/) 을 쓰면
+계정 없이 https 주소를 받을 수 있습니다.
+
+```bash
+cloudflared tunnel --url http://localhost:8787
+# → https://xxxx.trycloudflare.com 주소가 나옵니다
+```
+
+인터넷 어디서나 들어올 수 있는 주소이니 `ROOM_PASSWORD` 를 반드시 정하세요. 주소는 터널을 다시 켤 때마다 바뀝니다.
+
 ## 멤버와 포지션
 
 처음 구성은 다음과 같습니다. 이름·아이콘·AI 종류·모델·생각 깊이·특기는 **프로필 → 모델 설정**에서 멤버마다 바꿀 수 있습니다.
@@ -64,7 +97,9 @@ npm start              # http://localhost:8787
 | --- | --- |
 | `ANTHROPIC_API_KEY` | Claude 멤버가 사용 |
 | `OPENAI_API_KEY` | GPT 멤버가 사용 |
+| `ROOM_PASSWORD` | 방 비밀번호. 다른 기기에서 접속할 때 필요 |
 | `PORT` | 서버 포트 (기본 8787) |
+| `HOST` | 기본 `0.0.0.0`(같은 와이파이에서 접속 가능). 이 컴퓨터에서만 쓰려면 `127.0.0.1` |
 
 키가 없는 종류의 멤버는 "API 키 없음"으로 표시되고 답하지 않습니다.
 `claude-opus-5`, `claude-fable-5-1` 요청에는 서버 측 거절 폴백(`fallbacks: "default"`)을 켜 두었습니다.
@@ -75,6 +110,7 @@ npm start              # http://localhost:8787
 - `src/ranks.ts` — 직급표, 포지션(메인/서브) 계산, 포지션별 임무
 - `src/prompts.ts` — 멤버별 시스템 프롬프트, 대화 기록을 각 멤버 기준 user/assistant 턴으로 변환
 - `src/agents.ts` — 처음 멤버 구성과 Claude(Anthropic SDK) / GPT(OpenAI SDK) 스트리밍 호출
-- `src/server.ts` — HTTP + SSE 서버 (`node:http`)
+- `src/server.ts` — HTTP + SSE 서버 (`node:http`), 접속 주소·QR 출력
+- `src/auth.ts` — `ROOM_PASSWORD` 로그인 (쿠키, 10번 틀리면 10분 잠금)
 - `public/` — 카카오톡 스타일 웹 UI
 - `test/` — 가짜 멤버로 진행 규칙과 직급 변동을 검증하는 테스트 (`npm test`)

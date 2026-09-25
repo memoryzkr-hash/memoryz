@@ -1,8 +1,11 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
+import { networkInterfaces } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import qrcode from 'qrcode-terminal';
+import { Gate } from './auth.js';
 import { DEFAULT_MEMBERS, MODEL_OPTIONS, makeAgent, providerReady } from './agents.js';
 import { Room, type RoomEvent } from './orchestrator.js';
 
@@ -14,6 +17,9 @@ try {
 }
 
 const PORT = Number(process.env.PORT ?? 8787);
+// 0.0.0.0 = 같은 와이파이의 휴대폰에서도 접속 가능. 이 컴퓨터에서만 쓰려면 HOST=127.0.0.1
+const HOST = process.env.HOST ?? '0.0.0.0';
+const gate = new Gate(process.env.ROOM_PASSWORD);
 const dataFile = path.join(root, 'data', 'room.json');
 const publicDir = path.join(root, 'public');
 
@@ -61,11 +67,25 @@ const types: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
   '.css': 'text/css; charset=utf-8',
+  '.json': 'application/json; charset=utf-8',
+  '.webmanifest': 'application/manifest+json; charset=utf-8',
+  '.png': 'image/png',
+  '.svg': 'image/svg+xml',
 };
 
 const server = createServer(async (req, res) => {
   const url = new URL(req.url ?? '/', 'http://localhost');
   try {
+    if (req.method === 'POST' && url.pathname === '/api/login') {
+      const { password } = await body(req);
+      const result = gate.login(req.socket.remoteAddress ?? '', String(password ?? ''));
+      if (result === 'locked') return json(res, { error: '너무 많이 틀렸어요. 10분 뒤에 다시 해 주세요.' }, 429);
+      if (result === null) return json(res, { error: '비밀번호가 틀렸어요.' }, 401);
+      const secure = req.headers['x-forwarded-proto'] === 'https';
+      res.writeHead(200, { 'content-type': 'application/json', 'set-cookie': gate.cookie(result, secure) });
+      return res.end('{"ok":true}');
+    }
+    if (url.pathname.startsWith('/api/') && !gate.allowed(req)) return json(res, { error: '로그인이 필요해요', login: true }, 401);
     if (req.method === 'GET' && url.pathname === '/api/events') {
       res.writeHead(200, { 'content-type': 'text/event-stream', 'cache-control': 'no-cache', connection: 'keep-alive' });
       res.write(': connected\n\n');
@@ -136,8 +156,24 @@ setInterval(() => {
   for (const res of clients) res.write(': ping\n\n');
 }, 20000).unref();
 
-server.listen(PORT, () => {
+function lanAddresses(): string[] {
+  return Object.values(networkInterfaces())
+    .flat()
+    .filter((i) => i && i.family === 'IPv4' && !i.internal)
+    .map((i) => i!.address);
+}
+
+server.listen(PORT, HOST, () => {
   console.log(`AI 단톡방: http://localhost:${PORT}`);
+  const lan = HOST === '0.0.0.0' ? lanAddresses() : [];
+  if (lan.length) {
+    console.log('\n📱 같은 와이파이의 휴대폰에서 접속:');
+    for (const ip of lan) console.log(`   http://${ip}:${PORT}`);
+    qrcode.generate(`http://${lan[0]}:${PORT}`, { small: true }, (q) => console.log(q));
+    if (!gate.enabled)
+      console.log('⚠️  ROOM_PASSWORD 가 없어서 같은 네트워크의 누구나 들어와 API 키를 쓸 수 있어요. .env 에 설정하세요.\n');
+  }
+  console.log(gate.enabled ? '🔒 비밀번호로 잠겨 있어요 (ROOM_PASSWORD)' : '🔓 비밀번호 없음');
   for (const m of room.views()) {
     console.log(`  ${m.emoji} ${m.name} ${m.rank}·${m.position} (${m.model}) ${m.ready ? '준비됨' : '— API 키 없음'}`);
   }
