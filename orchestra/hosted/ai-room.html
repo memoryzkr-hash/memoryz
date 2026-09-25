@@ -1,0 +1,1237 @@
+<title>AI 단톡방</title>
+<style>
+:root {
+  --chat-bg: #bacee0;
+  --bar-bg: #bacee0;
+  --panel: #ffffff;
+  --text: #191919;
+  --muted: #8a8a8a;
+  --name: #4a4a4a;
+  --time: #556677;
+  --mine: #fee500;
+  --theirs: #ffffff;
+  --line: #ececec;
+  --notice: rgba(0, 0, 0, 0.14);
+  --kakao-brown: #3c1e1e;
+  --soft: #f5f5f5;
+}
+:root[data-theme='dark'] {
+  --chat-bg: #2c3640;
+  --bar-bg: #2c3640;
+  --panel: #1f1f1f;
+  --text: #eaeaea;
+  --muted: #9a9a9a;
+  --name: #c9c9c9;
+  --time: #9fb0c0;
+  --theirs: #3a3a3a;
+  --line: #333;
+  --notice: rgba(0, 0, 0, 0.3);
+  --soft: #2a2a2a;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --chat-bg: #2c3640;
+    --bar-bg: #2c3640;
+    --panel: #1f1f1f;
+    --text: #eaeaea;
+    --muted: #9a9a9a;
+    --name: #c9c9c9;
+    --time: #9fb0c0;
+    --theirs: #3a3a3a;
+    --line: #333;
+    --notice: rgba(0, 0, 0, 0.3);
+    --soft: #2a2a2a;
+  }
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+[hidden] { display: none !important; }
+html, body { margin: 0; height: 100%; padding: 0; }
+body {
+  background: #d7e0e8;
+  color: var(--text);
+  font: 14.5px/1.45 -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
+  letter-spacing: -0.2px;
+}
+button { font: inherit; color: inherit; }
+.app {
+  position: relative; display: flex; flex-direction: column;
+  height: 100%; max-width: 560px; margin: 0 auto; overflow: hidden;
+  background: var(--chat-bg); box-shadow: 0 0 24px rgba(0, 0, 0, 0.12);
+}
+
+/* 아이콘 버튼 */
+.icon-btn {
+  flex: none; width: 40px; height: 40px; display: grid; place-items: center;
+  border: none; background: none; cursor: pointer; padding: 0; color: var(--text);
+}
+.icon-btn svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.text-btn { border: none; background: none; cursor: pointer; color: var(--text); padding: 6px; }
+
+/* 상단바 */
+.topbar {
+  display: flex; align-items: center; gap: 2px; height: calc(54px + env(safe-area-inset-top)); padding: env(safe-area-inset-top) 6px 0;
+  background: var(--bar-bg); flex: none;
+}
+.room-title { flex: 1; display: flex; align-items: baseline; gap: 6px; font-size: 17px; font-weight: 700; padding-left: 2px; }
+.room-title .count { font-weight: 500; color: #5c6b78; font-size: 16px; }
+.searchbar { display: flex; align-items: center; gap: 8px; padding: 6px 12px; background: var(--panel); border-bottom: 1px solid var(--line); }
+.searchbar input { flex: 1; border: none; background: var(--soft); border-radius: 8px; padding: 8px 10px; font: inherit; color: var(--text); }
+.searchbar span { color: var(--muted); font-size: 12px; }
+mark { background: #ffe44d; color: inherit; border-radius: 2px; }
+
+/* 대화 */
+.log { flex: 1; overflow-y: auto; padding: 4px 10px 12px; overscroll-behavior: contain; }
+.date {
+  display: flex; justify-content: center; margin: 14px 0 10px;
+}
+.date span {
+  display: inline-flex; align-items: center; gap: 5px; background: var(--notice); color: #fff;
+  font-size: 12px; padding: 4px 12px; border-radius: 999px;
+}
+.notice { display: flex; justify-content: center; margin: 10px 0; }
+.notice span {
+  background: var(--notice); color: #fff; font-size: 12px; line-height: 1.4;
+  padding: 5px 12px; border-radius: 999px; max-width: 86%; text-align: center; word-break: keep-all;
+}
+.notice.quiet span { background: none; color: #5c6b78; padding: 0 12px; font-size: 11.5px; }
+
+.msg { display: flex; align-items: flex-start; gap: 8px; margin-top: 2px; }
+.msg.first { margin-top: 10px; }
+.msg.mine { justify-content: flex-end; }
+.avatar {
+  flex: none; width: 40px; height: 40px; border-radius: 15px;
+  display: grid; place-items: center; font-size: 21px; cursor: pointer; user-select: none;
+}
+.avatar-space { flex: none; width: 40px; }
+.body { display: flex; flex-direction: column; min-width: 0; max-width: calc(100% - 100px); }
+.msg.mine .body { align-items: flex-end; max-width: calc(100% - 60px); }
+.name { font-size: 12.5px; color: var(--name); margin: 0 0 4px 1px; display: flex; align-items: center; gap: 4px; }
+.name .rank { color: var(--muted); font-size: 11.5px; }
+.line { display: flex; align-items: flex-end; gap: 5px; }
+.msg.mine .line { flex-direction: row-reverse; }
+.meta { display: flex; flex-direction: column; align-items: flex-end; flex: none; font-size: 10.5px; color: var(--time); line-height: 1.25; }
+.msg:not(.mine) .meta { align-items: flex-start; }
+.meta .unread { color: #f5c400; font-weight: 700; font-size: 11px; }
+
+.bubble {
+  position: relative; background: var(--theirs); color: var(--text); border-radius: 13px;
+  padding: 7px 11px; overflow-wrap: anywhere; min-width: 0; cursor: pointer;
+}
+.msg.mine .bubble { background: var(--mine); color: #191919; white-space: pre-wrap; }
+/* 말풍선 꼬리: 그룹의 첫 말풍선만 */
+.msg.first:not(.mine) .bubble::before, .msg.first.mine .bubble::before {
+  content: ''; position: absolute; top: 0; width: 12px; height: 12px;
+}
+.msg.first:not(.mine) .bubble { border-top-left-radius: 4px; }
+.msg.first.mine .bubble { border-top-right-radius: 4px; }
+.msg.first:not(.mine) .bubble::before { left: -5px; background: radial-gradient(circle at 0 100%, transparent 7px, var(--theirs) 7.5px); width: 8px; height: 8px; }
+.msg.first.mine .bubble::before { right: -5px; background: radial-gradient(circle at 100% 100%, transparent 7px, var(--mine) 7.5px); width: 8px; height: 8px; }
+
+.bubble.summary { box-shadow: inset 0 0 0 1.5px #f2a93b; }
+.summary-head { display: flex; align-items: center; gap: 4px; font-weight: 700; font-size: 12.5px; color: #c27c0e; margin-bottom: 3px; }
+.bubble p { margin: 0 0 6px; }
+.bubble p:last-child { margin-bottom: 0; }
+.bubble pre { background: rgba(0, 0, 0, 0.05); padding: 8px 10px; border-radius: 8px; overflow-x: auto; font-size: 12.5px; margin: 6px 0; white-space: pre; }
+.bubble code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12.5px; }
+.bubble :not(pre) > code { background: rgba(0, 0, 0, 0.06); padding: 1px 4px; border-radius: 4px; }
+.bubble ul, .bubble ol { margin: 3px 0; padding-left: 18px; }
+.bubble .mention { color: #1f6fd1; font-weight: 600; }
+.msg.mine .mention { color: #6b4f00; }
+.direct-quote { font-size: 12px; color: #6b5a00; border-bottom: 1px solid rgba(0, 0, 0, 0.12); padding-bottom: 4px; margin-bottom: 4px; white-space: normal; }
+.cursor::after { content: '▍'; animation: blink 1s steps(1) infinite; color: var(--muted); }
+@keyframes blink { 50% { opacity: 0; } }
+.dots { display: inline-flex; gap: 4px; padding: 4px 2px; }
+.dots i { width: 6px; height: 6px; border-radius: 50%; background: #b5b5b5; animation: bounce 1.2s infinite; }
+.dots i:nth-child(2) { animation-delay: 0.15s; }
+.dots i:nth-child(3) { animation-delay: 0.3s; }
+@keyframes bounce { 0%, 60%, 100% { transform: translateY(0); opacity: 0.6; } 30% { transform: translateY(-4px); opacity: 1; } }
+
+.reaction {
+  align-self: flex-start; margin-top: 3px; background: var(--panel); border-radius: 999px;
+  font-size: 11.5px; padding: 1px 8px; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); cursor: pointer;
+}
+.react-pop {
+  position: absolute; z-index: 20; display: flex; gap: 4px; background: var(--panel);
+  border-radius: 999px; padding: 5px 8px; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+}
+.react-pop button { border: none; background: none; font-size: 22px; cursor: pointer; border-radius: 50%; width: 38px; height: 38px; }
+.react-pop button.on { background: #fff3a6; }
+.react-pop button:hover { background: var(--soft); }
+
+/* 입력창 */
+.composer { position: relative; background: var(--panel); flex: none; padding-bottom: env(safe-area-inset-bottom); }
+.input-row { display: flex; align-items: flex-end; gap: 2px; padding: 6px 6px; }
+.input-row .icon-btn { color: #7a7a7a; }
+textarea {
+  flex: 1; resize: none; max-height: 120px; min-height: 40px; font: inherit; color: var(--text);
+  background: transparent; border: none; outline: none; padding: 9px 4px;
+}
+.send {
+  flex: none; width: 40px; height: 40px; border-radius: 10px; border: none; cursor: pointer;
+  background: var(--mine); display: grid; place-items: center; margin-left: 2px;
+}
+.send svg { width: 20px; height: 20px; fill: none; stroke: #3c1e1e; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.send:disabled { background: var(--soft); cursor: default; }
+.send:disabled svg { stroke: #b8b8b8; }
+.send.stop { background: #3c1e1e; }
+.send.stop svg { stroke: none; fill: #fee500; }
+.direct-bar {
+  display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--line); font-size: 13px;
+}
+.direct-bar .who { flex: 1; min-width: 0; }
+.direct-bar .who small { display: block; color: var(--muted); font-size: 11.5px; }
+.direct-bar .mini { width: 28px; height: 28px; border-radius: 10px; font-size: 15px; }
+.mention-pop {
+  position: absolute; bottom: 100%; left: 8px; right: 8px; margin-bottom: 6px; background: var(--panel);
+  border-radius: 12px; box-shadow: 0 4px 18px rgba(0, 0, 0, 0.16); overflow: hidden;
+}
+.mention-pop button, .member-row {
+  display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 12px; border: none; background: none;
+  cursor: pointer; text-align: left;
+}
+.mention-pop button:hover, .member-row:hover { background: var(--soft); }
+.mention-pop .avatar, .member-row .avatar { width: 34px; height: 34px; border-radius: 13px; font-size: 18px; }
+.plus-menu {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px 6px; padding: 16px 12px 20px;
+  border-top: 1px solid var(--line);
+}
+.plus-menu button { border: none; background: none; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 12px; }
+.plus-menu .avatar { width: 52px; height: 52px; border-radius: 19px; font-size: 26px; }
+.plus-menu .off { opacity: 0.35; }
+
+/* 서랍 */
+.dim { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.35); z-index: 30; }
+.drawer {
+  position: absolute; top: 0; right: 0; bottom: 0; width: min(86%, 380px); z-index: 31;
+  background: var(--panel); display: flex; flex-direction: column;
+  transform: translateX(100%); transition: transform 0.22s ease;
+}
+.drawer.open { transform: none; }
+.drawer-head { display: flex; align-items: center; justify-content: space-between; padding: 8px 6px 8px 16px; font-size: 16px; }
+.drawer-body { flex: 1; overflow-y: auto; }
+.drawer section { padding: 10px 0 14px; border-top: 8px solid var(--soft); }
+.drawer h3 { margin: 4px 16px 8px; font-size: 13px; color: var(--muted); font-weight: 600; }
+.member-row { padding: 8px 16px; }
+.member-row .info { flex: 1; min-width: 0; }
+.member-row .info b { font-weight: 600; }
+.member-row .info small { display: block; color: var(--muted); font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.member-row .me-tag { background: #555; color: #fff; font-size: 10px; border-radius: 4px; padding: 0 4px; margin-left: 4px; }
+.tag { display: inline-block; font-size: 10.5px; border-radius: 4px; padding: 0 5px; margin-left: 4px; background: var(--soft); color: var(--name); font-weight: 600; vertical-align: 1px; }
+.tag.main { background: #fff1b8; color: #8a5a00; }
+.member-row.away { opacity: 0.5; }
+.row-setting { display: flex; align-items: center; justify-content: space-between; padding: 9px 16px; font-size: 14px; }
+.row-setting input[type='number'] { width: 64px; padding: 4px 6px; border: 1px solid var(--line); border-radius: 6px; background: transparent; color: var(--text); font: inherit; text-align: right; }
+.switch { appearance: none; width: 42px; height: 24px; border-radius: 999px; background: #d6d6d6; position: relative; cursor: pointer; transition: background 0.15s; }
+.switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: transform 0.15s; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2); }
+.switch:checked { background: #fee500; }
+.switch:checked::after { transform: translateX(18px); }
+.rank-table { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 16px; }
+.rank-table span { background: var(--soft); border-radius: 6px; padding: 3px 8px; font-size: 12px; }
+.rank-table b { font-weight: 600; margin-right: 3px; }
+.hint { margin: 10px 16px 0; font-size: 12px; color: var(--muted); line-height: 1.6; }
+.drawer-foot { border: none; border-top: 1px solid var(--line); background: var(--panel); color: #e5484d; padding: 16px; cursor: pointer; text-align: left; }
+
+/* 프로필 */
+.profile { position: absolute; inset: 0; z-index: 40; display: flex; flex-direction: column; color: #fff; overflow: hidden; }
+.profile .bg { position: absolute; inset: 0; }
+.profile .top { position: relative; display: flex; justify-content: space-between; padding: 8px 6px; }
+.profile .top .icon-btn { color: #fff; }
+.profile .center { position: relative; flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 26px; text-align: center; }
+.profile .big { width: 96px; height: 96px; border-radius: 36px; font-size: 50px; display: grid; place-items: center; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2); }
+.profile h2 { margin: 12px 0 2px; font-size: 20px; }
+.profile .status { font-size: 13.5px; opacity: 0.85; min-height: 18px; }
+.profile .badges { margin-top: 10px; display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+.profile .badges span { background: rgba(255, 255, 255, 0.18); border-radius: 999px; padding: 3px 10px; font-size: 12px; }
+.profile .actions { position: relative; display: flex; justify-content: center; gap: 30px; padding: 18px 0 calc(26px + env(safe-area-inset-bottom)); border-top: 1px solid rgba(255, 255, 255, 0.2); }
+.profile .actions button { border: none; background: none; color: #fff; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 12.5px; }
+.profile .actions button:disabled { opacity: 0.4; cursor: default; }
+.profile .actions svg { width: 28px; height: 28px; fill: none; stroke: #fff; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+
+.sheet {
+  position: absolute; left: 0; right: 0; bottom: 0; max-height: 88%; overflow-y: auto; z-index: 2;
+  background: var(--panel); color: var(--text); border-radius: 16px 16px 0 0; padding: 6px 18px calc(18px + env(safe-area-inset-bottom));
+}
+.sheet .grab { width: 40px; height: 4px; border-radius: 2px; background: var(--line); margin: 4px auto 10px; }
+.sheet h3 { margin: 0 0 12px; font-size: 16px; }
+.field { display: block; margin-bottom: 12px; font-size: 12.5px; color: var(--muted); }
+.field input, .field select, .field textarea {
+  display: block; width: 100%; margin-top: 4px; padding: 9px 10px; font: inherit; font-size: 14.5px; color: var(--text);
+  background: var(--soft); border: 1px solid transparent; border-radius: 8px; outline: none; min-height: 0; max-height: none;
+}
+.field input:focus, .field select:focus, .field textarea:focus { border-color: #d6b800; }
+.field-row { display: flex; gap: 10px; }
+.field-row .field { flex: 1; }
+.rank-ctl { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+.rank-ctl strong { flex: 1; color: var(--text); font-size: 15px; }
+.rank-ctl input { width: 76px; display: inline-block; margin: 0; text-align: right; }
+.pill-btn { border: 1px solid var(--line); background: var(--panel); border-radius: 999px; padding: 6px 12px; cursor: pointer; font-size: 13px; }
+.save-btn { width: 100%; border: none; border-radius: 10px; background: var(--mine); color: #191919; font-weight: 700; padding: 13px; cursor: pointer; margin-top: 4px; }
+.warn { color: #d9480f; font-size: 12px; margin: -4px 0 10px; }
+
+/* 휴대폰: 입력칸이 16px 보다 작으면 iOS 가 화면을 확대한다 */
+@media (max-width: 560px) {
+  textarea, .field input, .field select, .field textarea, .searchbar input { font-size: 16px; }
+}
+
+.banner { background: #fff3a6; color: #5a4600; font-size: 12.5px; padding: 8px 14px; line-height: 1.45; }
+.banner b { color: #3c1e1e; }
+.confirm { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 16px; background: var(--soft); font-size: 13px; }
+.confirm .pill-btn.danger { background: #e5484d; color: #fff; border-color: #e5484d; }
+.foot-note { margin: 10px 16px 0; font-size: 11.5px; color: var(--muted); line-height: 1.5; }
+
+</style>
+<div class="app" id="app">
+    <header class="topbar">
+      <button class="icon-btn" id="back" aria-label="뒤로" title="맨 위로">
+        <svg viewBox="0 0 24 24"><path d="M15 4 7 12l8 8" /></svg>
+      </button>
+      <div class="room-title"><span>AI 단톡방</span><span id="count" class="count"></span></div>
+      <button class="icon-btn" id="searchBtn" aria-label="대화 검색">
+        <svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5" /><path d="m15.5 15.5 5 5" /></svg>
+      </button>
+      <button class="icon-btn" id="menuBtn" aria-label="채팅방 서랍">
+        <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
+      </button>
+    </header>
+    <div id="noClaude" class="banner" hidden>이 페이지는 <b>claude.ai 안에서</b> 열어야 멤버들이 답할 수 있어요. 지금은 대화 기록만 볼 수 있어요.</div>
+    <div class="searchbar" id="searchbar" hidden>
+      <input id="searchInput" type="search" placeholder="대화 내용 검색" />
+      <span id="searchCount"></span>
+      <button id="searchClose" class="text-btn">닫기</button>
+    </div>
+
+    <main id="log" class="log"></main>
+
+    <footer class="composer">
+      <div id="mentionPop" class="mention-pop" hidden></div>
+      <div id="directBar" class="direct-bar" hidden></div>
+      <div class="input-row">
+        <button class="icon-btn plus" id="plusBtn" aria-label="직접 호출 메뉴">
+          <svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="4" /><path d="M12 8v8M8 12h8" /></svg>
+        </button>
+        <textarea id="input" rows="1" placeholder="메시지 입력"></textarea>
+        <button class="icon-btn" id="mentionBtn" aria-label="멤버 부르기" title="@ 멤버 부르기">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.5" /><path d="M15.5 12v1.5a2.5 2.5 0 0 0 5 0V12a8.5 8.5 0 1 0-3.5 6.9" /></svg>
+        </button>
+        <button id="send" class="send" aria-label="전송" disabled>
+          <svg viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6" /></svg>
+        </button>
+        <button id="stop" class="send stop" aria-label="중지" hidden>
+          <svg viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="1.5" /></svg>
+        </button>
+      </div>
+      <div id="plusMenu" class="plus-menu" hidden></div>
+    </footer>
+
+    <!-- 채팅방 서랍 -->
+    <div id="drawerDim" class="dim" hidden></div>
+    <aside id="drawer" class="drawer" aria-hidden="true">
+      <div class="drawer-head">
+        <strong>채팅방 서랍</strong>
+        <button class="icon-btn" id="drawerClose" aria-label="닫기">
+          <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18" /></svg>
+        </button>
+      </div>
+      <div class="drawer-body">
+        <section>
+          <h3>대화상대 <span id="memberCount"></span></h3>
+          <div id="memberList"></div>
+        </section>
+        <section>
+          <h3>채팅방 설정</h3>
+          <label class="row-setting">답변 최대 횟수 <input id="maxTurns" type="number" min="1" max="30" /></label>
+          <label class="row-setting">토론 뒤 메인이 최종 정리 <input id="summarize" type="checkbox" class="switch" /></label>
+          <label class="row-setting">실적으로 직급 자동 변동 <input id="autoRank" type="checkbox" class="switch" /></label>
+        </section>
+        <section>
+          <h3>직급 체계</h3>
+          <div id="rankTable" class="rank-table"></div>
+          <p class="hint">👍 공감 +3 · 👎 −3 · 최종 정리에서 채택 +2 · 정정당함 −2<br />점수가 가장 높은 멤버가 👑 메인, 다음부터 서브1·서브2가 됩니다.</p>
+        </section>
+        <section>
+          <h3>이 페이지는</h3>
+          <p class="foot-note">멤버 세 명은 모두 Claude이고, 답할 때 지금 보고 있는 분의 Claude 사용량을 써요. 대화와 멤버 설정은 이 기기의 브라우저에만 저장돼서, 다른 기기에서 열면 새 방으로 시작해요.</p>
+        </section>
+      </div>
+      <div id="resetConfirm" class="confirm" hidden><span>대화를 모두 지울까요? 멤버 설정과 직급은 남아요.</span>
+        <span><button id="resetNo" class="pill-btn">취소</button> <button id="resetYes" class="pill-btn danger">지우기</button></span></div>
+      <button id="reset" class="drawer-foot">대화 내용 지우기</button>
+    </aside>
+
+    <!-- 프로필 -->
+    <div id="profile" class="profile" hidden></div>
+  </div>
+  
+<script>
+// ─── 직급 ───────────────────────────────────────────────────
+const RANKS = [
+  { min: -Infinity, title: '인턴' }, { min: 0, title: '사원' }, { min: 10, title: '대리' }, { min: 20, title: '과장' },
+  { min: 35, title: '차장' }, { min: 50, title: '부장' }, { min: 70, title: '이사' },
+];
+const POINTS = { up: 3, down: -3, adopted: 2, mistake: -2 };
+const rankIndex = (score) => RANKS.findLastIndex((r) => score >= r.min);
+const rankOf = (score) => RANKS[rankIndex(score)].title;
+const stepScore = (score, dir) => RANKS[Math.max(1, Math.min(RANKS.length - 1, rankIndex(score) + dir))].min;
+const positionTitle = (i) => (i === 0 ? '메인' : `서브${i}`);
+const DUTIES = {
+  메인: '메인(리드). 사용자의 요청에 가장 먼저 답하고 방향·설계·초안을 잡습니다. 토론이 끝나면 최종 정리를 맡습니다.',
+  서브1: '서브1(검증). 다른 멤버의 답을 꼼꼼히 검증해 버그, 빠진 요구사항, 엣지 케이스, 보안·성능 문제를 찾아 구체적인 수정안을 냅니다.',
+  서브: '서브(대안). 다른 멤버와 다른 관점에서 대안적 접근, 반론, 실무 팁, 더 단순한 방법을 제시합니다. 동의만 할 거면 PASS 합니다.',
+};
+const dutyOf = (p) => DUTIES[p] ?? DUTIES['서브'];
+
+// ─── 프롬프트 ───────────────────────────────────────────────
+const PASS = '[PASS]';
+const REVIEW_TAG = '[평가]';
+const TIERS = { quick: '빠름', default: '보통', complex: '깊게' };
+
+function systemPrompt(me, members) {
+  const roster = members
+    .map((m) => `- ${m.emoji} ${m.name} — ${m.rank}, ${m.position}${m.specialty ? `, 특기: ${m.specialty}` : ''}`)
+    .join('\n');
+  const other = members.find((m) => m.id !== me.id)?.name ?? '이름';
+  return `당신은 "AI 단톡방"의 멤버 ${me.emoji} ${me.name}입니다 (${me.rank}, ${me.position}).
+이 방에는 사람 사용자 한 명과 아래 AI 멤버들이 함께 있습니다.
+
+${roster}
+
+당신의 포지션: ${dutyOf(me.position)}${me.specialty ? `\n당신의 특기: ${me.specialty}` : ''}
+
+직급과 포지션은 실적으로 바뀝니다. 사용자의 공감과, 최종 정리에서 의견이 채택되었는지가 실적입니다.
+좋은 실적은 말을 많이 하는 것이 아니라 팀의 결과물을 실제로 낫게 만드는 것입니다.
+
+아래 대화 기록에서 다른 사람의 발언은 "[이름]: 내용" 형식으로 보입니다. 당신의 과거 발언은 그대로 보입니다.
+"[사용자 → 이름]" 은 사용자가 그 멤버만 직접 호출한 메시지입니다.
+
+단톡방 규칙:
+1. 팀의 목표는 사용자의 요청을 최고 품질로 끝내는 것입니다. 서로 보완하세요.
+2. 이미 누군가 말한 내용을 반복하지 마세요. 빠진 부분, 틀린 부분, 더 나은 대안만 덧붙이세요.
+3. 다른 멤버의 발언에 오류가 있으면 누구의 어떤 부분인지 짚고 고친 내용을 제시하세요. 동의하면 짧게 동의만 하면 됩니다.
+4. 특정 멤버의 의견이 꼭 필요하면 "@이름" 으로 불러서 넘기세요 (예: @${other} 이 부분 봐줘).
+5. 더할 말이 없으면 다른 말 없이 정확히 ${PASS} 만 답하세요. 억지로 말을 보태는 것보다 낫습니다.
+6. 사용자와 같은 언어로(기본은 한국어) 메신저답게 간결하게 쓰세요. 코드가 필요하면 코드 블록을 쓰세요.
+7. 자기 이름표("[${me.name}]:")를 앞에 붙이지 마세요.`;
+}
+
+function instructionFor(me, kind) {
+  switch (kind) {
+    case 'first': return `[진행자] ${me.name} 차례입니다. 사용자의 최신 메시지에 먼저 답해 주세요.`;
+    case 'mentioned': return `[진행자] ${me.name}님이 호출되었습니다. 호출한 내용에 답해 주세요.`;
+    case 'direct': return `[진행자] 사용자가 ${me.name}님만 직접 호출했습니다. 다른 멤버의 보완 없이 이 답이 그대로 전달되니, 완결된 답을 주세요. ${PASS} 는 쓰지 마세요.`;
+    case 'follow': return `[진행자] ${me.name} 차례입니다. 지금까지의 대화를 보고 당신의 포지션으로 보완할 점이 있으면 덧붙이고, 없으면 ${PASS} 라고만 답하세요.`;
+    case 'summary': return `[진행자] 토론이 끝났습니다. ${me.name}님이 지금까지 합의한 내용을 반영해 사용자에게 줄 최종 결론을 정리해 주세요. 반영한 수정 사항은 누구의 의견인지 짧게 밝혀 주세요. ${PASS} 는 쓰지 마세요.
+그리고 맨 마지막 줄에 인사고과를 정확히 이 형식으로 남겨 주세요 (화면에는 보이지 않습니다):
+${REVIEW_TAG} 채택: 이름, 이름 / 오류: 이름
+- 채택: 최종 결론에 실제로 반영된 의견을 낸 다른 멤버 (자신 제외)
+- 오류: 이번 토론에서 틀린 내용을 말해 다른 멤버에게 정정된 멤버 (자신이 정정되었다면 자신도 솔직하게 포함)
+- 해당자가 없으면 "없음" 이라고 쓰세요.`;
+  }
+}
+
+const isPass = (t) => { const u = t.trim().toUpperCase(); return u === '' || u === PASS || u === 'PASS' || u.startsWith(PASS); };
+const mightBePass = (t) => { const u = t.trimStart().toUpperCase(); return u.length < PASS.length ? PASS.startsWith(u) : u.startsWith(PASS); };
+function parseReview(text) {
+  const i = text.lastIndexOf(REVIEW_TAG);
+  if (i < 0) return null;
+  const line = text.slice(i + REVIEW_TAG.length);
+  const part = (label) => line.match(new RegExp(`${label}\\s*[:：]\\s*([^/\\n]*)`))?.[1]?.trim() ?? '';
+  return { text: text.slice(0, i).trim(), adopted: part('채택'), mistakes: part('오류') };
+}
+
+/** 대화 기록을 "나" 기준의 user/assistant 턴으로. 시스템 프롬프트는 맨 앞 user 턴에 */
+function toTurns(meId, system, transcript, label, instruction) {
+  const turns = [{ role: 'user', content: system }];
+  const push = (role, content) => {
+    const last = turns[turns.length - 1];
+    if (last.role === role) last.content += `\n\n${content}`;
+    else turns.push({ role, content });
+  };
+  // 64KB 제한: 오래된 기록은 앞에서부터 버린다
+  let budget = 50000;
+  const kept = [];
+  for (let i = transcript.length - 1; i >= 0; i--) {
+    budget -= transcript[i].text.length + 20;
+    if (budget < 0) break;
+    kept.unshift(transcript[i]);
+  }
+  if (kept.length < transcript.length) push('user', '[진행자] (앞부분 대화는 길어서 생략되었습니다)');
+  for (const m of kept) {
+    if (m.author === meId) push('assistant', m.text);
+    else push('user', `[${label(m)}]: ${m.text}`);
+  }
+  push('user', instruction);
+  return turns;
+}
+
+// ─── 진행자 ─────────────────────────────────────────────────
+const DEFAULT_MEMBERS = [
+  { id: 'claude-a', name: '클로드A', emoji: '🧠', color: '#f6c9a8', tier: 'complex', specialty: '설계와 구현', score: 35, present: true },
+  { id: 'claude-b', name: '클로드B', emoji: '🔍', color: '#b9d3f5', tier: 'default', specialty: '코드 리뷰와 검증', score: 20, present: true },
+  { id: 'claude-c', name: '클로드C', emoji: '⚡', color: '#bfe8cc', tier: 'quick', specialty: '다른 관점의 아이디어', score: 10, present: true },
+];
+const EDITABLE = ['name', 'emoji', 'color', 'tier', 'specialty', 'score', 'present'];
+
+class Room {
+  constructor(members, deps) {
+    this.members = members;
+    this.deps = deps;
+    this.messages = [];
+    this.settings = { maxTurns: 8, summarize: true, autoRank: true };
+    this.queue = []; this.passed = new Set(); this.turnsLeft = 0; this.solo = false;
+    this.lastSpeaker = null; this.contributors = new Set(); this.running = false; this.abort = null; this.seq = 0;
+  }
+  get busy() { return this.running; }
+  views() {
+    return this.members
+      .map((m, i) => ({ m, i }))
+      .sort((a, b) => b.m.score - a.m.score || a.i - b.i)
+      .map(({ m }, i) => ({ ...m, rank: rankOf(m.score), position: positionTitle(i), ready: this.deps.ready() }));
+  }
+  view(id) { return this.views().find((m) => m.id === id); }
+  active() { return this.views().filter((m) => m.ready && m.present); }
+  nameOf = (a) => (a === 'user' ? '사용자' : a === 'system' ? '시스템' : this.members.find((m) => m.id === a)?.name ?? a);
+  label = (m) => (m.to ? `사용자 → ${this.nameOf(m.to)}` : this.nameOf(m.author));
+  newId() { return `${Date.now().toString(36)}-${(this.seq++).toString(36)}`; }
+  add(author, text, extra = {}) {
+    const message = { id: this.newId(), author, text, ts: Date.now(), ...extra };
+    this.messages.push(message);
+    this.deps.emit({ type: 'message', message });
+    this.deps.onChange?.();
+    return message;
+  }
+  mentions(text, exclude) {
+    const lower = text.toLowerCase();
+    const everyone = /@(모두|전원|all|everyone)(?![\p{L}\p{N}])/iu.test(text);
+    return this.active()
+      .filter((m) => m.id !== exclude)
+      .filter((m) => everyone || [m.name, m.position, m.id].some((al) => lower.includes(`@${al.toLowerCase()}`)))
+      .map((m) => m.id);
+  }
+  configure(id, patch) {
+    const m = this.members.find((x) => x.id === id);
+    if (!m) return;
+    const before = this.snapshot();
+    const wasPresent = m.present;
+    for (const key of EDITABLE) {
+      if (patch[key] === undefined) continue;
+      m[key] = key === 'score' ? Math.round(Number(patch[key])) || 0 : patch[key];
+    }
+    m.name = String(m.name).trim() || m.id;
+    if (!TIERS[m.tier]) m.tier = 'default';
+    if (wasPresent !== m.present) this.add('system', `${m.name}님이 ${m.present ? '들어왔습니다' : '나갔습니다'}.`);
+    this.announce(before);
+    this.deps.emit({ type: 'members' });
+    this.deps.onChange?.();
+  }
+  post(text, to) {
+    const direct = to && this.active().some((m) => m.id === to) ? to : undefined;
+    this.add('user', text, direct ? { to: direct } : {});
+    this.passed.clear(); this.contributors.clear(); this.solo = Boolean(direct);
+    if (direct) { this.turnsLeft = 1; this.queue = [{ id: direct, kind: 'direct' }]; }
+    else {
+      this.turnsLeft = this.settings.maxTurns;
+      const called = this.mentions(text);
+      this.queue = called.length ? called.map((id) => ({ id, kind: 'mentioned' })) : this.active().slice(0, 1).map((m) => ({ id: m.id, kind: 'first' }));
+    }
+    if (!this.running) this.loop();
+  }
+  react(messageId, value) {
+    const msg = this.messages.find((m) => m.id === messageId);
+    if (!msg || msg.author === 'user' || msg.author === 'system') return;
+    const before = this.snapshot();
+    const pts = (v) => (v ? POINTS[v] : 0);
+    if (this.settings.autoRank) this.award(msg.author, pts(value) - pts(msg.reaction));
+    if (value) msg.reaction = value; else delete msg.reaction;
+    this.deps.emit({ type: 'update', message: msg });
+    this.announce(before);
+    this.deps.emit({ type: 'members' });
+    this.deps.onChange?.();
+  }
+  stop() { this.queue = []; this.turnsLeft = 0; this.abort?.abort(); }
+  reset() { this.stop(); this.messages = []; this.lastSpeaker = null; this.deps.onChange?.(); }
+  award(id, delta) { const m = this.members.find((x) => x.id === id); if (m && delta) m.score += delta; }
+  snapshot() { return new Map(this.views().map((v) => [v.id, v])); }
+  announce(before) {
+    const after = this.views();
+    for (const v of after) {
+      const old = before.get(v.id);
+      if (!old || old.rank === v.rank) continue;
+      const up = rankIndex(v.score) > rankIndex(old.score);
+      this.add('system', `${up ? '🎉' : '📉'} ${v.name}님이 ${v.rank}(으)로 ${up ? '승진' : '강등'}했습니다.`);
+    }
+    const main = after[0];
+    const oldMain = [...before.values()].find((v) => v.position === '메인');
+    if (main && oldMain && main.id !== oldMain.id) this.add('system', `👑 ${main.name}님이 새 메인이 되었습니다.`);
+  }
+  pickNext() {
+    const order = this.active().map((m) => m.id);
+    while (this.queue.length) { const n = this.queue.shift(); if (order.includes(n.id)) return n; }
+    if (this.solo || !order.length) return null;
+    const start = this.lastSpeaker && order.includes(this.lastSpeaker) ? order.indexOf(this.lastSpeaker) + 1 : 0;
+    for (let i = 0; i < order.length; i++) {
+      const id = order[(start + i) % order.length];
+      if (id !== this.lastSpeaker && !this.passed.has(id)) return { id, kind: 'follow' };
+    }
+    return null;
+  }
+  async loop() {
+    this.running = true;
+    try {
+      let summarized = false;
+      while (true) {
+        const next = this.turnsLeft > 0 ? this.pickNext() : null;
+        if (next) { this.turnsLeft--; await this.speak(next.id, next.kind); continue; }
+        const main = this.active()[0];
+        const aborted = this.abort?.signal.aborted;
+        if (!summarized && !aborted && !this.solo && main && this.settings.summarize && this.contributors.size >= 2) {
+          summarized = true; await this.speak(main.id, 'summary'); continue;
+        }
+        break;
+      }
+    } finally { this.running = false; this.abort = null; this.deps.emit({ type: 'idle' }); }
+  }
+  async speak(id, kind) {
+    const me = this.view(id);
+    const messageId = this.newId();
+    this.abort = new AbortController();
+    this.deps.emit({ type: 'typing', author: id, messageId });
+    const canPass = kind !== 'summary' && kind !== 'direct';
+    let text = ''; let shown = 0;
+    const onText = (whole) => {
+      text = whole;
+      if (canPass && mightBePass(text)) return;
+      const visible = kind === 'summary' ? text.split('[평')[0] : text;
+      if (visible.length > shown) { this.deps.emit({ type: 'delta', messageId, text: visible.slice(shown) }); shown = visible.length; }
+    };
+    const active = this.active();
+    try {
+      text = await this.deps.respond({
+        member: me, tier: me.tier,
+        turns: toTurns(id, systemPrompt(me, active), this.messages, this.label, instructionFor(me, kind)),
+        signal: this.abort.signal, onText,
+      }) || text;
+    } catch (err) {
+      if (this.abort.signal.aborted || err?.code === 'cancelled') {
+        if (text.trim() && !isPass(text)) this.finish(messageId, id, `${text}\n\n_(중단됨)_`);
+        else this.deps.emit({ type: 'pass', author: id, messageId });
+        return;
+      }
+      this.deps.emit({ type: 'drop', author: id, messageId });
+      this.add('system', `⚠️ ${me.name}: ${errorText(err)}`);
+      this.passed.add(id);
+      if (err?.code === 'not_granted' || err?.code === 'sampling_disabled' || err?.code === 'rate_limited') this.stop();
+      return;
+    }
+    if (canPass && isPass(text)) { this.passed.add(id); this.deps.emit({ type: 'pass', author: id, messageId }); return; }
+    if (kind === 'summary') {
+      const review = parseReview(text);
+      this.finish(messageId, id, (review?.text ?? text).trim(), 'summary');
+      if (review && this.settings.autoRank) this.applyReview(id, review.adopted, review.mistakes);
+      return;
+    }
+    this.finish(messageId, id, text.trim());
+    if (this.solo) return;
+    this.passed.clear(); this.passed.add(id); this.lastSpeaker = id; this.contributors.add(id);
+    for (const called of this.mentions(text, id)) if (!this.queue.some((q) => q.id === called)) this.queue.push({ id: called, kind: 'mentioned' });
+  }
+  applyReview(reviewer, adopted, mistakes) {
+    const before = this.snapshot();
+    const find = (s) => this.members.filter((m) => s.split(/[,，、\s]+/).some((w) => w && (w === m.name || w === `@${m.name}`)));
+    const notes = [];
+    for (const m of find(adopted)) { if (m.id === reviewer || !this.contributors.has(m.id)) continue; this.award(m.id, POINTS.adopted); notes.push(`${m.name} +${POINTS.adopted}`); }
+    for (const m of find(mistakes)) { this.award(m.id, POINTS.mistake); notes.push(`${m.name} ${POINTS.mistake}`); }
+    if (notes.length) this.add('system', `📋 인사고과: ${notes.join(', ')}`);
+    this.announce(before);
+    this.deps.emit({ type: 'members' });
+    this.deps.onChange?.();
+  }
+  finish(messageId, author, text, kind) {
+    const message = { id: messageId, author, text, ts: Date.now(), ...(kind ? { kind } : {}) };
+    this.messages.push(message);
+    this.deps.emit({ type: 'done', message });
+    this.deps.onChange?.();
+  }
+}
+
+function errorText(e) {
+  switch (e?.code) {
+    case 'not_granted': return '이 페이지가 Claude를 쓰도록 허용해 주셔야 답할 수 있어요. 페이지를 새로고침하고 허용을 눌러 주세요.';
+    case 'sampling_disabled': return '이 계정에서는 Claude를 쓸 수 없어요.';
+    case 'rate_limited': return '요청이 너무 많거나 사용량 한도예요. 잠시 뒤에 다시 보내 주세요.';
+    case 'session_expired': return '로그인이 풀렸어요. claude.ai에 다시 로그인해 주세요.';
+    case 'prompt_too_large': return '대화가 너무 길어요. 서랍에서 대화 내용을 지우고 다시 시작해 주세요.';
+    case 'refused': return '이 요청에는 답하지 않았어요. 다르게 물어봐 주세요.';
+    case 'empty_completion': return '답이 비어 있었어요. 다시 보내 주세요.';
+    default: return `오류가 났어요 (${e?.code ?? e?.message ?? '알 수 없음'}). 다시 보내 주세요.`;
+  }
+}
+
+const $ = (id) => document.getElementById(id);
+const log = $('log');
+const input = $('input');
+const state = { messages: [], members: [], settings: {}, busy: false, live: new Map(), direct: null, search: '', unread: new Map(), passes: [], forceScroll: false };
+const member = (id) => state.members.find((m) => m.id === id);
+const present = () => state.members.filter((m) => m.present && m.ready);
+
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+}
+
+function highlight(html) {
+  if (!state.search) return html;
+  const q = state.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  // 태그 밖의 글자만 칠한다
+  return html.replace(/(^|>)([^<]*)/g, (_, a, t) => a + t.replace(new RegExp(esc(q), 'gi'), (m) => `<mark>${m}</mark>`));
+}
+
+/** 작은 마크다운: 코드 블록, 인라인 코드, 굵게, 목록, @멘션 */
+function render(md) {
+  return md
+    .split(/```/)
+    .map((part, i) => {
+      if (i % 2) return `<pre><code>${esc(part.replace(/^[\w+-]*\n/, '').replace(/\n$/, ''))}</code></pre>`;
+      const inline = (t) =>
+        esc(t)
+          .replace(/`([^`]+)`/g, '<code>$1</code>')
+          .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+          .replace(/(^|\s)(@[\w가-힣-]+)/g, '$1<span class="mention">$2</span>');
+      // 줄 단위로 보면서 이어지는 목록 줄은 <ul>/<ol> 로 묶는다
+      let out = '';
+      let para = [];
+      let list = null;
+      const flushPara = () => {
+        if (para.length) out += `<p>${para.map(inline).join('<br>')}</p>`;
+        para = [];
+      };
+      const flushList = () => {
+        if (list) out += `<${list.tag}>${list.items.map((t) => `<li>${inline(t)}</li>`).join('')}</${list.tag}>`;
+        list = null;
+      };
+      for (const line of part.split('\n')) {
+        const ul = line.match(/^\s*[-*•] (.*)/);
+        const ol = line.match(/^\s*\d+[.)] (.*)/);
+        const tag = ul ? 'ul' : ol ? 'ol' : null;
+        if (tag) {
+          flushPara();
+          if (list?.tag !== tag) flushList();
+          (list ??= { tag, items: [] }).items.push((ul ?? ol)[1]);
+        } else if (!line.trim()) {
+          flushPara();
+          flushList();
+        } else {
+          flushList();
+          para.push(line);
+        }
+      }
+      flushPara();
+      flushList();
+      return out;
+    })
+    .join('');
+}
+
+const time = (ts) => new Date(ts).toLocaleTimeString('ko-KR', { hour: 'numeric', minute: '2-digit' });
+const day = (ts) =>
+  new Date(ts).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
+const sameMinute = (a, b) => Math.floor(a / 60000) === Math.floor(b / 60000);
+
+const avatar = (m, cls = 'avatar', profile = true) =>
+  `<div class="${cls}" style="background:${m?.color ?? '#ddd'}"${profile ? ` data-profile="${m?.id ?? ''}"` : ''}>${m?.emoji ?? '🤖'}</div>`;
+
+// ─── 대화 그리기 ───────────────────────────────────────────
+
+function items() {
+  const list = [...state.messages.map((m) => ({ ...m, live: false })), ...state.passes];
+  for (const [id, l] of state.live) list.push({ id, author: l.author, text: l.text, ts: Date.now(), live: true });
+  return list.sort((a, b) => (a.live ? 1 : 0) - (b.live ? 1 : 0) || a.ts - b.ts);
+}
+
+function renderLog() {
+  const near = log.scrollHeight - log.scrollTop - log.clientHeight < 160;
+  const list = items();
+  let html = '';
+  let lastDay = '';
+  let hits = 0;
+  if (!list.length) {
+    html = `<div class="date"><span>📅 ${day(Date.now())}</span></div>
+      <div class="notice"><span>클로드 세 명이 있는 단톡방이에요. 👑 메인이 먼저 답하고 서브들이 보완해요.</span></div>
+      <div class="notice"><span>＋ 버튼이나 프로필에서 한 멤버만 직접 호출할 수 있어요.</span></div>`;
+  }
+  list.forEach((m, i) => {
+    const d = day(m.ts);
+    if (d !== lastDay) {
+      html += `<div class="date"><span>📅 ${d}</span></div>`;
+      lastDay = d;
+    }
+    if (m.author === 'system') {
+      html += `<div class="notice"><span>${esc(m.text)}</span></div>`;
+      return;
+    }
+    if (m.pass) {
+      html += `<div class="notice quiet"><span>${esc(m.text)}</span></div>`;
+      return;
+    }
+    const prev = list[i - 1];
+    const next = list[i + 1];
+    const first = !prev || prev.author !== m.author || prev.pass || !sameMinute(prev.ts, m.ts) || day(prev.ts) !== d;
+    const last = !next || next.author !== m.author || next.pass || !sameMinute(next.ts, m.ts) || m.live;
+    const mine = m.author === 'user';
+    const who = member(m.author);
+    let content;
+    if (m.live && !m.text) content = '<span class="dots"><i></i><i></i><i></i></span>';
+    else if (mine) content = (m.to ? `<div class="direct-quote">🎯 ${esc(member(m.to)?.name ?? '')}에게 직접 호출</div>` : '') + esc(m.text);
+    else content = (m.kind === 'summary' ? '<div class="summary-head">📌 최종 정리</div>' : '') + render(m.text);
+    content = highlight(content);
+    if (state.search && m.text.toLowerCase().includes(state.search.toLowerCase())) hits++;
+    const unread = mine ? state.unread.get(m.id)?.size : 0;
+    const meta = last && !m.live ? `<div class="meta">${unread ? `<span class="unread">${unread}</span>` : ''}<span>${time(m.ts)}</span></div>` : '';
+    const reaction = m.reaction ? `<div class="reaction" data-react="${m.id}">${m.reaction === 'up' ? '👍' : '👎'} 1</div>` : '';
+    const bubbleCls = `bubble${m.kind === 'summary' ? ' summary' : ''}${m.live && m.text ? ' cursor' : ''}`;
+    if (mine) {
+      html += `<div class="msg mine${first ? ' first' : ''}" data-id="${m.id}"><div class="body"><div class="line">
+        <div class="${bubbleCls}">${content}</div>${meta}</div></div></div>`;
+    } else {
+      const rank = who ? `<span class="rank">${esc(who.rank)}${who.position === '메인' ? ' 👑' : ''}</span>` : '';
+      html += `<div class="msg${first ? ' first' : ''}" data-id="${m.id}" data-author="${m.author}">
+        ${first ? avatar(who) : '<div class="avatar-space"></div>'}
+        <div class="body">${first ? `<div class="name">${esc(who?.name ?? m.author)} ${rank}</div>` : ''}
+          <div class="line"><div class="${bubbleCls}" data-bubble="${m.live ? '' : m.id}">${content}</div>${meta}</div>${reaction}</div></div>`;
+    }
+  });
+  log.innerHTML = html;
+  $('searchCount').textContent = state.search ? `${hits}건` : '';
+  if (near || state.forceScroll) log.scrollTop = log.scrollHeight;
+  state.forceScroll = false;
+}
+
+/** 스트리밍 중엔 그 말풍선만 고친다 */
+function patchLive(id) {
+  const l = state.live.get(id);
+  const el = log.querySelector(`.msg[data-id="${id}"] .bubble`);
+  if (!l || !el || !l.text) return renderLog();
+  const near = log.scrollHeight - log.scrollTop - log.clientHeight < 160;
+  el.innerHTML = render(l.text);
+  el.classList.add('cursor');
+  if (near) log.scrollTop = log.scrollHeight;
+}
+
+// ─── 멤버 · 서랍 ────────────────────────────────────────────
+
+function renderMembers() {
+  const here = state.members.filter((m) => m.present);
+  $('count').textContent = here.length + 1;
+  $('memberCount').textContent = here.length + 1;
+  const row = (m) => `<button class="member-row${m.present ? '' : ' away'}" data-profile="${m.id}">
+      ${avatar(m)}<div class="info"><b>${esc(m.name)}</b>
+      <span class="tag${m.position === '메인' ? ' main' : ''}">${m.position === '메인' ? '👑 메인' : m.position}</span>
+      <span class="tag">${esc(m.rank)}</span>
+      <small>${m.ready ? 'Claude · ' + (TIERS[m.tier] ?? '보통') : 'Claude 연결 안 됨'} · ${m.score}점${m.present ? '' : ' · 나감'}</small></div></button>`;
+  $('memberList').innerHTML =
+    `<div class="member-row"><div class="avatar" style="background:#fee500">🙂</div><div class="info"><b>나</b><span class="me-tag">나</span><small>사용자</small></div></div>` +
+    state.members.map(row).join('');
+  $('rankTable').innerHTML = RANKS.map((r) => `<span><b>${r.title}</b>${r.min === -Infinity ? '0 미만' : r.min + '점~'}</span>`).join('');
+  $('maxTurns').value = state.settings.maxTurns;
+  $('summarize').checked = state.settings.summarize;
+  $('autoRank').checked = state.settings.autoRank;
+  renderDirectBar();
+  renderPlusMenu();
+}
+
+function openDrawer(open) {
+  $('drawer').classList.toggle('open', open);
+  $('drawer').setAttribute('aria-hidden', String(!open));
+  $('drawerDim').hidden = !open;
+}
+
+// ─── 직접 호출 ──────────────────────────────────────────────
+
+function setDirect(id) {
+  state.direct = id;
+  renderDirectBar();
+  $('plusMenu').hidden = true;
+  input.focus();
+}
+
+function renderDirectBar() {
+  const m = state.direct && member(state.direct);
+  if (m && !(m.present && m.ready)) state.direct = null;
+  const bar = $('directBar');
+  bar.hidden = !state.direct;
+  if (!state.direct) return;
+  bar.innerHTML = `${avatar(m, 'avatar mini')}<div class="who">🎯 <b>${esc(m.name)}</b>에게 직접 호출
+    <small>다른 멤버 없이 ${esc(m.name)}만 답해요</small></div>
+    <button class="icon-btn" id="directClose" aria-label="직접 호출 취소"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18" /></svg></button>`;
+  $('directClose').onclick = () => setDirect(null);
+}
+
+function renderPlusMenu() {
+  $('plusMenu').innerHTML = state.members
+    .map((m) => {
+      const ok = m.present && m.ready;
+      return `<button data-direct="${m.id}" ${ok ? '' : 'disabled'} class="${ok ? '' : 'off'}">
+        <div class="avatar" style="background:${m.color}">${m.emoji}</div>${esc(m.name)} 호출</button>`;
+    })
+    .join('');
+}
+
+// ─── @멘션 팝업 ────────────────────────────────────────────
+
+function mentionQuery() {
+  const upto = input.value.slice(0, input.selectionStart);
+  const m = upto.match(/(^|\s)@([\w가-힣-]*)$/);
+  return m ? m[2] : null;
+}
+
+function renderMentionPop() {
+  const q = mentionQuery();
+  const pop = $('mentionPop');
+  if (q === null) return (pop.hidden = true);
+  const list = present().filter((m) => !q || m.name.includes(q) || m.position.includes(q));
+  const all = '모두'.startsWith(q) || !q;
+  if (!list.length && !all) return (pop.hidden = true);
+  pop.hidden = false;
+  pop.innerHTML =
+    list
+      .map((m) => `<button data-mention="${esc(m.name)}">${avatar(m, 'avatar', false)}<span><b>${esc(m.name)}</b> <span class="tag">${m.position}</span> <span class="tag">${esc(m.rank)}</span></span></button>`)
+      .join('') + (all && present().length > 1 ? `<button data-mention="모두"><div class="avatar" style="background:#eee">👥</div><b>모두</b></button>` : '');
+}
+
+function insertMention(name) {
+  const pos = input.selectionStart;
+  const before = input.value.slice(0, pos).replace(/@([\w가-힣-]*)$/, `@${name} `);
+  input.value = before + input.value.slice(pos);
+  input.setSelectionRange(before.length, before.length);
+  $('mentionPop').hidden = true;
+  input.focus();
+  updateSend();
+}
+
+
+// ─── 프로필 · 설정 ─────────────────────────────────────────
+
+function darken(hex, f = 0.55) {
+  const n = parseInt(hex.slice(1), 16);
+  const c = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => Math.round(v * f));
+  return `rgb(${c.join(',')})`;
+}
+
+function openProfile(id, edit = false) {
+  const m = member(id);
+  const el = $('profile');
+  if (!m) return (el.hidden = true);
+  el.hidden = false;
+  el.dataset.id = id;
+  const canCall = m.present && m.ready;
+  el.innerHTML = `
+    <div class="bg" style="background:linear-gradient(180deg, ${darken(m.color, 0.5)} 0%, ${darken(m.color, 0.3)} 100%)"></div>
+    <div class="top">
+      <button class="icon-btn" data-close aria-label="닫기"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18" /></svg></button>
+    </div>
+    <div class="center">
+      <div class="big" style="background:${m.color}">${m.emoji}</div>
+      <h2>${esc(m.name)}</h2>
+      <div class="status">${esc(m.specialty)}</div>
+      <div class="badges">
+        <span>${m.position === '메인' ? '👑 메인' : m.position}</span><span>${esc(m.rank)} · ${m.score}점</span>
+        <span>Claude · ${TIERS[m.tier] ?? '보통'}</span>
+        ${m.ready ? '' : '<span>⚠️ Claude 사용 불가</span>'}
+      </div>
+    </div>
+    <div class="actions">
+      <button data-call ${canCall ? '' : 'disabled'}><svg viewBox="0 0 24 24"><path d="M12 4c-4.7 0-8.5 3-8.5 6.7 0 2.4 1.6 4.5 4 5.7l-.9 3.4 3.9-2.6c.5.1 1 .1 1.5.1 4.7 0 8.5-3 8.5-6.6S16.7 4 12 4Z" /></svg>직접 호출</button>
+      <button data-edit><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16v4Z" /><path d="m13.5 6.5 4 4" /></svg>모델 설정</button>
+      <button data-toggle ${m.ready ? '' : 'disabled'}><svg viewBox="0 0 24 24">${m.present ? '<path d="M15 12H4M8 8l-4 4 4 4M14 4h5a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-5" />' : '<path d="M4 12h11M11 8l4 4-4 4M14 4h5a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-5" />'}</svg>${m.present ? '내보내기' : '초대하기'}</button>
+    </div>
+    ${edit ? editSheet(m) : ''}`;
+  if (edit) bindSheet(m);
+}
+
+function editSheet(m) {
+  return `<form class="sheet" id="sheet">
+    <div class="grab"></div>
+    <h3>${esc(m.name)} 설정</h3>
+    <div class="field-row">
+      <label class="field" style="flex:0 0 72px">아이콘<input id="f-emoji" name="emoji" value="${esc(m.emoji)}" maxlength="4" /></label>
+      <label class="field">이름<input id="f-name" name="name" value="${esc(m.name)}" maxlength="20" required /></label>
+      <label class="field" style="flex:0 0 64px">색<input id="f-color" name="color" type="color" value="${m.color}" style="padding:2px;height:40px" /></label>
+    </div>
+    <label class="field">모델 (생각하는 깊이)<select id="f-tier" name="tier">
+      <option value="quick" ${m.tier === 'quick' ? 'selected' : ''}>빠름 — 바로 답해요, 가벼운 대화용</option>
+      <option value="default" ${m.tier === 'default' ? 'selected' : ''}>보통 — 잠깐 생각하고 답해요</option>
+      <option value="complex" ${m.tier === 'complex' ? 'selected' : ''}>깊게 — 오래 생각해요, 어려운 문제용</option></select></label>
+    <p class="hint" style="margin:-6px 0 12px">이 페이지의 멤버는 모두 Claude예요. 사용량은 지금 보고 있는 분의 Claude 계정에서 나가요.</p>
+    <label class="field">특기 (프로필 상태 메시지 · 프롬프트에 들어가요)<input id="f-specialty" name="specialty" value="${esc(m.specialty)}" maxlength="80" /></label>
+    <label class="field">직급 · 점수
+      <div class="rank-ctl"><strong id="rankNow">${esc(m.rank)}</strong>
+        <button type="button" class="pill-btn" data-step="-1">강등</button>
+        <button type="button" class="pill-btn" data-step="1">승진</button>
+        <input id="f-score" name="score" type="number" value="${m.score}" /></div></label>
+    <button class="save-btn">저장</button>
+  </form>`;
+}
+
+function bindSheet(m) {
+  const f = $('sheet');
+  const sync = () => ($('rankNow').textContent = rankOf(Number(f.score.value) || 0));
+  f.score.oninput = sync;
+  f.querySelectorAll('[data-step]').forEach((b) => {
+    b.onclick = () => { f.score.value = stepScore(Number(f.score.value) || 0, Number(b.dataset.step)); sync(); };
+  });
+  f.onsubmit = (ev) => {
+    ev.preventDefault();
+    const data = Object.fromEntries(new FormData(f));
+    data.score = Number(data.score);
+    room.configure(m.id, data);
+    openProfile(m.id);
+  };
+}
+
+// ─── 방 · 저장 ──────────────────────────────────────────────
+
+const STORE = 'ai-room-v1';
+let sampleFn = null;
+let room;
+
+function load() {
+  try { return JSON.parse(localStorage.getItem(STORE) || 'null'); } catch { return null; }
+}
+function save() {
+  try {
+    localStorage.setItem(STORE, JSON.stringify({ members: room.members, settings: room.settings, messages: room.messages.slice(-400) }));
+  } catch { /* 저장이 막힌 브라우저에서는 이번 방문 동안만 유지 */ }
+}
+
+function syncState() {
+  state.members = room.views();
+  state.settings = room.settings;
+  state.messages = room.messages;
+}
+
+function handle(e) {
+  switch (e.type) {
+    case 'message': {
+      const m = e.message;
+      if (m.author === 'user') {
+        const readers = m.to ? [m.to] : present().map((x) => x.id);
+        state.unread.set(m.id, new Set(readers));
+        state.forceScroll = true;
+        setBusy(true);
+      }
+      syncState();
+      renderLog();
+      break;
+    }
+    case 'typing':
+      state.live.set(e.messageId, { author: e.author, text: '' });
+      markRead(e.author);
+      setBusy(true);
+      renderLog();
+      break;
+    case 'delta': {
+      const l = state.live.get(e.messageId);
+      if (!l) break;
+      const wasEmpty = !l.text;
+      l.text += e.text;
+      wasEmpty ? renderLog() : patchLive(e.messageId);
+      break;
+    }
+    case 'done':
+      state.live.delete(e.message.id);
+      syncState();
+      renderLog();
+      break;
+    case 'update':
+      renderLog();
+      break;
+    case 'drop':
+      state.live.delete(e.messageId);
+      markRead(e.author);
+      renderLog();
+      break;
+    case 'pass': {
+      state.live.delete(e.messageId);
+      markRead(e.author);
+      const m = member(e.author);
+      state.passes.push({ id: e.messageId, author: e.author, ts: Date.now(), pass: true, text: `${m?.emoji ?? ''} ${m?.name ?? ''}님: 덧붙일 의견 없음` });
+      renderLog();
+      break;
+    }
+    case 'idle':
+      state.live.clear();
+      state.unread.clear();
+      setBusy(false);
+      renderLog();
+      break;
+    case 'members':
+      syncState();
+      renderMembers();
+      renderLog();
+      if (!$('profile').hidden && !$('sheet')) openProfile($('profile').dataset.id);
+      break;
+  }
+}
+
+async function respond({ tier, turns, signal, onText }) {
+  if (!sampleFn) throw { code: 'not_granted', message: 'sample unavailable' };
+  const { text } = await sampleFn(turns, { modelTier: tier, cache: false, signal, onText: ({ text }) => onText(text) });
+  return text;
+}
+
+function setBusy(b) {
+  state.busy = b;
+  $('stop').hidden = !b;
+  updateSend();
+}
+
+function updateSend() {
+  $('send').disabled = !input.value.trim();
+  $('send').hidden = state.busy && !input.value.trim();
+}
+
+function markRead(author) {
+  for (const set of state.unread.values()) set.delete(author);
+}
+
+// ─── 입력 · 이벤트 ──────────────────────────────────────────
+
+function autosize() {
+  input.style.height = 'auto';
+  input.style.height = `${Math.min(input.scrollHeight, 120)}px`;
+}
+
+function send() {
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  autosize();
+  updateSend();
+  $('mentionPop').hidden = true;
+  room.post(text, state.direct ?? undefined);
+  setDirect(null);
+}
+
+$('send').onclick = send;
+$('stop').onclick = () => room.stop();
+input.addEventListener('keydown', (ev) => {
+  if (ev.key === 'Enter' && !ev.shiftKey && !ev.isComposing) { ev.preventDefault(); send(); }
+  if (ev.key === 'Escape') $('mentionPop').hidden = true;
+});
+input.addEventListener('input', () => { autosize(); updateSend(); renderMentionPop(); });
+input.addEventListener('focus', () => ($('plusMenu').hidden = true));
+$('mentionBtn').onclick = () => {
+  const pos = input.selectionStart;
+  const pre = input.value.slice(0, pos);
+  const add = (pre && !/\s$/.test(pre) ? ' ' : '') + '@';
+  input.value = pre + add + input.value.slice(pos);
+  input.setSelectionRange(pos + add.length, pos + add.length);
+  input.focus();
+  renderMentionPop();
+};
+$('mentionPop').onclick = (ev) => { const b = ev.target.closest('[data-mention]'); if (b) insertMention(b.dataset.mention); };
+$('plusBtn').onclick = () => { $('plusMenu').hidden = !$('plusMenu').hidden; };
+$('plusMenu').onclick = (ev) => { const b = ev.target.closest('[data-direct]'); if (b && !b.disabled) setDirect(b.dataset.direct); };
+
+$('menuBtn').onclick = () => openDrawer(true);
+$('drawerClose').onclick = () => openDrawer(false);
+$('drawerDim').onclick = () => openDrawer(false);
+$('back').onclick = () => log.scrollTo({ top: 0, behavior: 'smooth' });
+$('searchBtn').onclick = () => { $('searchbar').hidden = false; $('searchInput').focus(); };
+$('searchInput').oninput = () => {
+  state.search = $('searchInput').value.trim();
+  renderLog();
+  log.querySelector('mark')?.scrollIntoView({ block: 'center' });
+};
+$('searchClose').onclick = () => { $('searchbar').hidden = true; $('searchInput').value = ''; state.search = ''; renderLog(); };
+
+$('maxTurns').onchange = () => { room.settings.maxTurns = Math.max(1, Math.min(30, Math.round(Number($('maxTurns').value)) || 8)); save(); };
+$('summarize').onchange = () => { room.settings.summarize = $('summarize').checked; save(); };
+$('autoRank').onchange = () => { room.settings.autoRank = $('autoRank').checked; save(); };
+$('reset').onclick = () => { $('resetConfirm').hidden = false; };
+$('resetNo').onclick = () => { $('resetConfirm').hidden = true; };
+$('resetYes').onclick = () => {
+  $('resetConfirm').hidden = true;
+  room.reset();
+  state.passes = [];
+  state.live.clear();
+  syncState();
+  openDrawer(false);
+  state.forceScroll = true;
+  renderLog();
+};
+
+document.addEventListener('click', (ev) => {
+  const p = ev.target.closest('[data-profile]');
+  if (p && p.dataset.profile) { openDrawer(false); openProfile(p.dataset.profile); }
+});
+
+$('profile').addEventListener('click', (ev) => {
+  const id = $('profile').dataset.id;
+  const m = member(id);
+  if (ev.target.closest('[data-close]')) return ($('profile').hidden = true);
+  if (ev.target.closest('[data-call]')) { $('profile').hidden = true; return setDirect(id); }
+  if (ev.target.closest('[data-edit]')) return openProfile(id, true);
+  if (ev.target.closest('[data-toggle]')) { room.configure(id, { present: !m.present }); return; }
+  if ($('sheet') && !ev.target.closest('.sheet') && !ev.target.closest('.actions')) openProfile(id);
+});
+
+// 공감: 말풍선을 누르면 👍/👎
+let pop;
+function closePop() { pop?.remove(); pop = null; }
+log.addEventListener('click', (ev) => {
+  const chip = ev.target.closest('[data-react]');
+  const bubble = ev.target.closest('[data-bubble]');
+  const id = chip?.dataset.react || bubble?.dataset.bubble;
+  closePop();
+  if (!id) return;
+  const msg = state.messages.find((m) => m.id === id);
+  if (!msg || window.getSelection()?.toString()) return;
+  pop = document.createElement('div');
+  pop.className = 'react-pop';
+  pop.innerHTML = `<button data-v="up" class="${msg.reaction === 'up' ? 'on' : ''}" title="좋아요 (+3점)">👍</button>
+    <button data-v="down" class="${msg.reaction === 'down' ? 'on' : ''}" title="별로예요 (−3점)">👎</button>`;
+  const r = (bubble ?? chip).getBoundingClientRect();
+  const app = $('app').getBoundingClientRect();
+  pop.style.left = `${Math.max(8, r.left - app.left)}px`;
+  pop.style.top = `${Math.max(60, r.top - app.top - 52)}px`;
+  $('app').append(pop);
+  pop.onclick = (e) => {
+    const v = e.target.closest('[data-v]')?.dataset.v;
+    if (v) room.react(id, msg.reaction === v ? null : v);
+    closePop();
+  };
+  ev.stopPropagation();
+});
+document.addEventListener('click', (ev) => {
+  if (pop && !pop.contains(ev.target)) closePop();
+  if (!ev.target.closest('.composer')) $('mentionPop').hidden = true;
+});
+log.addEventListener('scroll', closePop);
+
+// ─── 시작 ───────────────────────────────────────────────────
+
+function start() {
+  const saved = load();
+  const members = DEFAULT_MEMBERS.map((d) => ({ ...d, ...(saved?.members ?? []).find((m) => m.id === d.id) }));
+  room = new Room(members, { ready: () => sampleFn !== null, respond, emit: handle, onChange: save });
+  room.messages = saved?.messages ?? [];
+  Object.assign(room.settings, saved?.settings);
+  syncState();
+  renderMembers();
+  state.forceScroll = true;
+  renderLog();
+}
+
+start();
+
+// Claude 연결은 나중에 되니, 될 때 멤버 상태를 다시 그린다
+(async () => {
+  const s = await window.claude?.use?.('sample').catch(() => null);
+  sampleFn = s ?? null;
+  $('noClaude').hidden = Boolean(s);
+  syncState();
+  renderMembers();
+  renderLog();
+})();
+
+</script>
