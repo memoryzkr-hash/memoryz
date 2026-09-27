@@ -8,7 +8,7 @@ const { chromium } = require('playwright');
 
 const SRC = path.resolve(__dirname, '..');
 const OUT = path.join(SRC, 'pdf');
-const TMP = fs.mkdtempSync(path.join(require('os').tmpdir(), 'pnu-pdf-'));
+const TMP = require.main === module ? fs.mkdtempSync(path.join(require('os').tmpdir(), 'pnu-pdf-')) : null;
 const FONT = path.dirname(require.resolve('pretendard/package.json')) + '/dist/web/static/woff2';
 const BRAND = '부산대 경영학과 입시 대비 자료';
 const COMBINED = '부산대_경영학과_인문논술_정시_대비자료.pdf';
@@ -253,7 +253,9 @@ async function pdf(browser, html, out, label) {
   await p.close();
 }
 
-(async () => {
+module.exports = { DOCS, TRANSFORM, mdHtml, chapter, summary };
+
+if (require.main === module) (async () => {
   fs.mkdirSync(OUT, { recursive: true });
   const browser = await chromium.launch();
   for (const d of DOCS) {
