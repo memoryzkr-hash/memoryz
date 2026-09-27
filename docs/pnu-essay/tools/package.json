@@ -1,0 +1,7 @@
+{
+  "name": "pnu-essay-pdf",
+  "private": true,
+  "description": "부산대 경영학과 대비 자료 Markdown을 Toss 스타일 PDF로 빌드",
+  "scripts": { "build": "node build-pdf.js" },
+  "dependencies": { "marked": "^18.0.0", "playwright": "^1.56.1", "pretendard": "^1.3.9" }
+}
