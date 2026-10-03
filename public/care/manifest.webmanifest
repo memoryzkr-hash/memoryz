@@ -1,0 +1,16 @@
+{
+  "name": "주간보호 돌봄수첩",
+  "short_name": "돌봄수첩",
+  "description": "주간보호센터 어르신 출석·건강·투약·송영 관리와 보호자 알림장",
+  "lang": "ko",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4f3ef",
+  "theme_color": "#1f6f5c",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
