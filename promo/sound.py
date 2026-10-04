@@ -226,8 +226,11 @@ def sidechain(buf):
         t = k / SR
         while j + 1 < len(hits) and hits[j + 1] <= t:
             j += 1
-        d = t - hits[j] if hits and t >= hits[j] else (t + DUR - hits[-1] if hits else 1)
-        buf[k] *= 1 - 0.65 * math.exp(-d * 11)
+        if not hits or t < hits[0]:
+            d = t + DUR - hits[-1] if hits and LEAD == 0 else 1.0  # 첫 킥 전: 반복 재생이면 마지막 킥에서 이어서, 아니면 누르지 않음
+        else:
+            d = t - hits[j]
+        buf[k] *= 1 - 0.65 * math.exp(-max(0.0, d) * 11)
 
 
 # ── 영상별 효과음 (b(n) 과 같은 박 숫자) ──────────────────
