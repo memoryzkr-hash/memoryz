@@ -40,7 +40,7 @@
   #s3 { background: var(--accent); }
   #s3 .head { top: 210px; }
   #s3 .kl > span { font-size: 104px; color: #fff; }
-  #phone { position: absolute; left: 140px; top: 640px; width: 800px; height: 1500px; border: 16px solid var(--ink); border-radius: 104px;
+  #phone { position: absolute; left: 140px; top: 560px; width: 800px; height: 1500px; border: 16px solid var(--ink); border-radius: 104px;
            background: var(--bg); overflow: hidden; transform-origin: 50% 30%; }
   #phone .bar-title { position: absolute; left: 0; right: 0; top: 56px; text-align: center; font-size: 38px; font-weight: 600; }
   #phone .back { position: absolute; left: 44px; top: 58px; }
@@ -57,15 +57,15 @@
   #s4 .head { top: 200px; }
   #h4k > span { font-size: 50px !important; color: var(--accent); font-weight: 600; letter-spacing: 0; margin-bottom: 18px; }
   #s4 .kl > span { font-size: 124px; }
-  .rate { position: absolute; top: 720px; width: 210px; height: 124px; border-radius: 62px; border: 3px solid var(--line); background: #fff;
+  .rate { position: absolute; top: 620px; width: 210px; height: 124px; border-radius: 62px; border: 3px solid var(--line); background: #fff;
           overflow: hidden; display: grid; place-items: center; font-size: 46px; font-weight: 600; }
   .rate .fill { position: absolute; width: 520px; height: 520px; border-radius: 50%; background: var(--accent); transform: scale(0); }
   .rate span { position: relative; }
   #nextCap { position: absolute; left: 90px; top: 930px; font-size: 56px; color: var(--sub); }
-  #nextRow { position: absolute; left: 80px; top: 990px; display: flex; align-items: baseline; }
-  #digit { position: relative; width: 300px; height: 560px; overflow: hidden; }
-  #digit span { position: absolute; left: 0; top: 0; font-size: 560px; font-weight: 700; line-height: 1; letter-spacing: -0.05em; color: var(--accent); }
-  #nextRow .u { font-size: 150px; font-weight: 700; margin-left: 20px; letter-spacing: -0.03em; }
+  #nextRow { position: absolute; left: 80px; top: 850px; display: flex; align-items: baseline; }
+  #digit { position: relative; width: 260px; height: 480px; overflow: hidden; }
+  #digit span { position: absolute; left: 0; top: 0; font-size: 480px; font-weight: 700; line-height: 1; letter-spacing: -0.05em; color: var(--accent); }
+  #nextRow .u { font-size: 130px; font-weight: 700; margin-left: 20px; letter-spacing: -0.03em; }
 
   /* 5. 로고 */
   #s5 { background: var(--accent); text-align: center; color: #fff; }
@@ -73,8 +73,8 @@
   #name { position: absolute; left: 0; right: 0; top: 780px; font-size: 210px; font-weight: 700; letter-spacing: -0.04em; }
   #name span { display: inline-block; }
   #tag { position: absolute; left: 0; right: 0; top: 1050px; font-size: 50px; font-weight: 600; opacity: .85; }
-  #url { position: absolute; left: 150px; width: 780px; top: 1170px; height: 116px; border-radius: 58px; background: #fff; color: var(--accent);
-         display: grid; place-items: center; font-size: 38px; font-weight: 700; }
+  #url { position: absolute; left: 140px; width: 800px; top: 1170px; height: 124px; border-radius: 62px; background: #fff; color: var(--accent);
+         display: grid; place-items: center; font-size: 48px; font-weight: 700; }
 
   .tap { background: rgba(10,10,10,.18); }
   /* 배경에 크게 흐르는 글자 */
@@ -149,7 +149,7 @@
     <div class="rate" id="r1" style="left:320px"><i class="fill"></i><span>어려움</span></div>
     <div class="rate" id="r2" style="left:550px"><i class="fill"></i><span>보통</span></div>
     <div class="rate" id="r3" style="left:780px"><i class="fill"></i><span>쉬움</span></div>
-    <div class="kl" id="nextCapK" style="position:absolute;left:90px;top:930px"><span style="font-size:56px;color:#55575E">다음 복습</span></div>
+    <div class="kl" id="nextCapK" style="position:absolute;left:90px;top:790px"><span style="font-size:56px;color:#55575E">다음 복습</span></div>
     <div id="nextRow">
       <div id="digit"><span id="d3">3</span><span id="d7">7</span></div>
       <div class="kl" id="nextU"><span class="u">일 뒤</span></div>
@@ -175,7 +175,7 @@
     </svg>
     <div id="name"><span>블</span><span>라</span><span>인</span><span>더</span></div>
     <div class="kl" id="tagK" style="position:absolute;left:0;right:0;top:1050px"><span style="font-size:50px;font-weight:600;opacity:.85">외울 그림만 가려 주는 플래시카드</span></div>
-    <div id="url">blinder-api.blinder-app.workers.dev</div>
+    <div id="url">프로필 링크에서 바로 시작 →</div>
   </div>
 
   <div class="bars" id="bars"></div>
@@ -319,20 +319,20 @@ function render(t) {
   rise($("#nextU"), t, b(24.5));
   const tap4 = $("#tap4");
   tap4.style.opacity = 0;
-  for (const [at, x, y] of [[b(23.5), 655, 782], [b(25.5), 885, 782]]) if (t >= at && t <= at + 0.4) tap(tap4, t, at, x, y);
+  for (const [at, x, y] of [[b(23.5), 655, 682], [b(25.5), 885, 682]]) if (t >= at && t <= at + 0.4) tap(tap4, t, at, x, y);
 
   // ── 5. 로고
-  const [lx, ly] = shake(t, [b(28.9)], 12);
+  const [lx, ly] = shake(t, [b(28.15)], 12);
   $("#logo").style.transform = `translate(${lx}px,${ly}px)`;
-  $("#lgCard").style.transform = `scale(${t < b(27.25) ? 0 : backOut((t - b(27.25)) / 0.4)})`;
-  $$("#logo .lgl").forEach((el, i) => set(el, { transformBox: "fill-box", transformOrigin: "left center", transform: `scaleX(${expoOut((t - b(27.75) - i * b(0.25)) / 0.3)})` }));
-  $("#lgBand").style.transform = `scaleX(${expoOut((t - b(28.75)) / 0.14)})`;
+  $("#lgCard").style.transform = `scale(${t < b(27.1) ? 0 : backOut((t - b(27.1)) / 0.4)})`;
+  $$("#logo .lgl").forEach((el, i) => set(el, { transformBox: "fill-box", transformOrigin: "left center", transform: `scaleX(${expoOut((t - b(27.4) - i * b(0.15)) / 0.3)})` }));
+  $("#lgBand").style.transform = `scaleX(${expoOut((t - b(28)) / 0.14)})`;
   $$("#name span").forEach((el, i) => {
-    const a = b(29.25) + i * b(0.25);
+    const a = b(28.25) + i * b(0.25);
     set(el, { transform: `translateY(${lerp(-160, 0, backOut((t - a) / 0.35))}px)`, opacity: clamp((t - a) / 0.05) });
   });
-  rise($("#tagK"), t, b(30.25));
-  set($("#url"), { transform: `scale(${t < b(30.75) ? 0 : backOut((t - b(30.75)) / 0.4)})` });
+  rise($("#tagK"), t, b(29.25));
+  set($("#url"), { transform: `scale(${t < b(29.5) ? 0 : backOut((t - b(29.5)) / 0.4)})` });
 }
 
 start({ duration: 15, render });

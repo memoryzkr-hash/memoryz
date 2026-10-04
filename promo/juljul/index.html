@@ -67,20 +67,20 @@
   #s5 .head { top: 200px; }
   #s5 .kl > span { font-size: 130px; }
   #h5c > span { font-size: 50px !important; color: var(--sub); font-weight: 600; letter-spacing: 0; margin-top: 30px; }
-  #track { position: absolute; top: 900px; left: 0; height: 600px; }
+  #track { position: absolute; top: 690px; left: 0; height: 600px; }
   .st { position: absolute; top: 0; width: 520px; text-align: center; }
   .st .n { font-size: 300px; font-weight: 700; letter-spacing: -0.05em; line-height: 1; font-variant-numeric: tabular-nums; }
   .st .u { font-size: 60px; font-weight: 700; margin-top: 10px; }
-  #rail { position: absolute; left: 0; right: 0; top: 1300px; height: 6px; background: var(--line); }
-  #pin { position: absolute; left: 532px; top: 1272px; width: 16px; height: 62px; border-radius: 8px; background: var(--accent); }
+  #rail { position: absolute; left: 0; right: 0; top: 1100px; height: 6px; background: var(--line); }
+  #pin { position: absolute; left: 532px; top: 1072px; width: 16px; height: 62px; border-radius: 8px; background: var(--accent); }
 
   /* 6. 로고 */
   #s6 { background: var(--accent); color: #fff; text-align: center; }
   #logo { position: absolute; left: 330px; top: 260px; width: 420px; height: 420px; }
   #name { position: absolute; left: 0; right: 0; top: 740px; font-size: 260px; font-weight: 700; letter-spacing: -0.05em; line-height: 1; }
   #name span { display: inline-block; }
-  #url { position: absolute; left: 240px; width: 600px; top: 1190px; height: 116px; border-radius: 58px; background: #fff; color: var(--accent);
-         display: grid; place-items: center; font-size: 44px; font-weight: 700; }
+  #url { position: absolute; left: 140px; width: 800px; top: 1190px; height: 124px; border-radius: 62px; background: #fff; color: var(--accent);
+         display: grid; place-items: center; font-size: 48px; font-weight: 700; }
 </style>
 </head>
 <body>
@@ -164,7 +164,7 @@
     </svg>
     <div id="name"><span>줄</span><span>줄</span></div>
     <div class="kl" id="tagK" style="position:absolute;left:0;right:0;top:1040px"><span style="font-size:52px;font-weight:600;opacity:.9">긴 글을 문단별로 외우는 공부 앱</span></div>
-    <div id="url">sulsul-app.pages.dev</div>
+    <div id="url">프로필 링크에서 바로 시작 →</div>
   </div>
 
   <div class="bars" id="bars"></div>
@@ -210,7 +210,7 @@ $("#bars").innerHTML = Array.from({ length: 12 }, (_, i) =>
   `<i style="top:${i * 160}px;height:162px;background:${COLORS[i % 3]};border-radius:${i % 2 ? "0" : "81px 0 0 81px"}"></i>`).join("");
 const BARS = $$("#bars i");
 
-const M = [b(4), b(9), b(13), b(24), b(28), 14.8];
+const M = [b(4), b(9), b(13), b(24), b(27.5), 14.8];
 const scenes = ["#s1", "#s2", "#s3", "#s4", "#s5", "#s6"].map($);
 const START = [M[5] - 15, ...M.slice(0, 5)];
 
@@ -316,21 +316,21 @@ function render(t) {
   // ── 5. 복습: 날짜 위를 카메라가 달림
   rise($("#h5a"), t, b(24.25)); rise($("#h5b"), t, b(24.75)); rise($("#h5c"), t, b(25.25));
   let pos = 0;
-  for (let k = 1; k < DAYS.length; k++) pos += expoOut((t - b(25) - (k - 1) * b(0.5)) / 0.3);
+  for (let k = 1; k < DAYS.length; k++) pos += expoOut((t - b(25) - (k - 1) * b(0.4)) / 0.25);
   $("#track").style.transform = `translateX(${280 - pos * 520}px)`;
   $$(".st").forEach((el, i) => (el.style.color = Math.abs(i - pos) < 0.5 ? "#3D33D8" : "#D3D4D9"));
 
   // ── 6. 로고
-  $("#lgSq").style.transform = `scale(${t < b(28.25) ? 0 : backOut((t - b(28.25)) / 0.4)})`;
-  $$("#logo .lgl").forEach((el, i) => set(el, { transformBox: "fill-box", transformOrigin: "left center", transform: `scaleX(${expoOut((t - b(28.5) - i * b(0.25)) / 0.3)})` }));
-  $("#lgBox").style.transform = `scale(${t < b(29.25) ? 0 : backOut((t - b(29.25)) / 0.35, 2.6)})`;
-  const [lx, ly] = shake(t, [b(29.75), b(30.25)].map((a) => a + 0.12), 12);
+  $("#lgSq").style.transform = `scale(${t < b(27.6) ? 0 : backOut((t - b(27.6)) / 0.4)})`;
+  $$("#logo .lgl").forEach((el, i) => set(el, { transformBox: "fill-box", transformOrigin: "left center", transform: `scaleX(${expoOut((t - b(27.8) - i * b(0.15)) / 0.3)})` }));
+  $("#lgBox").style.transform = `scale(${t < b(28.25) ? 0 : backOut((t - b(28.25)) / 0.35, 2.6)})`;
+  const [lx, ly] = shake(t, [b(28.5), b(29)].map((a) => a + 0.12), 12);
   $$("#name span").forEach((el, i) => {
-    const a = b(29.75) + i * b(0.5);
-    set(el, { transform: `translate(${lx}px,${lerp(-300, 0, backOut((t - a) / 0.4, 1.4)) + ly}px)`, opacity: t < a ? 0 : 1 });
+    const a = b(28.5) + i * b(0.5);
+    set(el, { transform: `translate(${lx}px,${lerp(260, 0, backOut((t - a) / 0.4, 1.4)) + ly}px) scale(${lerp(0.6, 1, expoOut((t - a) / 0.3))})`, opacity: clamp((t - a) / 0.06) });
   });
-  rise($("#tagK"), t, b(30.75));
-  $("#url").style.transform = `scale(${t < b(31.25) ? 0 : backOut((t - b(31.25)) / 0.35)})`;
+  rise($("#tagK"), t, b(29.25));
+  $("#url").style.transform = `scale(${t < b(29.5) ? 0 : backOut((t - b(29.5)) / 0.35)})`;
   $("#mq6").style.transform = `translateX(${-200 - (t - M[4]) * 280}px)`;
 }
 

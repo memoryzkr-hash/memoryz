@@ -258,13 +258,13 @@ def blinder(fx):
         add(fx, bt(22.75) + i * bt(0.25), pop(520 + i * 80, 0.12))
     add(fx, bt(23.5), tap()); add(fx, bt(25.5), tap())
     add(fx, bt(24.25), whoosh(0.4, 0.1)); add(fx, bt(25.7), whoosh(0.35, 0.1))
-    add(fx, bt(27.25), pop(440, 0.18))
+    add(fx, bt(27.1), pop(440, 0.18))
     for i in range(3):
-        add(fx, bt(27.75) + i * bt(0.25), tick(0.18, 1500))
-    add(fx, bt(28.75), impact(0.8))             # 로고 가림막
+        add(fx, bt(27.4) + i * bt(0.15), tick(0.18, 1500))
+    add(fx, bt(28), impact(0.8))                # 로고 가림막
     for i in range(4):
-        add(fx, bt(29.25) + i * bt(0.25), pop(600 + i * 120, 0.12))
-    add(fx, bt(30.75), ding(1175, 0.14, 0.9))
+        add(fx, bt(28.25) + i * bt(0.25), pop(600 + i * 120, 0.12))
+    add(fx, bt(29.5), ding(1175, 0.14, 0.9))    # 마지막 안내 문구
 
 
 def juljul(fx):
@@ -293,18 +293,18 @@ def juljul(fx):
         add(fx, bt(21.75) + 0.05 + k * 0.045, typing(0.09))
     add(fx, bt(21.75) + 0.7, ding(1175, 0.13, 0.6))
     for k in range(5):                          # 날짜 위를 달림
-        add(fx, bt(25) + k * bt(0.5), whoosh(0.25, 0.1)); add(fx, bt(25) + k * bt(0.5) + 0.12, pop(523 + k * 90, 0.12))
-    add(fx, bt(28.25), pop(440, 0.18))
+        add(fx, bt(25) + k * bt(0.4), whoosh(0.25, 0.1)); add(fx, bt(25) + k * bt(0.4) + 0.1, pop(523 + k * 90, 0.12))
+    add(fx, bt(27.6), pop(440, 0.18))
     for i in range(3):
-        add(fx, bt(28.5) + i * bt(0.25), tick(0.18, 1500))
-    add(fx, bt(29.25), pop(990, 0.16))
-    add(fx, bt(29.75) + 0.12, impact(0.7)); add(fx, bt(30.25) + 0.12, impact(0.7))
-    add(fx, bt(31.25), ding(1175, 0.14, 0.9))
+        add(fx, bt(27.8) + i * bt(0.15), tick(0.18, 1500))
+    add(fx, bt(28.25), pop(990, 0.16))
+    add(fx, bt(28.5) + 0.12, impact(0.7)); add(fx, bt(29) + 0.12, impact(0.7))
+    add(fx, bt(29.5), ding(1175, 0.14, 0.9))    # 마지막 안내 문구
 
 
 TRANSITIONS = {
     "blinder": [bt(4), bt(14), bt(21), bt(27), 14.8],
-    "juljul": [bt(4), bt(9), bt(13), bt(24), bt(28), 14.8],
+    "juljul": [bt(4), bt(9), bt(13), bt(24), bt(27.5), 14.8],
 }
 
 

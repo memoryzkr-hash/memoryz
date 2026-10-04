@@ -41,14 +41,14 @@ Y1="230+60*pow(2,-10*max(0,t-0.25)/0.35)"
 Y2="300+120*pow(2,-10*max(0,t-0.47)/0.35)"
 ffmpeg -y -loglevel error \
   -i "$HOOK" -i "$OUT/$NAME.mp4" -i "$OUT/${NAME}_lead.wav" \
-  -f lavfi -i "color=c=black:s=1080x1920:d=$HOOK_LEN:r=60,format=rgba,geq=r=0:g=0:b=0:a='255*0.72*pow(max(0\,1-Y/820)\,1.4)'" \
+  -f lavfi -i "color=c=black:s=1080x1920:d=$HOOK_LEN:r=60,format=rgba,geq=r=0:g=0:b=0:a='255*0.82*pow(max(0\,1-Y/1050)\,1.1)'" \
   -filter_complex "
     [0:v]trim=start=$START:duration=$HOOK_LEN,setpts=PTS-STARTPTS,fps=60,
          scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,setsar=1,
          format=rgba[hv]; [hv][3:v]overlay=0:0,
          drawbox=x=80:y=1460:w='min(920,920*max(0,t-0.9)/0.25)':h=14:color=0x3D33D8:t=fill,
-         drawtext=fontfile=$FONT_S:textfile=$TMP/kicker.txt:fontsize=52:fontcolor=white:shadowcolor=black@0.35:shadowy=3:x=80:y='$Y1':alpha='$A1',
-         drawtext=fontfile=$FONT_B:textfile=$TMP/title.txt:fontsize=124:line_spacing=10:fontcolor=white:shadowcolor=black@0.35:shadowy=4:x=80:y='$Y2':alpha='$A2',
+         drawtext=fontfile=$FONT_S:textfile=$TMP/kicker.txt:fontsize=52:fontcolor=white:shadowcolor=black@0.55:shadowx=0:shadowy=3:x=80:y='$Y1':alpha='$A1',
+         drawtext=fontfile=$FONT_B:textfile=$TMP/title.txt:fontsize=124:line_spacing=10:fontcolor=white:shadowcolor=black@0.55:shadowx=0:shadowy=5:x=80:y='$Y2':alpha='$A2',
          format=yuv420p[h];
     [1:v]fps=60,format=yuv420p,setsar=1[a];
     [h][a]xfade=transition=slideleft:duration=$XFADE:offset=$LEAD[v]" \
