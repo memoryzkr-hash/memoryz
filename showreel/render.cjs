@@ -15,7 +15,7 @@ const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/cs
     if (!p.startsWith(root) || !fs.existsSync(p)) { res.writeHead(404); return res.end(); }
     res.writeHead(200, { 'Content-Type': types[path.extname(p)] || 'application/octet-stream' }); fs.createReadStream(p).pipe(res);
   }).listen(0);
-  const url = `http://127.0.0.1:${server.address().port}/index.html`;
+  const url = `http://127.0.0.1:${server.address().port}/${process.env.PAGE || 'index.html'}`;
   const frames = []; for (let f = start; f < end; f += step) frames.push(f);
   let next = 0, done = 0; const t0 = Date.now();
   await Promise.all(Array.from({ length: workers }, async () => {
@@ -23,6 +23,8 @@ const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/cs
     const page = await browser.newPage({ viewport: { width: 1080, height: 1920 } });
     page.on('pageerror', e => { console.error('PAGE ERROR', e); process.exit(1); });
     await page.goto(url); await page.evaluate(() => { document.body.classList.add('capture'); return window.READY; });
+    const ev = await page.evaluate(() => window.EVENTS ? window.EVENTS() : null);
+    if (ev) fs.writeFileSync(path.join(outDir, 'events.json'), JSON.stringify(ev));
     while (next < frames.length) {
       const f = frames[next++];
       const b64 = await page.evaluate(([f, S]) => { window.renderFrame(f, S); return document.getElementById('c').toDataURL('image/png').slice(22); }, [f, S]);

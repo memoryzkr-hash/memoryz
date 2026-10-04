@@ -28,3 +28,20 @@ whooshes, risers, Freeverb-style reverb), with cues timed to the picture.
 ```
 
 Fonts: Anton, Inter Tight, Instrument Serif, JetBrains Mono (SIL OFL, via Google Fonts).
+
+## People
+
+**Code-drawn: [`code-character.mp4`](code-character.mp4)** (6s). A 14-joint 2D rig (`person.js`). Legs use
+2-bone IK against procedural foot paths, so the feet stay planted on the scrolling ground. The walk
+ramps into a run (with onion skins), then she does a front flip with a squash-and-stretch landing and
+waves. There are no keyframes: every pose is a function of time. Footsteps in the soundtrack
+(`person-audio.cjs`) come from the rig's gait phase. To rebuild:
+
+```bash
+PAGE=person.html node render.cjs /tmp/pf 0 360 4 4 && node person-audio.cjs /tmp/pf/events.json /tmp/person.wav
+ffmpeg -framerate 60 -i /tmp/pf/f%04d.png -i /tmp/person.wav -c:v libx264 -crf 20 -pix_fmt yuv420p -c:a aac -shortest code-character.mp4
+```
+
+**AI-generated: [`ai/ai-person.jpg`](ai/ai-person.jpg), [`ai/ai-person.mp4`](ai/ai-person.mp4)** (5s, no audio). A fictional
+person, made with Higgsfield (Soul 2 for the still, Seedance 2.5 image-to-video at 1080p). She has the
+same black bob and cream sweater as the code-drawn character.
