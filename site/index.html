@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#FBFBFD">
 <meta name="description" content="블라인더와 줄줄, 시험 공부를 돕는 두 앱">
 <title>memoryz</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -25,7 +26,9 @@
 }
 *{box-sizing:border-box}
 [hidden]{display:none!important}
-html{scroll-padding-top:calc(var(--gh) + var(--lh) + 8px)}
+html{scroll-padding-top:calc(var(--gh) + var(--lh) + 8px);-webkit-text-size-adjust:100%;text-size-adjust:100%}
+*{-webkit-tap-highlight-color:transparent}
+body.lock{overflow:hidden}
 body{margin:0;background:var(--white);color:var(--ink);font-family:var(--sans);font-size:17px;line-height:1.47;letter-spacing:-.022em;-webkit-font-smoothing:antialiased;word-break:keep-all;overflow-wrap:anywhere}
 button,input{font:inherit;color:inherit;letter-spacing:inherit}
 button{cursor:pointer}
@@ -344,6 +347,77 @@ footer .notes li::before{content:counter(fn) ".";flex:0 0 auto}
 .fbot{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px 24px;padding-top:16px}
 .fbot .crumbs{color:#424245}
 
+
+/* ---------- 휴대폰 ---------- */
+.mbtn,.lbtn{display:none}
+.dots{display:none}
+.pbar{display:none}
+@media (max-width:760px){
+  .gnav ul,.gnav .go{display:none!important}
+  .brand{margin-right:auto}
+  .mbtn{display:grid;place-items:center;width:44px;height:44px;margin-right:-12px;border:0;background:none;padding:0}
+  .mbtn i{display:block;width:17px;height:1.5px;background:var(--ink);border-radius:1px;transition:transform .25s}
+  .mbtn i + i{margin-top:5px}
+  .mbtn span{display:grid}
+  .mbtn[aria-expanded="true"] i:first-child{transform:translateY(3.25px) rotate(45deg)}
+  .mbtn[aria-expanded="true"] i:last-child{transform:translateY(-3.25px) rotate(-45deg)}
+  .msheet{position:fixed;left:0;right:0;bottom:0;top:calc(env(safe-area-inset-top,0px) + var(--gh));background:#FBFBFD;z-index:39;overflow-y:auto;overscroll-behavior:contain;padding:18px 0 calc(40px + env(safe-area-inset-bottom,0px))}
+  .msheet .big{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+  .msheet .big a{display:block;font-size:28px;font-weight:600;letter-spacing:-.02em;padding:6px 0}
+  .msheet h4{margin:30px 0 8px;font-size:12px;font-weight:400;color:var(--sub)}
+  .msheet .small{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+  .msheet .small a{display:block;font-size:17px;font-weight:600;padding:8px 0}
+
+  .lnav .pn{margin-right:0}
+  .lbtn{display:grid;place-items:center;width:36px;height:36px;margin-right:auto;border:0;background:none;padding:0;color:var(--sub)}
+  .lbtn svg{transition:transform .25s}
+  .lnav.open .lbtn svg{transform:rotate(180deg)}
+  .lsheet{position:absolute;left:0;right:0;top:100%;background:rgba(255,255,255,.97);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid rgba(0,0,0,.12);padding:6px 0 16px;display:none}
+  .lnav.open .lsheet{display:block}
+  .lsheet a{display:block;padding:12px 0;font-size:17px;border-bottom:1px solid #E8E8ED}
+  .lsheet a:last-child{border-bottom:0}
+
+  .hero{padding-top:40px}
+  .stage{margin-top:36px}
+  .under{margin-bottom:56px}
+  .band{padding-block:72px}
+  .stats{margin-top:40px}
+  .tile{padding:40px 20px 0;min-height:0}
+  .tile .vis{padding-block:28px 32px}
+  .tile p.d{font-size:17px}
+  .crop{height:330px;padding-top:28px}
+
+  /* 기능 타일은 옆으로 넘겨 보기 */
+  .tiles.swipe{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:12px;padding:12px 22px 8px;scroll-padding-inline:22px;scrollbar-width:none;overscroll-behavior-x:contain}
+  .tiles.swipe::-webkit-scrollbar{display:none}
+  .tiles.swipe > .tile{flex:0 0 86%;scroll-snap-align:start;border-radius:22px;min-height:560px}
+  .dots{display:flex;justify-content:center;gap:4px;margin:6px 0 20px}
+  .dots button{width:28px;height:28px;border:0;background:none;padding:0;display:grid;place-items:center}
+  .dots button::before{content:"";width:8px;height:8px;border-radius:50%;background:#C7C7CC;transition:background-color .2s,width .2s}
+  .dots button[aria-current="true"]::before{background:var(--ink);width:20px;border-radius:4px}
+
+  .phone .scr{min-height:600px}
+  .tablet{padding:6px;border-radius:20px}
+  .tablet .scr{border-radius:15px}
+  .t-bar{height:46px;padding:0 12px}
+  .t-body{padding:10px;gap:10px}
+  .fig{padding:2px}
+  .t-ctrl .hint{font-size:12px}
+  .inp{font-size:16px}
+
+  .pick .hd h3{font-size:22px}
+  .pick .hd p{font-size:14px}
+  .pick .v{font-size:15px;padding-inline:8px}
+  .pick .v small{font-size:13px}
+  .pbar{display:grid;grid-column:1/-1;grid-template-columns:1fr 1fr;position:sticky;top:calc(env(safe-area-inset-top,0px) + var(--gh));z-index:5;background:rgba(255,255,255,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--hair);margin-inline:-22px;padding:10px 22px;font-size:15px;font-weight:700}
+  .faq summary{font-size:17px}
+  .contact code{font-size:19px}
+}
+/* 블라인더 가림막은 손가락으로 누르기 쉽게 누르는 범위를 넓힌다 */
+.live .mk{stroke:rgba(0,0,0,0);stroke-width:16}
+.live .mk.open{stroke:#0A0A0A;stroke-width:1.2}
+.passage{-webkit-touch-callout:none}
+
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 </style>
 </head>
@@ -371,8 +445,19 @@ footer .notes li::before{content:counter(fn) ".";flex:0 0 auto}
       <li><a class="gl" href="#support" data-v="support">고객지원</a></li>
     </ul>
     <a class="go" href="#home-pick">나에게 맞는 앱</a>
+    <button type="button" class="mbtn" id="mbtn" aria-expanded="false" aria-controls="msheet" aria-label="메뉴 열기"><span><i></i><i></i></span></button>
   </div>
 </header>
+  <div class="msheet" id="msheet" hidden>
+    <div class="wrap">
+      <ul class="big"><li><a href="#blinder">블라인더</a></li><li><a href="#juljul">줄줄</a></li><li><a href="#support">고객지원</a></li><li><a href="#home-pick">나에게 맞는 앱</a></li></ul>
+      <h4>블라인더 살펴보기</h4>
+      <ul class="small"><li><a href="#blinder-find">그림 자동 찾기</a></li><li><a href="#blinder-more">기능</a></li><li><a href="#blinder-price">요금</a></li><li><a href="https://blinder-api.blinder-app.workers.dev" target="_blank" rel="noopener">웹앱 열기</a></li></ul>
+      <h4>줄줄 살펴보기</h4>
+      <ul class="small"><li><a href="#juljul-six">6단계 암기</a></li><li><a href="#juljul-more">기능</a></li><li><a href="#juljul-price">요금</a></li><li><a href="https://sulsul-app.pages.dev" target="_blank" rel="noopener">웹앱 열기</a></li></ul>
+    </div>
+  </div>
+
 
 <main>
 <!-- ===================== 홈 ===================== -->
@@ -405,6 +490,8 @@ footer .notes li::before{content:counter(fn) ".";flex:0 0 auto}
         </div>
       </div>
     </a>
+    </div>
+  <div class="tiles swipe" style="padding-top:0">
     <a class="tile" href="#blinder-find">
       <div class="k">블라인더</div>
       <h2>PDF를 넣으면,<br>그림을 골라요.</h2>
@@ -438,6 +525,7 @@ footer .notes li::before{content:counter(fn) ".";flex:0 0 auto}
       <div class="pick">
         <div class="hd"><span class="logo-bm"></span><h3>블라인더</h3><p>그림의 이름표만 가려 주는 플래시카드</p><div class="acts"><a class="pill sm" href="https://blinder-api.blinder-app.workers.dev" target="_blank" rel="noopener">써 보기</a><a class="more" style="font-size:14px" href="#blinder">더 알아보기</a></div></div>
         <div class="hd"><span class="logo-m"></span><h3>줄줄</h3><p>긴 글을 정리하고 6단계로 외우는 앱</p><div class="acts"><a class="pill sm" href="https://sulsul-app.pages.dev" target="_blank" rel="noopener">시작하기</a><a class="more" style="font-size:14px" href="#juljul">더 알아보기</a></div></div>
+        <div class="pbar" aria-hidden="true"><span>블라인더</span><span>줄줄</span></div>
         <div class="rl">이런 걸 외울 때</div>
         <div class="v">그림 속 이름<small>구조식, 해부도, 세포 그림</small></div>
         <div class="v">긴 글<small>지문, 발표문, 모범 답안</small></div>
@@ -471,9 +559,10 @@ footer .notes li::before{content:counter(fn) ".";flex:0 0 auto}
 <div class="view" id="v-juljul" hidden>
   <nav class="lnav" aria-label="줄줄 메뉴"><div class="wrap">
     <a class="pn" href="#juljul"><span class="logo-s"></span>줄줄</a>
+    <button type="button" class="lbtn" aria-expanded="false" aria-label="구역 메뉴 열기"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2.5 5l4.5 4.5L11.5 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
     <a class="ll" href="#juljul-six">6단계 암기</a><a class="ll" href="#juljul-more">기능</a><a class="ll" href="#juljul-price">요금</a>
     <a class="pill sm" href="https://sulsul-app.pages.dev" target="_blank" rel="noopener">시작하기</a>
-  </div></nav>
+  </div><div class="lsheet"><div class="wrap" style="height:auto;display:block"><a href="#juljul-six">6단계 암기</a><a href="#juljul-more">기능</a><a href="#juljul-how">쓰는 방법</a><a href="#juljul-price">요금</a></div></div></nav>
 
   <section class="hero">
     <div class="wrap">
@@ -524,7 +613,7 @@ footer .notes li::before{content:counter(fn) ".";flex:0 0 auto}
     </div>
   </section>
 
-  <div class="tiles" id="juljul-more">
+  <div class="tiles swipe" id="juljul-more">
     <div class="tile">
       <div class="k">AI 문단 정리</div>
       <h2>문단마다,<br>한 줄로 정리.</h2>
@@ -625,9 +714,10 @@ footer .notes li::before{content:counter(fn) ".";flex:0 0 auto}
 <div class="view" id="v-blinder" hidden>
   <nav class="lnav" aria-label="블라인더 메뉴"><div class="wrap">
     <a class="pn" href="#blinder"><span class="logo-b"></span>블라인더</a>
+    <button type="button" class="lbtn" aria-expanded="false" aria-label="구역 메뉴 열기"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2.5 5l4.5 4.5L11.5 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
     <a class="ll" href="#blinder-find">그림 자동 찾기</a><a class="ll" href="#blinder-more">기능</a><a class="ll" href="#blinder-price">요금</a>
     <a class="pill sm" href="https://blinder-api.blinder-app.workers.dev" target="_blank" rel="noopener">써 보기</a>
-  </div></nav>
+  </div><div class="lsheet"><div class="wrap" style="height:auto;display:block"><a href="#blinder-find">그림 자동 찾기</a><a href="#blinder-more">기능</a><a href="#blinder-safe">내 자료 보호</a><a href="#blinder-price">요금</a></div></div></nav>
 
   <section class="hero">
     <div class="wrap">
@@ -665,7 +755,7 @@ footer .notes li::before{content:counter(fn) ".";flex:0 0 auto}
     </div>
   </section>
 
-  <div class="tiles" id="blinder-more">
+  <div class="tiles swipe" id="blinder-more">
     <div class="tile">
       <div class="k">형광펜·별표 표시 카드</div>
       <h2>칠하고 별표 친 곳도,<br>카드로.</h2>
@@ -1003,6 +1093,44 @@ footer .notes li::before{content:counter(fn) ".";flex:0 0 auto}
     t.replaceWith(d);
   });
 
+
+  /* ---------- 휴대폰 메뉴 ---------- */
+  var mbtn = $('mbtn'), msheet = $('msheet');
+  function menu(open){
+    msheet.hidden = !open; mbtn.setAttribute('aria-expanded', String(open));
+    mbtn.setAttribute('aria-label', open ? '메뉴 닫기' : '메뉴 열기');
+    document.body.classList.toggle('lock', open);
+  }
+  mbtn.addEventListener('click', function(){ menu(msheet.hidden); });
+  msheet.addEventListener('click', function(e){ if (e.target.closest('a')) menu(false); });
+  document.querySelectorAll('.lnav').forEach(function(nav){
+    var b = nav.querySelector('.lbtn');
+    b.addEventListener('click', function(){ var o = !nav.classList.contains('open'); nav.classList.toggle('open', o); b.setAttribute('aria-expanded', String(o)); });
+    nav.querySelector('.lsheet').addEventListener('click', function(e){ if (e.target.closest('a')){ nav.classList.remove('open'); b.setAttribute('aria-expanded','false'); } });
+  });
+  window.addEventListener('keydown', function(e){ if (e.key === 'Escape'){ menu(false); document.querySelectorAll('.lnav.open').forEach(function(n){ n.classList.remove('open'); }); } });
+
+  /* ---------- 넘겨 보는 타일의 점 ---------- */
+  var marks = [];
+  document.querySelectorAll('.tiles.swipe').forEach(function(row){
+    var tiles = row.querySelectorAll(':scope > .tile'), dots = document.createElement('div');
+    dots.className = 'dots'; dots.setAttribute('aria-label', '카드 넘기기');
+    tiles.forEach(function(t, i){
+      var b = document.createElement('button'); b.type = 'button'; b.setAttribute('aria-label', (i+1) + '번째 카드');
+      b.addEventListener('click', function(){ row.scrollTo({left: t.offsetLeft - row.offsetLeft - 22, behavior:'smooth'}); });
+      dots.appendChild(b);
+    });
+    row.after(dots);
+    function mark(){
+      var w = tiles[0].getBoundingClientRect().width + 12, k = Math.round(row.scrollLeft / (w || 1));
+      if (!row.clientWidth) return;
+      if (row.scrollLeft > 0 && row.scrollLeft + row.clientWidth >= row.scrollWidth - 4) k = tiles.length - 1;
+      dots.querySelectorAll('button').forEach(function(b, i){ b.setAttribute('aria-current', String(i === k)); });
+    }
+    row.addEventListener('scroll', function(){ requestAnimationFrame(mark); }, {passive:true});
+    marks.push(mark); mark();
+  });
+
   /* ---------- 페이지 이동 ---------- */
   var NOTES = {
     home: ['블라인더는 처음 자료 3개까지 무료예요. 줄줄 무료 이용은 자료 3개, AI 정리 하루 3번까지예요.',
@@ -1023,6 +1151,8 @@ footer .notes li::before{content:counter(fn) ".";flex:0 0 auto}
     var h = (location.hash || '#home').slice(1);
     var v = h.split('-')[0];
     if (!$('v-' + v)) { v = 'home'; h = 'home'; }
+    if (typeof menu === 'function') menu(false);
+    document.querySelectorAll('.lnav.open').forEach(function(n){ n.classList.remove('open'); });
     if (v !== shown){
       document.querySelectorAll('.view').forEach(function(el){ el.hidden = el.id !== 'v-' + v; });
       document.querySelectorAll('.gl').forEach(function(a){ if (a.dataset.v === v) a.setAttribute('aria-current','page'); else a.removeAttribute('aria-current'); });
@@ -1031,12 +1161,14 @@ footer .notes li::before{content:counter(fn) ".";flex:0 0 auto}
       $('crumbs').textContent = CRUMB[v];
       if (v === 'blinder'){ var hb = $('heroBl'); hb.classList.remove('open'); setTimeout(function(){ hb.classList.add('open'); }, 900); }
       shown = v;
+      requestAnimationFrame(function(){ marks.forEach(function(f){ f(); }); });
     }
     var target = h !== v ? $(h) : null;
     if (target) requestAnimationFrame(function(){ target.scrollIntoView({behavior:'smooth', block:'start'}); });
     else window.scrollTo(0, 0);
   }
   window.addEventListener('hashchange', route);
+  window.addEventListener('resize', function(){ marks.forEach(function(f){ f(); }); });
   route();
 
   /* 펼침 메뉴: 항목을 누르면 접기 */
