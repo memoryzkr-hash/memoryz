@@ -1,10 +1,11 @@
-"""영상에 맞춘 효과음을 직접 합성해서 MP4에 붙인다(외부 음원 없음 → 저작권 걱정 없음).
+"""영상에 맞춘 128BPM 비트와 효과음을 직접 합성해서 MP4에 붙인다(외부 음원 없음 → 저작권 걱정 없음).
 
     python3 promo/sound.py blinder   → promo/out/blinder_sound.mp4
     python3 promo/sound.py juljul    → promo/out/juljul_sound.mp4
     python3 promo/sound.py juljul --lead 2.7 --wav-only  → 앞에 2.7초 도입 장면이 붙는 판의 소리(wav)만
 
-소리 시각은 각 영상 index.html 의 시간표와 맞춘다. 영상 시간표를 바꾸면 여기 EVENTS 도 같이 바꾼다.
+시각은 박(beat) 단위로 적는다. 15초 = 32박 = 8마디라서 끝과 처음이 그대로 이어진다.
+영상 index.html 의 b(n) 시각과 같은 숫자를 쓴다.
 """
 import math
 import random
@@ -18,43 +19,136 @@ from pathlib import Path
 SR = 48000
 DUR = 15.0
 N = int(SR * DUR)
+BEAT = 60 / 128
 ROOT = Path(__file__).resolve().parent
+LEAD = 0.0  # 앞에 붙는 도입 장면 길이(초). 0이면 15초 반복 재생용
 random.seed(7)
 
 
-LEAD = 0.0  # 앞에 붙는 도입 장면 길이(초). 0이면 15초 반복 재생용
+def bt(n):
+    return n * BEAT
 
 
-def add(buf, start, samples):
-    i0 = int((start + LEAD) * SR)
+def add(buf, start, samples, gain=1.0):
+    i0 = int(round((start + LEAD) * SR))
     n = len(buf)
     for k, v in enumerate(samples):
         j = i0 + k
         if LEAD == 0:
             j %= n  # 끝을 넘으면 앞으로 감아서 반복 재생 때도 이어지게
+        elif j < 0:
+            continue
         elif j >= n:
             break
-        buf[j] += v
+        buf[j] += v * gain
 
 
-def env_decay(n, rate):
-    return [math.exp(-rate * k / SR) for k in range(n)]
+# ── 악기 ─────────────────────────────────────────────
+
+def kick(vol=0.65):
+    n = int(0.32 * SR)
+    out, ph = [], 0.0
+    for k in range(n):
+        t = k / SR
+        f = 45 + 110 * math.exp(-t * 32)
+        ph += 2 * math.pi * f / SR
+        click = math.exp(-t * 900) * 0.4
+        out.append(vol * (math.exp(-t * 9) * math.sin(ph) + click))
+    return out
+
+
+def clap(vol=0.24):
+    n = int(0.25 * SR)
+    out, prev = [], 0.0
+    for k in range(n):
+        t = k / SR
+        w = random.uniform(-1, 1)
+        hp = w - prev
+        prev = w
+        # 손뼉 세 번이 겹친 느낌
+        e = sum(math.exp(-(t - d) * 40) for d in (0, 0.011, 0.022) if t >= d) / 2
+        out.append(vol * e * (0.8 * hp + 0.3 * math.sin(2 * math.pi * 190 * t) * math.exp(-t * 30)))
+    return out
+
+
+def hat(vol=0.12, decay=55):
+    n = int(0.09 * SR)
+    out, prev = [], 0.0
+    for k in range(n):
+        w = random.uniform(-1, 1)
+        out.append(vol * math.exp(-decay * k / SR) * (w - prev))
+        prev = w
+    return out
+
+
+def bass(f, dur, vol=0.32):
+    n = int(dur * SR)
+    out = []
+    for k in range(n):
+        t = k / SR
+        env = min(1, t / 0.005) * math.exp(-t * 7)
+        s = sum(math.sin(2 * math.pi * f * h * t) / h for h in (1, 2, 3, 4))
+        out.append(vol * env * s * 0.6)
+    return out
+
+
+def pluck(freqs, vol=0.09, decay=7):
+    n = int(0.5 * SR)
+    out = []
+    for k in range(n):
+        t = k / SR
+        env = min(1, t / 0.003) * math.exp(-t * decay)
+        s = 0.0
+        for f in freqs:
+            s += math.sin(2 * math.pi * f * t) + 0.35 * math.sin(4 * math.pi * f * t) * math.exp(-t * 14)
+        out.append(vol * env * s)
+    return out
+
+
+def riser(dur, vol=0.18):
+    n = int(dur * SR)
+    out, lp = [], 0.0
+    for k in range(n):
+        x = k / n
+        lp += (0.02 + 0.5 * x * x) * (random.uniform(-1, 1) - lp)
+        out.append(vol * x * x * lp * 2)
+    return out
+
+
+def crash(vol=0.11, length=1.1):
+    n = int(length * SR)
+    out, prev = [], 0.0
+    for k in range(n):
+        w = random.uniform(-1, 1)
+        out.append(vol * math.exp(-4 * k / SR) * (w - prev))
+        prev = w
+    return out
+
+
+def impact(vol=0.7):
+    """가림막이 '쾅' 닿는 소리"""
+    n = int(0.22 * SR)
+    out, ph, lp = [], 0.0, 0.0
+    for k in range(n):
+        t = k / SR
+        f = 60 + 160 * math.exp(-t * 40)
+        ph += 2 * math.pi * f / SR
+        lp += 0.3 * (random.uniform(-1, 1) - lp)
+        out.append(vol * (math.exp(-t * 18) * math.sin(ph) + 0.5 * math.exp(-t * 60) * lp))
+    return out
 
 
 def tick(vol=0.25, f=1900):
     n = int(0.03 * SR)
-    e = env_decay(n, 140)
-    return [vol * e[k] * math.sin(2 * math.pi * f * k / SR) for k in range(n)]
+    return [vol * math.exp(-140 * k / SR) * math.sin(2 * math.pi * f * k / SR) for k in range(n)]
 
 
 def tap(vol=0.35):
-    """손끝으로 누르는 둔한 소리"""
     n = int(0.06 * SR)
     out, lp = [], 0.0
     for k in range(n):
         lp += 0.12 * (random.uniform(-1, 1) - lp)
-        body = math.sin(2 * math.pi * 320 * k / SR)
-        out.append(vol * math.exp(-70 * k / SR) * (0.55 * body + 0.9 * lp))
+        out.append(vol * math.exp(-70 * k / SR) * (0.55 * math.sin(2 * math.pi * 320 * k / SR) + 0.9 * lp))
     return out
 
 
@@ -63,38 +157,25 @@ def pop(f=660, vol=0.22, up=True):
     out, ph = [], 0.0
     for k in range(n):
         x = k / n
-        ff = f * (1 + (0.25 if up else -0.2) * min(1, x * 4))
+        ff = f * (1 + (0.3 if up else -0.2) * min(1, x * 4))
         ph += 2 * math.pi * ff / SR
-        a = min(1, k / (0.004 * SR)) * math.exp(-22 * k / SR)
-        out.append(vol * a * math.sin(ph))
+        out.append(vol * min(1, k / (0.004 * SR)) * math.exp(-22 * k / SR) * math.sin(ph))
     return out
 
 
 def ding(f=880, vol=0.16, length=0.7):
     n = int(length * SR)
     return [vol * math.exp(-6 * k / SR) * min(1, k / (0.003 * SR))
-            * (math.sin(2 * math.pi * f * k / SR) + 0.25 * math.sin(2 * math.pi * 2 * f * k / SR))
-            for k in range(n)]
+            * (math.sin(2 * math.pi * f * k / SR) + 0.25 * math.sin(4 * math.pi * f * k / SR)) for k in range(n)]
 
 
-def whoosh(dur=0.35, vol=0.12):
+def whoosh(dur=0.35, vol=0.14):
     n = int(dur * SR)
     out, lp = [], 0.0
     for k in range(n):
         x = k / n
-        cut = 0.02 + 0.18 * math.sin(math.pi * x)
-        lp += cut * (random.uniform(-1, 1) - lp)
+        lp += (0.02 + 0.2 * math.sin(math.pi * x)) * (random.uniform(-1, 1) - lp)
         out.append(vol * (math.sin(math.pi * x) ** 2) * lp * 3)
-    return out
-
-
-def glide(f0, f1, dur=0.4, vol=0.1):
-    n = int(dur * SR)
-    out, ph = [], 0.0
-    for k in range(n):
-        x = k / n
-        ph += 2 * math.pi * (f0 + (f1 - f0) * x) / SR
-        out.append(vol * math.sin(math.pi * x) * math.sin(ph))
     return out
 
 
@@ -103,79 +184,124 @@ def typing(vol=0.12):
     out, prev = [], 0.0
     for k in range(n):
         w = random.uniform(-1, 1)
-        out.append(vol * math.exp(-260 * k / SR) * (w - prev))  # 고역만 남겨 '톡'
+        out.append(vol * math.exp(-260 * k / SR) * (w - prev))
         prev = w
     return out
 
 
-def pad(buf, vol=0.016):
-    """아주 작게 깔리는 화음. 주파수를 1/15Hz 배수로 맞춰 15초 끝과 처음이 이어진다."""
-    notes = [220.0, 277.18, 329.63, 415.30]
-    notes = [round(f * DUR) / DUR for f in notes]
-    lfo_f = 2 / DUR
+# ── 비트 ─────────────────────────────────────────────
+
+# 마디마다 화음: Am · F · C · G 두 번 (8마디 = 15초)
+ROOTS = [110.0, 87.31, 130.81, 98.0]
+CHORDS = [[440.0, 523.25, 659.25], [349.23, 440.0, 523.25], [392.0, 523.25, 659.25], [392.0, 493.88, 587.33]]
+
+
+def music(drums, synth, transitions):
+    first = -math.ceil(LEAD / BEAT) if LEAD else 0
+    for n in range(first, 32):
+        t = bt(n)
+        bar = (n // 4) % 4
+        add(drums, t, kick())
+        if n % 2 == 1:
+            add(drums, t, clap())
+        add(drums, t + BEAT / 2, hat(0.09, 45))
+        add(drums, t + BEAT / 4, hat(0.035))
+        add(drums, t + 3 * BEAT / 4, hat(0.035))
+        add(synth, t + BEAT / 2, bass(ROOTS[bar], BEAT / 2 * 0.95))
+        if n % 4 in (1, 3):
+            add(synth, t + BEAT * 0.75, pluck(CHORDS[bar]))
+        if n % 4 == 2:
+            add(synth, t + BEAT * 0.5, pluck(CHORDS[bar], 0.06))
+    for m in transitions:
+        add(drums, m - 0.6, riser(0.6))
+        add(drums, m, crash())
+
+
+def sidechain(buf):
+    """킥마다 신스 소리를 잠깐 눌러서 '펌핑'"""
+    first = -math.ceil(LEAD / BEAT) if LEAD else 0
+    hits = [bt(n) + LEAD for n in range(first, 32) if bt(n) + LEAD >= 0]
+    j = 0
     for k in range(len(buf)):
         t = k / SR
-        fade = min(1.0, t / 1.5) if LEAD else 1.0
-        s = sum(math.sin(2 * math.pi * f * t) for f in notes)
-        buf[k] += fade * vol * (0.75 + 0.25 * math.sin(2 * math.pi * lfo_f * t)) * s
+        while j + 1 < len(hits) and hits[j + 1] <= t:
+            j += 1
+        d = t - hits[j] if hits and t >= hits[j] else (t + DUR - hits[-1] if hits else 1)
+        buf[k] *= 1 - 0.65 * math.exp(-d * 11)
 
 
-def chime(buf, t):
-    add(buf, t, ding(784, 0.14, 1.0))
-    add(buf, t + 0.12, ding(1175, 0.12, 1.0))
+# ── 영상별 효과음 (b(n) 과 같은 박 숫자) ──────────────────
 
-
-def blinder(buf):
-    for i in range(5):                       # 첫 장면 가림막
-        add(buf, 0.12 + i * 0.13, tick(0.22, 1700 + i * 60))
-    add(buf, 1.35, whoosh(0.45))             # PDF 등장
-    add(buf, 2.3, pop(740)); add(buf, 2.65, pop(880))  # 그림 찾음
+def blinder(fx):
+    for n in (0.5, 1, 1.5, 2, 2.5):            # 첫 장면 가림막 '쾅'
+        add(fx, bt(n), impact(0.55))
+    for n in (0.75, 1.75, 4.25, 4.75, 5.25):    # 큰 글자 올라옴
+        add(fx, bt(n), whoosh(0.25, 0.08))
+    add(fx, bt(7.6), whoosh(0.6, 0.16))         # 종이가 날아옴
+    add(fx, bt(9), whoosh(0.8, 0.07))           # 스캔
+    add(fx, bt(9.75), pop(740)); add(fx, bt(10.5), pop(880))
     for i in range(5):
-        add(buf, 3.8 + i * 0.08, tick(0.12))
+        add(fx, bt(11) + i * bt(0.25), tick(0.2, 1600))
+    for i in range(20):                         # 숫자 0 → 20
+        add(fx, bt(11.75) + bt(1.5) * (1 - math.pow(1 - i / 20, 2.5)), tick(0.07, 2400))
+    add(fx, bt(14), whoosh(0.7, 0.14))          # 폰이 날아옴
+    for n in (16, 17, 18, 18.9):
+        add(fx, bt(n), tap())
+    add(fx, bt(16.1), pop(700)); add(fx, bt(17.1), pop(820)); add(fx, bt(18.1), pop(620, up=False))
+    for i, f in enumerate((660, 784, 880, 1047, 1175)):
+        add(fx, bt(19.25) + i * bt(0.125), pop(f, 0.14))
+    for i in range(4):                          # 버튼이 튀어 오름
+        add(fx, bt(22.75) + i * bt(0.25), pop(520 + i * 80, 0.12))
+    add(fx, bt(23.5), tap()); add(fx, bt(25.5), tap())
+    add(fx, bt(24.25), whoosh(0.4, 0.1)); add(fx, bt(25.7), whoosh(0.35, 0.1))
+    add(fx, bt(27.25), pop(440, 0.18))
     for i in range(3):
-        add(buf, 4.1 + i * 0.08, tick(0.12))
-    add(buf, 4.9, whoosh(0.45))              # 폰 화면
-    for at in (5.9, 6.8, 7.7, 8.5, 10.9, 12.1):
-        add(buf, at, tap())
-    add(buf, 5.95, pop(700)); add(buf, 6.85, pop(820))  # 열기
-    add(buf, 7.75, pop(620, up=False))       # 닫기
-    for i, f in enumerate((660, 784, 880, 1047, 1175)):  # 정답 확인 → 전부 열림
-        add(buf, 8.75 + i * 0.04, pop(f, 0.12))
-    add(buf, 9.9, whoosh(0.45))              # 복습 카드
-    add(buf, 11.1, glide(500, 760)); add(buf, 12.3, glide(600, 960))
-    add(buf, 12.9, whoosh(0.5))              # 마무리
-    add(buf, 13.15, tick(0.25, 1500))
-    chime(buf, 13.45)
-    add(buf, 14.55, whoosh(0.5, 0.08))       # 처음으로
-
-
-def juljul(buf):
-    add(buf, 0.1, whoosh(0.5))               # 글이 문단으로 나뉨
-    for i in range(3):
-        add(buf, 0.3 + i * 0.17, tick(0.18, 1500 + i * 150))
-    add(buf, 1.55, whoosh(0.5, 0.09))        # 문단 정리
-    for i in range(3):
-        add(buf, 2.8 + i * 0.25, pop(740 + i * 90, 0.15))
-    add(buf, 4.9, whoosh(0.45))              # 단계 카드
-    for at in (5.95, 6.95, 7.9, 9.1, 10.1):  # 단계 넘어감
-        add(buf, at, tick(0.16, 1400))
-    for at, f in ((6.25, 740), (6.5, 880)):  # 빈칸 열기
-        add(buf, at, tap()); add(buf, at + 0.05, pop(f, 0.15))
-    for i, at in enumerate((8.1, 8.38, 8.66)):  # 순서 고르기
-        add(buf, at, tap()); add(buf, at + 0.08, pop(660 + i * 110, 0.12))
-    add(buf, 9.35, typing()); add(buf, 9.55, typing())  # 쓰기
-    add(buf, 9.7, ding(1047, 0.12, 0.5))
-    for k in range(13):                      # 통째로 쓰기
-        add(buf, 10.15 + k * 0.046, typing(0.09))
-    add(buf, 10.8, ding(1175, 0.12, 0.5))
-    add(buf, 10.95, whoosh(0.45))            # 복습
-    for i, f in enumerate((523, 587, 659, 784, 880)):
-        add(buf, 11.35 + i * 0.25, pop(f, 0.14))
-    add(buf, 12.9, whoosh(0.5))              # 마무리
+        add(fx, bt(27.75) + i * bt(0.25), tick(0.18, 1500))
+    add(fx, bt(28.75), impact(0.8))             # 로고 가림막
     for i in range(4):
-        add(buf, 13.1 + i * 0.1, tick(0.16, 1500 + i * 100))
-    chime(buf, 13.55)
-    add(buf, 14.55, whoosh(0.5, 0.08))
+        add(fx, bt(29.25) + i * bt(0.25), pop(600 + i * 120, 0.12))
+    add(fx, bt(30.75), ding(1175, 0.14, 0.9))
+
+
+def juljul(fx):
+    add(fx, bt(0.75), whoosh(0.25, 0.08)); add(fx, bt(1.75), whoosh(0.25, 0.08))
+    add(fx, bt(4.25), whoosh(0.25, 0.08))
+    add(fx, bt(5) + 0.16, impact(0.8)); add(fx, bt(5.5) + 0.16, impact(0.8))  # 줄, 줄
+    add(fx, bt(6.25), whoosh(0.25, 0.08))
+    for i in range(5):
+        add(fx, bt(7.5) + i * bt(0.125), whoosh(0.18, 0.06))
+    for i in range(3):                          # 문단 카드
+        add(fx, bt(9.75) + i * bt(0.375), whoosh(0.3, 0.09))
+        add(fx, bt(11) + i * bt(0.5), pop(740 + i * 110, 0.14))
+    for n in (14.75, 16.5, 18.25, 20, 21.75):   # 단계 숫자 굴러감
+        add(fx, bt(n), whoosh(0.2, 0.1)); add(fx, bt(n) + 0.12, tick(0.2, 1300))
+    for n in range(10):                         # 읽기: 낱말이 차례로
+        add(fx, bt(13) + 0.06 * n, tick(0.06, 2200))
+    add(fx, bt(14.75) + 0.08, impact(0.35)); add(fx, bt(14.75) + 0.22, impact(0.35))
+    add(fx, bt(14.75) + 0.55, pop(880, 0.15))
+    for i in range(6):
+        add(fx, bt(16.5) + 0.08 + i * 0.05, tick(0.1, 1700))
+    for d in (0.12, 0.32, 0.52):
+        add(fx, bt(18.25) + d, tap()); add(fx, bt(18.25) + d + 0.05, pop(660 + d * 400, 0.11))
+    add(fx, bt(20) + 0.15, typing()); add(fx, bt(20) + 0.3, typing())
+    add(fx, bt(20) + 0.45, ding(1047, 0.12, 0.5))
+    for k in range(12):
+        add(fx, bt(21.75) + 0.05 + k * 0.045, typing(0.09))
+    add(fx, bt(21.75) + 0.7, ding(1175, 0.13, 0.6))
+    for k in range(5):                          # 날짜 위를 달림
+        add(fx, bt(25) + k * bt(0.5), whoosh(0.25, 0.1)); add(fx, bt(25) + k * bt(0.5) + 0.12, pop(523 + k * 90, 0.12))
+    add(fx, bt(28.25), pop(440, 0.18))
+    for i in range(3):
+        add(fx, bt(28.5) + i * bt(0.25), tick(0.18, 1500))
+    add(fx, bt(29.25), pop(990, 0.16))
+    add(fx, bt(29.75) + 0.12, impact(0.7)); add(fx, bt(30.25) + 0.12, impact(0.7))
+    add(fx, bt(31.25), ding(1175, 0.14, 0.9))
+
+
+TRANSITIONS = {
+    "blinder": [bt(4), bt(14), bt(21), bt(27), 14.8],
+    "juljul": [bt(4), bt(9), bt(13), bt(24), bt(28), 14.8],
+}
 
 
 def main():
@@ -187,14 +313,17 @@ def main():
     if "--lead" in args:
         LEAD = float(args[args.index("--lead") + 1])
     wav_only = "--wav-only" in args
-    buf = array("d", [0.0]) * (N + int(LEAD * SR))
-    pad(buf)
+    total = N + int(LEAD * SR)
+    drums, synth, fx = (array("d", [0.0]) * total for _ in range(3))
+    music(drums, synth, TRANSITIONS[name])
+    sidechain(synth)
+    {"blinder": blinder, "juljul": juljul}[name](fx)
     if LEAD:
-        add(buf, -0.35, whoosh(0.6, 0.14))  # 도입 장면 → 앱 화면으로 넘어갈 때
-    {"blinder": blinder, "juljul": juljul}[name](buf)
+        add(fx, -0.35, whoosh(0.6, 0.16))  # 도입 장면 → 앱 화면으로 넘어갈 때
 
-    peak = max(abs(v) for v in buf) or 1
-    gain = 0.85 / peak
+    mix = [0.6 * drums[k] + 1.0 * synth[k] + 0.9 * fx[k] for k in range(total)]
+    peak = max(abs(v) for v in mix) or 1
+    gain = 0.95 / peak
     out = ROOT / "out"
     wav = out / (f"{name}_lead.wav" if LEAD else f"{name}_sound.wav")
     with wave.open(str(wav), "wb") as w:
@@ -202,8 +331,8 @@ def main():
         w.setsampwidth(2)
         w.setframerate(SR)
         frames = bytearray()
-        for v in buf:
-            s = int(max(-1, min(1, math.tanh(v * gain * 1.1))) * 32000)
+        for v in mix:
+            s = int(math.tanh(v * gain * 1.25) * 32000)
             frames += struct.pack("<hh", s, s)
         w.writeframes(bytes(frames))
     if wav_only:

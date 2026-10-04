@@ -3,255 +3,339 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>블라인더 15초 소개 영상</title>
+<title>블라인더 15초 모션그래픽</title>
 <link rel="stylesheet" href="../shared/base.css">
 <style>
-  /* 1. 첫 장면: 큰 그림 카드 */
-  #hookCard { left: 88px; top: 700px; width: 904px; height: 640px; }
-  #hookCard .fig { position: absolute; left: 32px; top: 50px; width: 840px; }
+  .w { color: #fff; }
+  .nv { color: var(--accent); }
 
-  /* 2. PDF 한 쪽 */
-  #paper { left: 170px; top: 690px; width: 740px; height: 820px; background: #fff; border: 2px solid var(--line); border-radius: 20px; }
-  .ln { position: absolute; height: 16px; border-radius: 8px; background: #E4E4E8; }
-  .ln.t { height: 26px; background: #D3D4D9; }
+  /* 1. 그림 위 가림막 */
+  #s1 { background: #fff; }
+  #s1 .head { top: 220px; }
+  #s1 .kl > span { font-size: 128px; }
+  #cellBig { position: absolute; left: 30px; top: 760px; width: 1020px; transform-origin: 50% 40%; }
+
+  /* 2. PDF */
+  #s2 { background: var(--ink); }
+  #k { position: absolute; left: 80px; top: 470px; transform-origin: 0 0; }
+  #k .kl > span { font-size: 220px; color: #fff; }
+  .chip { display: inline-block; background: #fff; color: var(--ink); border-radius: 36px; padding: 0 .16em; margin-left: .05em; }
+  #page { position: absolute; left: 190px; top: 660px; width: 700px; height: 920px; background: #fff; border-radius: 26px;
+          transform-origin: 50% 60%; overflow: hidden; }
+  .ln { position: absolute; height: 18px; border-radius: 9px; background: #DCDDE2; }
+  .ln.t { height: 28px; background: #C9CAD1; }
   .figbox { position: absolute; }
-  .figbox .ring { position: absolute; inset: -14px; border: 6px solid var(--accent); border-radius: 18px; opacity: 0; }
-  .figbox .check { position: absolute; right: -30px; top: -30px; width: 60px; height: 60px; border-radius: 50%; background: var(--accent); display: grid; place-items: center; opacity: 0; }
+  .figbox .ring { position: absolute; inset: -12px; border: 7px solid var(--accent); border-radius: 18px; opacity: 0; }
+  .figbox .check { position: absolute; right: -26px; top: -26px; width: 64px; height: 64px; border-radius: 50%; background: var(--accent);
+                   display: grid; place-items: center; opacity: 0; }
+  #scan { position: absolute; left: 0; right: 0; height: 170px; background: linear-gradient(to bottom, rgba(61,51,216,0), rgba(61,51,216,.28));
+          border-bottom: 8px solid var(--accent); }
+  #cnt { position: absolute; left: 80px; top: 190px; color: #fff; }
+  #cnt .cap { font-size: 52px; font-weight: 600; opacity: .7; }
+  #cnt .row { display: flex; align-items: baseline; gap: 18px; margin-top: -10px; }
+  #cnt .n { font-size: 330px; font-weight: 700; letter-spacing: -0.05em; line-height: 1; font-variant-numeric: tabular-nums; }
+  #cnt .u { font-size: 120px; font-weight: 700; }
 
-  /* 3. 폰 화면 */
-  #phone { left: 140px; top: 640px; width: 800px; height: 1400px; border: 14px solid var(--ink); border-radius: 100px; background: var(--bg); overflow: hidden; }
+  /* 3. 폰 */
+  #s3 { background: var(--accent); }
+  #s3 .head { top: 210px; }
+  #s3 .kl > span { font-size: 104px; color: #fff; }
+  #phone { position: absolute; left: 140px; top: 640px; width: 800px; height: 1500px; border: 16px solid var(--ink); border-radius: 104px;
+           background: var(--bg); overflow: hidden; transform-origin: 50% 30%; }
   #phone .bar-title { position: absolute; left: 0; right: 0; top: 56px; text-align: center; font-size: 38px; font-weight: 600; }
   #phone .back { position: absolute; left: 44px; top: 58px; }
   #phone .track { position: absolute; left: 48px; right: 48px; top: 140px; height: 8px; border-radius: 4px; background: #E4E4E8; }
-  #phone .track i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 4px; background: var(--accent); }
-  #phone .count { position: absolute; right: 48px; top: 164px; font-size: 30px; color: var(--muted); font-variant-numeric: tabular-nums; }
-  #studyCard { left: 40px; top: 214px; width: 692px; height: 530px; border-radius: 40px; }
+  #phone .track i { position: absolute; left: 0; top: 0; bottom: 0; width: 16.7%; border-radius: 4px; background: var(--accent); }
+  #phone .count { position: absolute; right: 48px; top: 164px; font-size: 30px; color: var(--muted); }
+  #studyCard { left: 40px; top: 214px; width: 688px; height: 530px; border-radius: 40px; }
   #studyCard .cap { position: absolute; left: 40px; top: 34px; font-size: 30px; color: var(--muted); }
-  #studyCard .fig { position: absolute; left: 22px; top: 88px; width: 648px; }
-  #answerBtn { left: 40px; top: 770px; width: 692px; height: 110px; font-size: 40px; }
+  #studyCard .fig { position: absolute; left: 20px; top: 88px; width: 648px; }
+  #answerBtn { left: 40px; top: 770px; width: 688px; height: 110px; font-size: 40px; }
 
-  /* 4. 복습 날짜 */
-  #rateCard { left: 88px; top: 780px; width: 904px; height: 620px; }
-  #rateCard .q { position: absolute; left: 56px; top: 56px; font-size: 44px; font-weight: 600; }
-  .rate { top: 150px; width: 180px; height: 96px; font-size: 36px; }
-  #rateCard .axis { position: absolute; left: 72px; width: 760px; top: 372px; height: 4px; background: var(--line); border-radius: 2px; }
-  .tick { position: absolute; top: 360px; width: 4px; height: 28px; margin-left: -2px; background: #D3D4D9; border-radius: 2px; }
-  .tlab { position: absolute; top: 404px; width: 120px; margin-left: -60px; text-align: center; font-size: 30px; color: var(--muted); }
-  #marker { position: absolute; top: 340px; width: 16px; height: 68px; margin-left: -8px; border-radius: 8px; background: var(--accent); }
-  #nextTxt { position: absolute; left: 56px; top: 490px; font-size: 48px; font-weight: 600; }
-  #nextTxt b { color: var(--accent); font-weight: 600; }
+  /* 4. 복습 */
+  #s4 { background: #fff; }
+  #s4 .head { top: 200px; }
+  #h4k > span { font-size: 50px !important; color: var(--accent); font-weight: 600; letter-spacing: 0; margin-bottom: 18px; }
+  #s4 .kl > span { font-size: 124px; }
+  .rate { position: absolute; top: 720px; width: 210px; height: 124px; border-radius: 62px; border: 3px solid var(--line); background: #fff;
+          overflow: hidden; display: grid; place-items: center; font-size: 46px; font-weight: 600; }
+  .rate .fill { position: absolute; width: 520px; height: 520px; border-radius: 50%; background: var(--accent); transform: scale(0); }
+  .rate span { position: relative; }
+  #nextCap { position: absolute; left: 90px; top: 930px; font-size: 56px; color: var(--sub); }
+  #nextRow { position: absolute; left: 80px; top: 990px; display: flex; align-items: baseline; }
+  #digit { position: relative; width: 300px; height: 560px; overflow: hidden; }
+  #digit span { position: absolute; left: 0; top: 0; font-size: 560px; font-weight: 700; line-height: 1; letter-spacing: -0.05em; color: var(--accent); }
+  #nextRow .u { font-size: 150px; font-weight: 700; margin-left: 20px; letter-spacing: -0.03em; }
 
-  /* 5. 마무리 */
-  #end { text-align: center; }
-  #end .logo { position: absolute; left: 330px; top: 470px; width: 420px; height: 420px; }
-  #end .name { position: absolute; left: 0; right: 0; top: 860px; font-size: 140px; font-weight: 700; letter-spacing: -0.02em; }
-  #end .line1 { position: absolute; left: 0; right: 0; top: 1060px; font-size: 48px; color: var(--sub); }
-  #end .cta { position: absolute; left: 0; right: 0; top: 1220px; font-size: 38px; color: var(--muted); }
-  #end .url { left: 140px; width: 800px; top: 1290px; height: 104px; font-size: 38px; font-weight: 600; }
+  /* 5. 로고 */
+  #s5 { background: var(--accent); text-align: center; color: #fff; }
+  #logo { position: absolute; left: 240px; top: 170px; width: 600px; height: 600px; }
+  #name { position: absolute; left: 0; right: 0; top: 780px; font-size: 210px; font-weight: 700; letter-spacing: -0.04em; }
+  #name span { display: inline-block; }
+  #tag { position: absolute; left: 0; right: 0; top: 1050px; font-size: 50px; font-weight: 600; opacity: .85; }
+  #url { position: absolute; left: 150px; width: 780px; top: 1170px; height: 116px; border-radius: 58px; background: #fff; color: var(--accent);
+         display: grid; place-items: center; font-size: 38px; font-weight: 700; }
+
+  .tap { background: rgba(10,10,10,.18); }
+  /* 배경에 크게 흐르는 글자 */
+  .mq { position: absolute; left: 0; white-space: nowrap; font-size: 330px; font-weight: 700; letter-spacing: -0.04em; line-height: 1; pointer-events: none; }
+  .zoom { position: absolute; inset: 0; transform-origin: 50% 45%; }
 </style>
 </head>
 <body>
 <div id="stage">
 
-  <!-- 1. 첫 장면 -->
-  <div class="layer" id="sA">
-    <div class="head" id="hA">
-      <div class="kicker">블라인더</div>
-      <div class="title">외울 이름표만<br>가려 드려요</div>
+  <!-- 1 -->
+  <div class="scene" id="s1">
+    <div class="head big">
+      <div class="kl" id="h1a"><span>외울 이름표만</span></div>
+      <div class="kl" id="h1b"><span><span class="nv">싹</span> 가려 드려요</span></div>
     </div>
-    <div class="card" id="hookCard"><div class="fig" id="figHook"></div></div>
+    <div id="cellBig"></div>
   </div>
 
-  <!-- 2. PDF에서 그림 찾기 -->
-  <div class="layer" id="sB">
-    <div class="head">
-      <div class="kicker">PDF 그대로</div>
-      <div class="title">교재를 넣으면<br>그림만 골라 줘요</div>
-      <div class="body" style="position:relative;height:63px">
-        <span class="abs" id="bBody1">그림 2개를 찾았어요</span>
-        <span class="abs" id="bBody2">글은 그대로, 그림 이름표만 가려요</span>
+  <!-- 2 -->
+  <div class="scene" id="s2">
+    <div class="mq" id="mq2" style="top:1560px;color:rgba(255,255,255,.07)">PDF · 그림 · PDF · 그림 · PDF · 그림 ·</div>
+    <div id="k" class="big">
+      <div class="kl" id="k1"><span>강의 PDF</span></div>
+      <div class="kl" id="k2"><span>넣으면</span></div>
+      <div class="kl" id="k3"><span>그림만<span class="chip">쏙</span></span></div>
+    </div>
+    <div id="cnt">
+      <div class="kl" id="cntCap"><span class="cap">자료 하나당 그림</span></div>
+      <div class="kl" id="cntRow"><span class="row"><span class="u">최대</span><span class="n" id="cntN">0</span><span class="u">개</span></span></div>
+    </div>
+    <div class="p3d">
+      <div id="page">
+        <div class="ln t" style="left:50px;top:50px;width:330px"></div>
+        <div id="lines"></div>
+        <div class="figbox" id="fig1" style="left:30px;top:120px;width:380px"><div id="figPdfCell"></div><div class="ring"></div><div class="check"></div></div>
+        <div class="figbox" id="fig2" style="left:360px;top:540px;width:310px"><div id="figPdfHeart"></div><div class="ring"></div><div class="check"></div></div>
+        <div id="scan"></div>
       </div>
     </div>
-    <div class="abs" id="paper">
-      <div class="ln t" style="left:56px;top:56px;width:360px"></div>
-      <div class="lines" id="lines"></div>
-      <div class="figbox" id="fig1" style="left:40px;top:150px;width:400px">
-        <div id="figPdfCell"></div>
-        <div class="ring"></div><div class="check"><svg width="30" height="30" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+  </div>
+
+  <!-- 3 -->
+  <div class="scene" id="s3">
+    <div class="mq" id="mq3a" style="top:1080px;color:rgba(255,255,255,.09)">열고 · 닫고 · 열고 · 닫고 · 열고 · 닫고 ·</div>
+    <div class="mq" id="mq3b" style="top:1420px;color:rgba(255,255,255,.09)">가리고 · 맞히고 · 가리고 · 맞히고 ·</div>
+    <div class="head big">
+      <div class="kl" id="h3a"><span>누르면 열리고</span></div>
+      <div class="kl" id="h3b"><span>다시 누르면 닫혀요</span></div>
+    </div>
+    <div class="p3d" style="perspective:1600px">
+      <div id="phone">
+        <svg class="back" width="44" height="44" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" fill="none" stroke="#0A0A0A" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <div class="bar-title">생명과학_2장</div>
+        <div class="track"><i></i></div>
+        <div class="count">1 / 6</div>
+        <div class="card" id="studyCard"><div class="cap">이름표 가리기</div><div class="fig" id="figStudy"></div></div>
+        <div class="pill black" id="answerBtn">정답 확인</div>
+        <div class="tap" id="tapP"></div>
       </div>
-      <div class="figbox" id="fig2" style="left:370px;top:560px;width:330px">
-        <div id="figPdfHeart"></div>
-        <div class="ring"></div><div class="check"><svg width="30" height="30" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-      </div>
     </div>
   </div>
 
-  <!-- 3. 눌러서 열기 -->
-  <div class="layer" id="sC">
-    <div class="head">
-      <div class="kicker">가리고, 맞히고</div>
-      <div class="title">누르면 열리고<br>다시 누르면 닫혀요</div>
+  <!-- 4 -->
+  <div class="scene" id="s4">
+    <div class="head big">
+      <div class="kl" id="h4k"><span class="kicker" style="margin:0">알아서 복습 일정</span></div>
+      <div class="kl" id="h4a"><span>잊을 때쯤</span></div>
+      <div class="kl" id="h4b"><span>다시 보여 줘요</span></div>
     </div>
-    <div class="abs" id="phone">
-      <svg class="back" width="44" height="44" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" fill="none" stroke="#0A0A0A" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      <div class="bar-title">생명과학_2장</div>
-      <div class="track"><i style="width:16.7%"></i></div>
-      <div class="count">1 / 6</div>
-      <div class="card" id="studyCard"><div class="cap">이름표 가리기</div><div class="fig" id="figStudy"></div></div>
-      <div class="pill black" id="answerBtn">정답 확인</div>
+    <div class="rate" id="r0" style="left:90px"><i class="fill"></i><span>다시</span></div>
+    <div class="rate" id="r1" style="left:320px"><i class="fill"></i><span>어려움</span></div>
+    <div class="rate" id="r2" style="left:550px"><i class="fill"></i><span>보통</span></div>
+    <div class="rate" id="r3" style="left:780px"><i class="fill"></i><span>쉬움</span></div>
+    <div class="kl" id="nextCapK" style="position:absolute;left:90px;top:930px"><span style="font-size:56px;color:#55575E">다음 복습</span></div>
+    <div id="nextRow">
+      <div id="digit"><span id="d3">3</span><span id="d7">7</span></div>
+      <div class="kl" id="nextU"><span class="u">일 뒤</span></div>
     </div>
+    <div class="tap" id="tap4"></div>
   </div>
 
-  <!-- 4. 복습 날짜 -->
-  <div class="layer" id="sD">
-    <div class="head">
-      <div class="kicker">알아서 복습 일정</div>
-      <div class="title">잊을 때쯤<br>다시 보여 줘요</div>
-      <div class="body">쉬움 7일 · 보통 3일 · 어려움 1일</div>
-    </div>
-    <div class="card" id="rateCard">
-      <div class="q">이 카드는 어땠나요?</div>
-      <div class="pill line rate" style="left:56px">다시</div>
-      <div class="pill line rate" style="left:252px">어려움</div>
-      <div class="pill line rate" id="rNormal" style="left:448px">보통</div>
-      <div class="pill line rate" id="rEasy" style="left:644px">쉬움</div>
-      <div class="axis"></div>
-      <div id="ticks"></div>
-      <div id="marker"></div>
-      <div id="nextTxt">다음 복습 <b id="nextDays">3일 뒤</b></div>
-    </div>
-  </div>
-
-  <!-- 5. 마무리 -->
-  <div class="layer" id="sE">
-    <div id="end">
-      <svg class="logo" viewBox="0 0 1024 1024">
+  <!-- 5 -->
+  <div class="scene" id="s5">
+    <div class="mq" id="mq5" style="top:1480px;color:rgba(255,255,255,.1)">BLINDER · 블라인더 · BLINDER · 블라인더 ·</div>
+    <svg id="logo" viewBox="0 0 1024 1024">
+      <g id="lgCard" style="transform-box: fill-box; transform-origin: center">
         <rect x="297" y="212" width="430" height="560" rx="78" fill="#0A0A0A"/>
         <rect x="339" y="254" width="346" height="476" rx="40" fill="#FFFFFF"/>
-        <rect x="380" y="320" width="232" height="34" rx="17" fill="#0A0A0A"/>
-        <rect x="380" y="590" width="252" height="34" rx="17" fill="#0A0A0A"/>
-        <rect x="380" y="650" width="172" height="34" rx="17" fill="#0A0A0A"/>
-        <g id="logoBand" style="transform-box: fill-box; transform-origin: left center">
-          <rect x="237" y="400" width="550" height="156" rx="34" fill="#F7F7F8"/>
-          <rect x="255" y="418" width="514" height="120" rx="22" fill="#0A0A0A"/>
-        </g>
-      </svg>
-      <div class="name">블라인더</div>
-      <div class="line1">외울 그림만 가려 주는 플래시카드</div>
-      <div class="cta">웹에서 바로 써 보기</div>
-      <div class="pill line url">blinder-api.blinder-app.workers.dev</div>
-    </div>
+      </g>
+      <rect class="lgl" x="380" y="320" width="232" height="34" rx="17" fill="#0A0A0A"/>
+      <rect class="lgl" x="380" y="590" width="252" height="34" rx="17" fill="#0A0A0A"/>
+      <rect class="lgl" x="380" y="650" width="172" height="34" rx="17" fill="#0A0A0A"/>
+      <g id="lgBand" style="transform-box: fill-box; transform-origin: left center">
+        <rect x="237" y="400" width="550" height="156" rx="34" fill="#3D33D8"/>
+        <rect x="255" y="418" width="514" height="120" rx="22" fill="#0A0A0A"/>
+      </g>
+    </svg>
+    <div id="name"><span>블</span><span>라</span><span>인</span><span>더</span></div>
+    <div class="kl" id="tagK" style="position:absolute;left:0;right:0;top:1050px"><span style="font-size:50px;font-weight:600;opacity:.85">외울 그림만 가려 주는 플래시카드</span></div>
+    <div id="url">blinder-api.blinder-app.workers.dev</div>
   </div>
 
-  <div class="tap" id="tap"></div>
+  <div class="bars" id="bars"></div>
 </div>
 
 <script type="module">
-import { start, prog, win, lerp, set, tap, easeOut } from "../shared/engine.js";
+import { start, prog, lerp, set, tap, clamp, expoOut, backOut, b, rise, shake, bars, BEAT } from "../shared/engine.js";
 import { cellSVG, heartSVG, setLabel, CELL_COUNT, HEART_COUNT, CELL_BOXES } from "../shared/figures.js";
 
 const $ = (s) => document.querySelector(s);
-$("#figHook").innerHTML = cellSVG("hk");
+const $$ = (s) => [...document.querySelectorAll(s)];
+const CHECK = '<svg width="34" height="34" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+$("#cellBig").innerHTML = cellSVG("hk");
 $("#figPdfCell").innerHTML = cellSVG("pc");
 $("#figPdfHeart").innerHTML = heartSVG("ph");
 $("#figStudy").innerHTML = cellSVG("st");
+$$(".check").forEach((c) => (c.innerHTML = CHECK));
+$$("svg g[id*='-l']").forEach((g) => set(g, { transformBox: "fill-box", transformOrigin: "center" }));
 
-// PDF 글줄
 const LINES = [
-  [480, 170, 200], [480, 206, 180], [480, 242, 204], [480, 278, 150], [480, 314, 196], [480, 350, 120],
-  [56, 456, 628], [56, 492, 600], [56, 528, 420],
-  [56, 596, 270], [56, 632, 250], [56, 668, 276], [56, 704, 230], [56, 740, 262], [56, 776, 160],
+  [440, 150, 200], [440, 186, 170], [440, 222, 210], [440, 258, 140], [440, 294, 190], [440, 330, 120],
+  [50, 400, 600], [50, 436, 560], [50, 472, 400],
+  [50, 560, 270], [50, 596, 250], [50, 632, 280], [50, 668, 230], [50, 704, 260], [50, 740, 200], [50, 776, 240],
+  [50, 830, 600], [50, 866, 420],
 ];
 $("#lines").innerHTML = LINES.map(([x, y, w]) => `<div class="ln" style="left:${x}px;top:${y}px;width:${w}px"></div>`).join("");
 
-// 복습 축: 0~7일
-const AX0 = 72, AXW = 760, dayX = (d) => AX0 + (AXW * d) / 7;
-$("#ticks").innerHTML = [0, 1, 3, 7]
-  .map((d) => `<div class="tick" style="left:${dayX(d)}px"></div><div class="tlab" style="left:${dayX(d)}px">${d === 0 ? "오늘" : d + "일"}</div>`)
-  .join("");
+// 전환 막대 8개: 검정·남색 번갈아
+const COLORS = ["#0A0A0A", "#3D33D8"];
+$("#bars").innerHTML = Array.from({ length: 8 }, (_, i) => `<i style="top:${i * 240}px;height:242px;background:${COLORS[i % 2]}"></i>`).join("");
+const BARS = $$("#bars i");
 
-// 공부 화면에서 누를 자리(무대 좌표)
-const ST = { x: 140 + 14 + 40 + 22, y: 640 + 14 + 214 + 88, k: 648 / 660 };
-const boxCenter = (i) => {
-  const [x, y, w, h] = CELL_BOXES[i];
-  return [ST.x + (x + w / 2) * ST.k, ST.y + (y + h / 2) * ST.k];
-};
-const TAP_CHLORO = boxCenter(2), TAP_VAC = boxCenter(3);
-const TAP_BTN = [540, 640 + 14 + 770 + 55];
-const RATE_Y = 780 + 150 + 48;
-const TAP_NORMAL = [88 + 448 + 90, RATE_Y], TAP_EASY = [88 + 644 + 90, RATE_Y];
+const M = [b(4), b(14), b(21), b(27), 14.8]; // 장면이 바뀌는 순간
+const scenes = ["#s1", "#s2", "#s3", "#s4", "#s5"].map($);
 
-const D = 15;
+// 폰 안 좌표
+const SV = { x: 40 + 20, y: 214 + 88, k: 648 / 660 };
+const boxC = (i) => { const [x, y, w, h] = CELL_BOXES[i]; return [SV.x + (x + w / 2) * SV.k, SV.y + (y + h / 2) * SV.k]; };
 
 function render(t) {
-  const sA = $("#sA"), sB = $("#sB"), sC = $("#sC"), sD = $("#sD"), sE = $("#sE");
+  // 지금 보이는 장면
+  let si = 0;
+  if (t >= M[4]) si = 0; else if (t >= M[3]) si = 4; else if (t >= M[2]) si = 3; else if (t >= M[1]) si = 2; else if (t >= M[0]) si = 1;
+  scenes.forEach((s, i) => (s.style.display = i === si ? "block" : "none"));
+  // 장면이 열릴 때 살짝 당겨지는 카메라
+  const startAt = [M[4] - 15, M[0], M[1], M[2], M[3]][si];
+  const tt = si === 0 && t >= M[4] ? t - 15 : t;
+  scenes[si].style.transform = `scale(${lerp(1.14, 1, expoOut((tt - startAt) / 0.7))})`;
+  $("#mq2").style.transform = `translateX(${-((t - M[0]) * 260) % 1400}px)`;
+  $("#mq3a").style.transform = `translateX(${-200 - (t - M[1]) * 320}px)`;
+  $("#mq3b").style.transform = `translateX(${-900 + (t - M[1]) * 300}px)`;
+  $("#mq5").style.transform = `translateX(${-300 - (t - M[3]) * 280}px)`;
 
-  // ── 1. 첫 장면 (0 ~ 1.45초, 끝에서 다시 돌아옴)
-  const aCard = t < 7 ? 1 - prog(t, 1.2, 1.45) : prog(t, 14.62, 15);
-  sA.style.opacity = 1;
-  $("#hookCard").style.opacity = aCard;
-  $("#hA").style.opacity = win(t, 0.35, 1.45, 0.25);
-  $("#hA").style.transform = `translateY(${lerp(16, 0, prog(t, 0.35, 0.6))}px)`;
-  for (let i = 0; i < CELL_COUNT; i++) {
-    const a = 0.12 + i * 0.13;
-    setLabel(sA, "hk", i, t < 7 ? prog(t, a, a + 0.22, easeOut) : 0);
-  }
+  // 전환 막대
+  let near = M.findIndex((m) => Math.abs(t - m) < 0.32);
+  if (near < 0) BARS.forEach((e) => (e.style.transform = "scaleX(0)"));
+  else bars(BARS, t, M[near], near === 4 ? { cover: 0.24, uncover: 0.2 } : {});
 
-  // ── 2. PDF (1.4 ~ 5.0초)
-  sB.style.opacity = win(t, 1.4, 5.0, 0.3);
-  $("#paper").style.transform = `translateY(${lerp(40, 0, prog(t, 1.4, 1.8))}px)`;
-  $("#lines").style.opacity = lerp(1, 0.35, prog(t, 2.2, 2.6));
-  [["#fig1", 2.3], ["#fig2", 2.65]].forEach(([s, a]) => {
-    const p = prog(t, a, a + 0.3);
-    set($(s + " .ring"), { opacity: p, transform: `scale(${lerp(1.05, 1, p)})` });
-    set($(s + " .check"), { opacity: p, transform: `scale(${lerp(0.6, 1, easeOut((t - a) / 0.3))})` });
+  // ── 1. 그림 위 가림막 (끝에서는 t-15 로 처음 상태)
+  const t1 = t >= M[4] ? t - 15 : t;
+  const HIT1 = [0.5, 1, 1.5, 2, 2.5].map(b);
+  const ORDER = [0, 2, 1, 3, 4];
+  ORDER.forEach((li, k) => setLabel($("#s1"), "hk", li, expoOut((t1 - HIT1[k]) / 0.09)));
+  const [sx, sy] = shake(t1, HIT1, 9);
+  $("#cellBig").style.transform = `translate(${sx}px,${sy}px) scale(${1 + 0.07 * clamp(t1 / b(4))})`;
+  rise($("#h1a"), t1, b(0.75));
+  rise($("#h1b"), t1, b(1.75));
+
+  // ── 2. PDF
+  rise($("#k1"), t, b(4.25)); rise($("#k2"), t, b(4.75)); rise($("#k3"), t, b(5.25));
+  const pulse = 1 + 0.03 * Math.max(0, 1 - Math.abs(t - b(6)) / 0.12) + 0.03 * Math.max(0, 1 - Math.abs(t - b(7)) / 0.12);
+  const kp = expoOut((t - b(7.5)) / 0.6);
+  set($("#k"), {
+    transform: `translate(${lerp(0, 0, kp)}px, ${lerp(0, -290, kp)}px) scale(${lerp(1, 0.42, kp) * pulse})`,
+    opacity: 1 - prog(t, b(11.25), b(11.6)),
   });
-  $("#bBody1").style.opacity = win(t, 2.9, 3.75, 0.2);
-  $("#bBody2").style.opacity = prog(t, 3.75, 3.95);
-  for (let i = 0; i < CELL_COUNT; i++) setLabel(sB, "pc", i, prog(t, 3.8 + i * 0.08, 4.0 + i * 0.08, easeOut));
-  for (let i = 0; i < HEART_COUNT; i++) setLabel(sB, "ph", i, prog(t, 4.1 + i * 0.08, 4.3 + i * 0.08, easeOut));
-
-  // ── 3. 눌러서 열기 (4.95 ~ 10.0초)
-  sC.style.opacity = win(t, 4.95, 10.0, 0.3);
-  $("#phone").style.transform = `translateY(${lerp(40, 0, prog(t, 4.95, 5.35))}px)`;
-  const all = prog(t, 8.75, 9.0);
-  for (let i = 0; i < CELL_COUNT; i++) {
-    let open = all;
-    if (i === 2) open = Math.max(all, prog(t, 5.95, 6.15) - prog(t, 7.75, 7.95)); // 엽록체: 열었다가 다시 닫기
-    if (i === 3) open = Math.max(all, prog(t, 6.85, 7.05)); // 액포
-    setLabel(sC, "st", i, 1 - open, open);
-  }
-  $("#answerBtn").style.transform = `scale(${1 - 0.03 * win(t, 8.55, 8.85, 0.12)})`;
-
-  // ── 4. 복습 날짜 (9.95 ~ 13.0초)
-  sD.style.opacity = win(t, 9.95, 13.0, 0.3);
-  $("#rateCard").style.transform = `translateY(${lerp(40, 0, prog(t, 9.95, 10.35))}px)`;
-  const pickN = prog(t, 10.95, 11.1) - prog(t, 12.15, 12.3);
-  const pickE = prog(t, 12.15, 12.3);
-  [[$("#rNormal"), pickN], [$("#rEasy"), pickE]].forEach(([el, p]) => {
-    set(el, { background: p > 0.5 ? "#3D33D8" : "#fff", color: p > 0.5 ? "#fff" : "#0A0A0A", borderColor: p > 0.5 ? "#3D33D8" : "#ECECEE" });
+  const pp = expoOut((t - b(7.6)) / 0.8);
+  const fl = Math.sin(t * 2.2) * 1.2;
+  set($("#page"), {
+    visibility: t < b(7.6) ? "hidden" : "visible",
+    transform: `translateY(${lerp(1000, 0, pp)}px) rotateX(${lerp(68, 10, pp)}deg) rotateZ(${lerp(-22, -3 + fl, pp)}deg) scale(${lerp(0.7, 1, pp)})`,
   });
-  const days = lerp(0, 3, prog(t, 11.1, 11.6)) + lerp(0, 4, prog(t, 12.3, 12.8));
-  $("#marker").style.left = dayX(days) + "px";
-  $("#nextDays").textContent = (t < 12.3 ? 3 : 7) + "일 뒤";
-  $("#nextTxt").style.opacity = prog(t, 11.45, 11.7);
+  const scanY = lerp(-170, 940, prog(t, b(9), b(10.75), (x) => x));
+  $("#scan").style.top = scanY + "px";
+  $("#scan").style.opacity = t > b(9) && t < b(10.9) ? 1 : 0;
+  $$("#lines .ln").forEach((el) => (el.style.opacity = t > b(9) && parseFloat(el.style.top) < scanY + 170 ? 0.28 : 1));
+  [["#fig1", b(9.75)], ["#fig2", b(10.5)]].forEach(([s, a]) => {
+    const p = backOut((t - a) / 0.3);
+    set($(s + " .ring"), { opacity: clamp((t - a) / 0.08), transform: `scale(${lerp(1.25, 1, expoOut((t - a) / 0.3))})` });
+    set($(s + " .check"), { opacity: clamp((t - a) / 0.05), transform: `scale(${t < a ? 0 : p})` });
+  });
+  for (let i = 0; i < CELL_COUNT; i++) setLabel($("#s2"), "pc", i, expoOut((t - b(11) - i * b(0.25)) / 0.08));
+  for (let i = 0; i < HEART_COUNT; i++) setLabel($("#s2"), "ph", i, expoOut((t - b(11.125) - i * b(0.25)) / 0.08));
+  rise($("#cntCap"), t, b(11.5)); rise($("#cntRow"), t, b(11.75));
+  $("#cntN").textContent = Math.round(20 * expoOut((t - b(11.75)) / b(1.5)));
 
-  // ── 5. 마무리 (12.95 ~ 14.85초)
-  sE.style.opacity = win(t, 12.95, 14.7, 0.3);
-  $("#logoBand").style.transform = `scaleX(${prog(t, 13.15, 13.55, easeOut)})`;
-  $("#end").style.transform = `translateY(${lerp(24, 0, prog(t, 12.95, 13.35))}px)`;
+  // ── 3. 폰
+  rise($("#h3a"), t, b(14.5)); rise($("#h3b"), t, b(15.25));
+  const ph = expoOut((t - b(14)) / 0.9);
+  const punch = 1 + 0.035 * Math.max(0, 1 - Math.abs(t - b(19.3)) / 0.15);
+  set($("#phone"), {
+    transform: `translate(${lerp(560, 0, ph)}px, ${lerp(240, 0, ph) + Math.sin(t * 2.4) * 8}px) rotateY(${lerp(58, -9 + Math.sin(t * 1.7) * 3, ph)}deg) rotateX(${lerp(12, 6, ph)}deg) scale(${punch})`,
+  });
+  const allOpen = (i) => expoOut((t - b(19.25) - i * b(0.125)) / 0.12);
+  for (let i = 0; i < CELL_COUNT; i++) {
+    let open = allOpen(i);
+    if (i === 2) open = Math.max(open, expoOut((t - b(16.1)) / 0.12) - expoOut((t - b(18.1)) / 0.12));
+    if (i === 3) open = Math.max(open, expoOut((t - b(17.1)) / 0.12));
+    setLabel($("#s3"), "st", i, 1 - open, open);
+    const g = $(`#st-l${i}`);
+    const pops = [b(19.25) + i * b(0.125)];
+    if (i === 2) pops.push(b(16.1));
+    if (i === 3) pops.push(b(17.1));
+    let sc = 1;
+    for (const a of pops) if (t >= a && t < a + 0.35) sc = Math.max(sc, lerp(1.35, 1, backOut((t - a) / 0.35)));
+    g.style.transform = `scale(${sc})`;
+  }
+  $("#answerBtn").style.transform = `scale(${1 - 0.04 * Math.max(0, 1 - Math.abs(t - b(19)) / 0.1)})`;
+  const tapP = $("#tapP");
+  tapP.style.opacity = 0;
+  for (const [at, x, y] of [[b(16), ...boxC(2)], [b(17), ...boxC(3)], [b(18), ...boxC(2)], [b(18.9), 384, 825]])
+    if (t >= at && t <= at + 0.4) tap(tapP, t, at, x, y);
 
-  // ── 누른 자리
-  const tapEl = $("#tap");
-  const taps = [
-    [5.9, ...TAP_CHLORO], [6.8, ...TAP_VAC], [7.7, ...TAP_CHLORO], [8.5, ...TAP_BTN],
-    [10.9, ...TAP_NORMAL], [12.1, ...TAP_EASY],
-  ];
-  tapEl.style.opacity = 0;
-  for (const [at, x, y] of taps) if (t >= at && t <= at + 0.4) tap(tapEl, t, at, x, y);
+  // ── 4. 복습
+  rise($("#h4k"), t, b(21.25)); rise($("#h4a"), t, b(21.5)); rise($("#h4b"), t, b(22));
+  [0, 1, 2, 3].forEach((i) => {
+    const a = b(22.75) + i * b(0.25);
+    set($("#r" + i), { transform: `translateY(${lerp(180, 0, backOut((t - a) / 0.35))}px)`, opacity: clamp((t - a) / 0.06) });
+  });
+  const pickN = expoOut((t - b(23.6)) / 0.3) * (1 - expoOut((t - b(25.6)) / 0.25));
+  const pickE = expoOut((t - b(25.6)) / 0.3);
+  [[2, pickN], [3, pickE]].forEach(([i, p]) => {
+    $(`#r${i} .fill`).style.transform = `scale(${p})`;
+    $(`#r${i} span`).style.color = p > 0.35 ? "#fff" : "#0A0A0A";
+    $(`#r${i}`).style.borderColor = p > 0.35 ? "#3D33D8" : "#ECECEE";
+  });
+  rise($("#nextCapK"), t, b(24));
+  const dIn = expoOut((t - b(24.25)) / 0.5), dSw = expoOut((t - b(25.7)) / 0.4);
+  $("#d3").style.transform = `translateY(${lerp(105, 0, dIn) + lerp(0, -105, dSw)}%)`;
+  $("#d7").style.transform = `translateY(${lerp(105, 0, dSw)}%)`;
+  rise($("#nextU"), t, b(24.5));
+  const tap4 = $("#tap4");
+  tap4.style.opacity = 0;
+  for (const [at, x, y] of [[b(23.5), 655, 782], [b(25.5), 885, 782]]) if (t >= at && t <= at + 0.4) tap(tap4, t, at, x, y);
+
+  // ── 5. 로고
+  const [lx, ly] = shake(t, [b(28.9)], 12);
+  $("#logo").style.transform = `translate(${lx}px,${ly}px)`;
+  $("#lgCard").style.transform = `scale(${t < b(27.25) ? 0 : backOut((t - b(27.25)) / 0.4)})`;
+  $$("#logo .lgl").forEach((el, i) => set(el, { transformBox: "fill-box", transformOrigin: "left center", transform: `scaleX(${expoOut((t - b(27.75) - i * b(0.25)) / 0.3)})` }));
+  $("#lgBand").style.transform = `scaleX(${expoOut((t - b(28.75)) / 0.14)})`;
+  $$("#name span").forEach((el, i) => {
+    const a = b(29.25) + i * b(0.25);
+    set(el, { transform: `translateY(${lerp(-160, 0, backOut((t - a) / 0.35))}px)`, opacity: clamp((t - a) / 0.05) });
+  });
+  rise($("#tagK"), t, b(30.25));
+  set($("#url"), { transform: `scale(${t < b(30.75) ? 0 : backOut((t - b(30.75)) / 0.4)})` });
 }
 
-start({ duration: D, render });
+start({ duration: 15, render });
 </script>
 </body>
 </html>

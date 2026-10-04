@@ -62,3 +62,12 @@ body.render { display: block; min-height: 0; background: var(--bg); }
   position: absolute; width: 120px; height: 120px; margin: -60px 0 0 -60px;
   border-radius: 50%; background: rgba(10, 10, 10, .14); opacity: 0; pointer-events: none;
 }
+
+/* 줄 단위로 올라오는 큰 글자 */
+.kl { overflow: hidden; padding-bottom: 0.08em; }
+.kl > span { display: block; will-change: transform; }
+.big { font-weight: 700; letter-spacing: -0.035em; line-height: 1.02; }
+.bars { position: absolute; inset: 0; pointer-events: none; z-index: 50; }
+.bars i { position: absolute; left: -2px; right: -2px; transform: scaleX(0); }
+.scene { position: absolute; inset: 0; overflow: hidden; display: none; }
+.p3d { position: absolute; inset: 0; perspective: 1800px; }

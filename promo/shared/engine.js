@@ -12,6 +12,51 @@ export const prog = (t, a, b, fn = ease) => fn((t - a) / (b - a));
 // a초에 나타나서 b초에 사라짐 (d초 동안 페이드)
 export const win = (t, a, b, d = 0.25) => Math.min(prog(t, a, a + d), 1 - prog(t, b - d, b));
 export const lerp = (a, b, p) => a + (b - a) * p;
+export const expoOut = (x) => (x >= 1 ? 1 : x <= 0 ? 0 : 1 - Math.pow(2, -10 * x));
+export const backOut = (x, s = 1.9) => {
+  x = clamp(x) - 1;
+  return 1 + (s + 1) * x * x * x + s * x * x;
+};
+// 128BPM: 15초 = 32박 = 8마디
+export const BEAT = 60 / 128;
+export const b = (n) => n * BEAT;
+
+// 줄 단위로 아래에서 밀려 올라오는 글자. el 안의 첫 자식이 움직인다.
+export function rise(el, t, at, dur = 0.45, from = 105) {
+  const p = expoOut((t - at) / dur);
+  el.firstElementChild.style.transform = `translateY(${lerp(from, 0, p)}%)`;
+  el.style.visibility = t < at ? "hidden" : "visible";
+}
+
+// 쾅 하고 닿은 뒤 짧게 흔들림
+export function shake(t, hits, amp = 10, dur = 0.18) {
+  let x = 0, y = 0;
+  for (const at of hits) {
+    const p = (t - at) / dur;
+    if (p < 0 || p > 1) continue;
+    const a = amp * (1 - p) * (1 - p);
+    x += a * Math.sin(p * 47);
+    y += a * Math.cos(p * 39);
+  }
+  return [x, y];
+}
+
+// 화면 전체를 덮었다가 걷히는 막대들. mid초에 다 덮이고 그때 장면이 바뀐다.
+export function bars(els, t, mid, { cover = 0.24, uncover = 0.24, stagger = 0.022, dir = 1 } = {}) {
+  const n = els.length;
+  els.forEach((el, i) => {
+    const d = i * stagger;
+    const a = mid - cover + d * 0.5;
+    let s = 0, origin = dir > 0 ? "left" : "right";
+    if (t >= a && t < mid) s = expoOut((t - a) / (cover - d * 0.5));
+    else if (t >= mid && t < mid + uncover) {
+      s = 1 - expoOut((t - mid - d * 0.5) / (uncover - d * 0.5));
+      origin = dir > 0 ? "right" : "left";
+    }
+    el.style.transformOrigin = origin + " center";
+    el.style.transform = `scaleX(${clamp(s)})`;
+  });
+}
 
 export function set(el, styles) {
   for (const k in styles) el.style[k] = styles[k];
