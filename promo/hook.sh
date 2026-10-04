@@ -29,20 +29,22 @@ printf '%s' "$TITLE" > "$TMP/title.txt"
 
 python3 "$DIR/sound.py" "$NAME" --lead "$LEAD" --wav-only > /dev/null
 
-# 글자는 박자에 맞춰 아래에서 튀어 올라옴(작은 글 0.25초, 큰 글 0.47초). 사진은 반투명 검정으로 눌러 글자를 살림
+# 글자는 박자에 맞춰 아래에서 튀어 올라옴(작은 글 0.25초, 큰 글 0.47초).
+# 사진은 글자가 있는 위쪽만 그라데이션으로 어둡게 해서 인물 얼굴은 밝게 둔다
 A1="if(lt(t,0.25),0,min(1,(t-0.25)/0.08))"
 A2="if(lt(t,0.47),0,min(1,(t-0.47)/0.08))"
 Y1="230+60*pow(2,-10*max(0,t-0.25)/0.35)"
 Y2="300+120*pow(2,-10*max(0,t-0.47)/0.35)"
 ffmpeg -y -loglevel error \
   -i "$HOOK" -i "$OUT/$NAME.mp4" -i "$OUT/${NAME}_lead.wav" \
+  -f lavfi -i "color=c=black:s=1080x1920:d=$HOOK_LEN:r=60,format=rgba,geq=r=0:g=0:b=0:a='255*0.72*pow(max(0\,1-Y/820)\,1.4)'" \
   -filter_complex "
     [0:v]trim=start=$START:duration=$HOOK_LEN,setpts=PTS-STARTPTS,fps=60,
          scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,setsar=1,
-         drawbox=x=0:y=0:w=iw:h=ih:color=black@0.4:t=fill,
+         format=rgba[hv]; [hv][3:v]overlay=0:0,
          drawbox=x=80:y=1460:w='min(920,920*max(0,t-0.9)/0.25)':h=14:color=0x3D33D8:t=fill,
-         drawtext=fontfile=$FONT_S:textfile=$TMP/kicker.txt:fontsize=52:fontcolor=white:x=80:y='$Y1':alpha='$A1',
-         drawtext=fontfile=$FONT_B:textfile=$TMP/title.txt:fontsize=124:line_spacing=10:fontcolor=white:x=80:y='$Y2':alpha='$A2',
+         drawtext=fontfile=$FONT_S:textfile=$TMP/kicker.txt:fontsize=52:fontcolor=white:shadowcolor=black@0.35:shadowy=3:x=80:y='$Y1':alpha='$A1',
+         drawtext=fontfile=$FONT_B:textfile=$TMP/title.txt:fontsize=124:line_spacing=10:fontcolor=white:shadowcolor=black@0.35:shadowy=4:x=80:y='$Y2':alpha='$A2',
          format=yuv420p[h];
     [1:v]fps=60,format=yuv420p,setsar=1[a];
     [h][a]xfade=transition=slideleft:duration=$XFADE:offset=$LEAD[v]" \
