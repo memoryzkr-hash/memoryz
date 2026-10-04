@@ -9,6 +9,9 @@
 | `blinder/index.html`, `juljul/index.html` | 영상 원본. 브라우저로 열면 반복 재생돼요 (`npx serve promo` 같은 간단한 서버로 열기) |
 | `shared/` | 공통 색·글꼴(프리텐다드)·재생기·예시 그림 |
 | `render.cjs` | 원본을 MP4로 바꾸는 도구 |
+| `out/blinder_higgsfield.mp4`, `out/juljul_higgsfield.mp4` | 힉스필드로 만든 3초 실사 도입 장면 + 앱 영상 + 효과음 (17.7초) |
+| `hooks/` | 힉스필드 원본 장면 (Seedance 2.5, 5초, 1080p). 1~4초 구간을 써요 |
+| `hook.sh` | 도입 장면을 앱 영상 앞에 붙이는 도구 |
 | `sound.py` | 효과음(누르기·가림막·알림음·아주 작은 배경 화음)을 직접 합성해 `_sound.mp4`를 만드는 도구. 외부 음원을 쓰지 않아 저작권 걱정이 없어요 |
 
 디자인은 두 앱 규칙을 따랐어요. 바탕 #F7F7F8, 남색 #3D33D8 한 가지, 검은 알약 버튼, 검은 가림막, 프리텐다드 글꼴을 쓰고, 튀어오르기나 회전 없이 페이드만 써요.
@@ -20,6 +23,7 @@
 NODE_PATH=$(npm root -g) node promo/render.cjs blinder              # → promo/out/blinder.mp4
 NODE_PATH=$(npm root -g) node promo/render.cjs juljul --shots 0,7.5  # 확인용 PNG만 찍기
 python3 promo/sound.py blinder                                       # → promo/out/blinder_sound.mp4
+bash promo/hook.sh blinder promo/hooks/blinder_hook.mp4 1.0          # → promo/out/blinder_higgsfield.mp4
 ```
 
 필요한 것: playwright(크로미움), ffmpeg, python3

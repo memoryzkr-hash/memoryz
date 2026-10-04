@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 # 힉스필드로 만든 실사 도입 장면(3초)을 앱 소개 영상 앞에 붙인다.
-#   bash promo/hook.sh blinder promo/hooks/blinder_hook.mp4
+#   bash promo/hook.sh blinder promo/hooks/blinder_hook.mp4 1.0
 #   → promo/out/blinder_higgsfield.mp4 (약 17.7초, 효과음 포함)
+#   세 번째 값은 도입 장면에서 쓸 구간의 시작 초(없으면 0)
 set -euo pipefail
 
 NAME="$1"
 HOOK="$2"
+START="${3:-0}"
 DIR="$(cd "$(dirname "$0")" && pwd)"
 OUT="$DIR/out"
 FONT_B="$DIR/shared/fonts/pretendard_bold.otf"
@@ -17,7 +19,7 @@ LEAD=$(python3 -c "print($HOOK_LEN - $XFADE)")
 case "$NAME" in
   blinder) KICKER="전공 그림 암기"; TITLE=$'교재 그림, 아직도\n오려 붙여 외우세요?' ;;
   juljul)  KICKER="지문 · 발표문 · 모범 답안"; TITLE=$'긴 글, 아직도\n통째로 외우세요?' ;;
-  *) echo "사용법: bash promo/hook.sh <blinder|juljul> <도입 장면.mp4>"; exit 1 ;;
+  *) echo "사용법: bash promo/hook.sh <blinder|juljul> <도입 장면.mp4> [시작 초]"; exit 1 ;;
 esac
 
 TMP="$(mktemp -d)"
@@ -32,7 +34,7 @@ ALPHA="if(lt(t,0.3),0,if(lt(t,0.55),(t-0.3)/0.25,1))"
 ffmpeg -y -loglevel error \
   -i "$HOOK" -i "$OUT/$NAME.mp4" -i "$OUT/${NAME}_lead.wav" \
   -filter_complex "
-    [0:v]trim=0:$HOOK_LEN,setpts=PTS-STARTPTS,fps=60,
+    [0:v]trim=start=$START:duration=$HOOK_LEN,setpts=PTS-STARTPTS,fps=60,
          scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,setsar=1,
          drawbox=x=0:y=0:w=iw:h=ih:color=black@0.35:t=fill,
          drawtext=fontfile=$FONT_S:textfile=$TMP/kicker.txt:fontsize=44:fontcolor=white:x=88:y=250:alpha='$ALPHA',
