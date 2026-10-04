@@ -206,7 +206,9 @@ sup{font-size:.6em}
 .fig text{font-family:var(--sans);font-size:14px;font-weight:700;fill:#1B1B22}
 .mk{fill:#0A0A0A;transition:fill .15s}
 .live .mk{cursor:pointer;pointer-events:all}
-.live .mk:hover{fill:#2A2A33}
+@media (hover:hover){.live .mk:not(.open):hover{fill:#2A2A33}}
+.live .mk:focus{outline:none}
+.live .mk:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .mk.open{fill:transparent;stroke:#0A0A0A;stroke-width:1.2;stroke-dasharray:3 3}
 .t-ctrl{display:flex;justify-content:space-between;align-items:center;gap:10px;min-height:44px}
 .t-ctrl .hint{font-size:13px;color:var(--app-t4)}
@@ -415,7 +417,7 @@ footer .notes li::before{content:counter(fn) ".";flex:0 0 auto}
 }
 /* 블라인더 가림막은 손가락으로 누르기 쉽게 누르는 범위를 넓힌다 */
 .live .mk{stroke:rgba(0,0,0,0);stroke-width:16}
-.live .mk.open{stroke:#0A0A0A;stroke-width:1.2}
+.live .mk.open{fill:transparent;stroke:#0A0A0A;stroke-width:1.2}
 .passage{-webkit-touch-callout:none}
 
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
