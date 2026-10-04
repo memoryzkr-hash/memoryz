@@ -2,6 +2,7 @@
 
     python3 promo/sound.py blinder   → promo/out/blinder_sound.mp4
     python3 promo/sound.py juljul    → promo/out/juljul_sound.mp4
+    python3 promo/sound.py juljul --lead 2.7 --wav-only  → 앞에 2.7초 도입 장면이 붙는 판의 소리(wav)만
 
 소리 시각은 각 영상 index.html 의 시간표와 맞춘다. 영상 시간표를 바꾸면 여기 EVENTS 도 같이 바꾼다.
 """
@@ -21,10 +22,18 @@ ROOT = Path(__file__).resolve().parent
 random.seed(7)
 
 
+LEAD = 0.0  # 앞에 붙는 도입 장면 길이(초). 0이면 15초 반복 재생용
+
+
 def add(buf, start, samples):
-    i0 = int(start * SR)
+    i0 = int((start + LEAD) * SR)
+    n = len(buf)
     for k, v in enumerate(samples):
-        j = (i0 + k) % N  # 끝을 넘으면 앞으로 감아서 반복 재생 때도 이어지게
+        j = i0 + k
+        if LEAD == 0:
+            j %= n  # 끝을 넘으면 앞으로 감아서 반복 재생 때도 이어지게
+        elif j >= n:
+            break
         buf[j] += v
 
 
@@ -104,10 +113,11 @@ def pad(buf, vol=0.016):
     notes = [220.0, 277.18, 329.63, 415.30]
     notes = [round(f * DUR) / DUR for f in notes]
     lfo_f = 2 / DUR
-    for k in range(N):
+    for k in range(len(buf)):
         t = k / SR
+        fade = min(1.0, t / 1.5) if LEAD else 1.0
         s = sum(math.sin(2 * math.pi * f * t) for f in notes)
-        buf[k] += vol * (0.75 + 0.25 * math.sin(2 * math.pi * lfo_f * t)) * s
+        buf[k] += fade * vol * (0.75 + 0.25 * math.sin(2 * math.pi * lfo_f * t)) * s
 
 
 def chime(buf, t):
@@ -169,17 +179,24 @@ def juljul(buf):
 
 
 def main():
-    name = sys.argv[1] if len(sys.argv) > 1 else ""
+    global LEAD
+    args = sys.argv[1:]
+    name = args[0] if args else ""
     if name not in ("blinder", "juljul"):
-        sys.exit("사용법: python3 promo/sound.py <blinder|juljul>")
-    buf = array("d", [0.0]) * N
+        sys.exit("사용법: python3 promo/sound.py <blinder|juljul> [--lead 초] [--wav-only]")
+    if "--lead" in args:
+        LEAD = float(args[args.index("--lead") + 1])
+    wav_only = "--wav-only" in args
+    buf = array("d", [0.0]) * (N + int(LEAD * SR))
     pad(buf)
+    if LEAD:
+        add(buf, -0.35, whoosh(0.6, 0.14))  # 도입 장면 → 앱 화면으로 넘어갈 때
     {"blinder": blinder, "juljul": juljul}[name](buf)
 
     peak = max(abs(v) for v in buf) or 1
     gain = 0.85 / peak
     out = ROOT / "out"
-    wav = out / f"{name}_sound.wav"
+    wav = out / (f"{name}_lead.wav" if LEAD else f"{name}_sound.wav")
     with wave.open(str(wav), "wb") as w:
         w.setnchannels(2)
         w.setsampwidth(2)
@@ -189,6 +206,9 @@ def main():
             s = int(max(-1, min(1, math.tanh(v * gain * 1.1))) * 32000)
             frames += struct.pack("<hh", s, s)
         w.writeframes(bytes(frames))
+    if wav_only:
+        print(wav)
+        return
 
     video = out / f"{name}.mp4"
     mp4 = out / f"{name}_sound.mp4"
