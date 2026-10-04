@@ -1,0 +1,64 @@
+@font-face { font-family: "Pretendard"; font-weight: 400; src: url("fonts/pretendard_regular.otf") format("opentype"); }
+@font-face { font-family: "Pretendard"; font-weight: 600; src: url("fonts/pretendard_semibold.otf") format("opentype"); }
+@font-face { font-family: "Pretendard"; font-weight: 700; src: url("fonts/pretendard_bold.otf") format("opentype"); }
+
+:root {
+  --bg: #F7F7F8;
+  --card: #FFFFFF;
+  --ink: #0A0A0A;
+  --sub: #55575E;
+  --muted: #8A8C93;
+  --line: #ECECEE;
+  --fill: #F1F1F3;
+  --accent: #3D33D8;
+  --accent-weak: #EFEEFD;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: #222; }
+body { display: grid; place-items: center; min-height: 100vh; }
+body.render { display: block; min-height: 0; background: var(--bg); }
+
+#stage {
+  position: relative;
+  width: 1080px;
+  height: 1920px;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
+  font-weight: 400;
+  letter-spacing: 0;
+  -webkit-font-smoothing: antialiased;
+  transform-origin: top left;
+}
+
+.abs { position: absolute; }
+.layer { position: absolute; inset: 0; will-change: opacity; }
+
+/* 위쪽 제목 묶음 */
+.head { position: absolute; left: 88px; top: 250px; width: 900px; }
+.kicker { font-size: 44px; font-weight: 600; color: var(--accent); margin-bottom: 28px; }
+.title { font-size: 100px; font-weight: 700; line-height: 1.15; letter-spacing: -0.02em; }
+.body { font-size: 42px; color: var(--sub); line-height: 1.5; margin-top: 32px; }
+
+.card {
+  position: absolute;
+  background: var(--card);
+  border: 2px solid var(--line);
+  border-radius: 48px;
+}
+.pill {
+  position: absolute;
+  display: grid; place-items: center;
+  border-radius: 999px;
+  font-weight: 600;
+}
+.pill.black { background: var(--ink); color: #fff; }
+.pill.line { background: var(--card); border: 2px solid var(--line); color: var(--ink); }
+
+/* 누른 자리 표시 */
+.tap {
+  position: absolute; width: 120px; height: 120px; margin: -60px 0 0 -60px;
+  border-radius: 50%; background: rgba(10, 10, 10, .14); opacity: 0; pointer-events: none;
+}

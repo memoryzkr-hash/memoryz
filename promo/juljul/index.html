@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>줄줄 15초 소개 영상</title>
+<link rel="stylesheet" href="../shared/base.css">
+<style>
+  /* 1·2. 문단 카드 */
+  #wrap { position: absolute; left: 88px; width: 904px; background: #fff; border: 2px solid var(--line); border-radius: 48px; }
+  .para { position: absolute; left: 88px; width: 904px; background: #fff; border: 2px solid transparent; overflow: hidden; }
+  .para .cap { position: absolute; left: 40px; top: 34px; font-size: 30px; color: var(--muted); white-space: nowrap; }
+  .para .full, .para .sum { position: absolute; left: 40px; width: 824px; }
+  .para .full { top: 32px; font-size: 32px; line-height: 1.55; }
+  .para .sum { font-size: 40px; line-height: 1.5; font-weight: 600; }
+  .kw { transition: none; }
+
+  /* 3. 여섯 단계 */
+  #steps { position: absolute; left: 88px; top: 690px; width: 904px; height: 80px; }
+  .seg { position: absolute; top: 0; height: 8px; border-radius: 4px; background: #E4E4E8; }
+  .slab { position: absolute; top: 26px; text-align: center; font-size: 30px; color: var(--muted); }
+  #stepCard { left: 88px; top: 800px; width: 904px; height: 620px; }
+  #stepCard .cap { position: absolute; left: 48px; top: 44px; font-size: 30px; color: var(--muted); }
+  .stitle { position: absolute; left: 48px; top: 96px; font-size: 48px; font-weight: 600; white-space: nowrap; }
+  .sbody { position: absolute; left: 48px; top: 210px; width: 808px; height: 380px; font-size: 46px; line-height: 1.6; }
+  .key { color: var(--accent); font-weight: 600; }
+  .blank { display: inline-block; min-width: 2.4em; padding: 0 .2em; border-radius: 12px; background: var(--fill); text-align: center; line-height: 1.35; }
+  .initial .rest { display: inline-block; height: .42em; border-radius: .21em; background: #E4E4E8; margin: 0 .38em 0 .08em; vertical-align: .08em; }
+  .chip { position: absolute; left: 0; width: 808px; height: 92px; border: 2px solid var(--line); border-radius: 24px; background: #fff;
+          font-size: 32px; display: flex; align-items: center; padding: 0 28px; gap: 20px; white-space: nowrap; }
+  .chip .no { width: 28px; color: var(--accent); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .input { display: inline-block; min-width: 3em; border-bottom: 4px solid #D3D4D9; text-align: left; padding: 0 .1em; line-height: 1.3; }
+  .caret { display: inline-block; width: 4px; height: 1.05em; background: var(--ink); vertical-align: -0.15em; margin-left: 2px; }
+  .sheet { position: absolute; left: 0; top: 0; width: 808px; height: 240px; border-radius: 24px; background: var(--fill); padding: 28px 32px; font-size: 42px; line-height: 1.55; }
+  .ok { position: absolute; left: 0; font-size: 34px; font-weight: 600; color: var(--accent); }
+
+  /* 4. 복습 */
+  #revCard { left: 88px; top: 800px; width: 904px; height: 560px; }
+  #revCard .cap { position: absolute; left: 56px; top: 52px; font-size: 30px; color: var(--muted); }
+  #revCard .next { position: absolute; left: 56px; top: 100px; font-size: 56px; font-weight: 600; }
+  #revCard .next b { color: var(--accent); font-weight: 600; font-variant-numeric: tabular-nums; }
+  #revCard .axis { position: absolute; left: 72px; width: 760px; top: 330px; height: 4px; background: var(--line); border-radius: 2px; }
+  .rtick { position: absolute; top: 300px; width: 16px; height: 64px; margin-left: -8px; border-radius: 8px; background: #E4E4E8; }
+  .rlab { position: absolute; top: 386px; width: 120px; margin-left: -60px; text-align: center; font-size: 30px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+  /* 5. 마무리 */
+  #end .logo { position: absolute; left: 390px; top: 500px; width: 300px; height: 300px; }
+  #end .name { position: absolute; left: 0; right: 0; top: 860px; text-align: center; font-size: 160px; font-weight: 700; letter-spacing: -0.02em; }
+  #end .line1 { position: absolute; left: 0; right: 0; top: 1080px; text-align: center; font-size: 48px; color: var(--sub); }
+  #end .cta { position: absolute; left: 0; right: 0; top: 1220px; text-align: center; font-size: 38px; color: var(--muted); }
+  #end .url { left: 290px; width: 500px; top: 1290px; height: 104px; font-size: 40px; }
+</style>
+</head>
+<body>
+<div id="stage">
+
+  <!-- 1. 첫 장면 제목 -->
+  <div class="head" id="hA">
+    <div class="kicker">줄줄</div>
+    <div class="title">긴 글도<br>줄줄 외워져요</div>
+  </div>
+  <!-- 2. 문단별 정리 제목 -->
+  <div class="head" id="hB">
+    <div class="kicker">문단별 정리</div>
+    <div class="title">글의 뼈대부터<br>잡아 드려요</div>
+  </div>
+
+  <!-- 1·2. 문단 카드 (첫 장면과 정리 장면이 같이 씀) -->
+  <div id="cards">
+    <div id="wrap"></div>
+    <div class="para" id="p0">
+      <span class="cap">1문단 · 화제를 꺼내요</span>
+      <div class="full">가짜 약을 먹었는데도 몸이 나아지는 경우가 있다. 아무 성분이 없는 설탕 알약을 진짜 약이라고 믿고 먹은 환자의 통증이 실제로 줄어드는 현상을 플라시보 효과라고 한다.</div>
+      <div class="sum">가짜 약을 믿고 먹은 환자의 통증이 줄어드는 현상을 <span class="kw">플라시보 효과</span>라고 한다.</div>
+    </div>
+    <div class="para" id="p1">
+      <span class="cap">2문단 · 이유를 설명해요</span>
+      <div class="full">플라시보 효과가 생기는 첫 번째 이유는 기대이다. 환자가 약을 먹으면 나을 것이라고 기대하면, 뇌는 통증을 줄이는 물질인 엔도르핀을 스스로 분비한다.</div>
+      <div class="sum">플라시보 효과가 생기는 첫 번째 이유는 <span class="kw">기대</span>이다.</div>
+    </div>
+    <div class="para" id="p2">
+      <span class="cap">3문단 · 이유를 설명해요</span>
+      <div class="full">두 번째 이유는 조건 형성이다. 예를 들어 같은 모양의 알약을 먹고 여러 번 효과를 본 사람은, 나중에 성분이 없는 알약을 먹어도 몸이 이전과 비슷하게 반응한다.</div>
+      <div class="sum">두 번째 이유는 <span class="kw">조건 형성</span>이다.</div>
+    </div>
+  </div>
+
+  <!-- 3. 여섯 단계 -->
+  <div class="layer" id="sC">
+    <div class="head">
+      <div class="kicker">여섯 단계 암기</div>
+      <div class="title">보면서 읽다가<br>보지 않고 써요</div>
+    </div>
+    <div id="steps"></div>
+    <div class="card" id="stepCard">
+      <div class="cap">2문단 · 이유를 설명해요</div>
+      <div class="stitle" data-s="0">소리 내어 세 번 읽어요</div>
+      <div class="stitle" data-s="1">빈칸에 들어갈 말을 떠올려요</div>
+      <div class="stitle" data-s="2">첫 글자만 보고 말해요</div>
+      <div class="stitle" data-s="3">문장을 순서대로 눌러요</div>
+      <div class="stitle" data-s="4">빈칸을 직접 써요</div>
+      <div class="stitle" data-s="5">보지 않고 써 보거나 말해요</div>
+
+      <div class="sbody" data-s="0">플라시보 효과가 생기는 첫 번째 이유는 <span class="key">기대</span>이다.</div>
+      <div class="sbody" data-s="1"><span class="blank" id="b1">플라시보</span> 효과가 생기는 첫 번째 이유는 <span class="blank" id="b2">기대</span>이다.</div>
+      <div class="sbody initial" data-s="2" id="initials"></div>
+      <div class="sbody" data-s="3">
+        <div class="chip" id="c0"><span class="no"></span>플라시보 효과가 생기는 첫 번째 이유는 기대이다.</div>
+        <div class="chip" id="c1"><span class="no"></span>환자가 약을 먹으면 나을 것이라고 기대하면, …</div>
+        <div class="chip" id="c2"><span class="no"></span>실제로 진통제를 기대한 사람의 뇌를 촬영하면 …</div>
+      </div>
+      <div class="sbody" data-s="4">
+        플라시보 효과가 생기는 첫 번째 이유는 <span class="input" id="in5"></span>이다.
+        <div class="ok" id="ok5" style="top:200px">맞았어요</div>
+      </div>
+      <div class="sbody" data-s="5">
+        <div class="sheet" id="sheet6"></div>
+        <div class="ok" id="ok6" style="top:270px">빠진 곳 없이 다 썼어요</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. 복습 -->
+  <div class="layer" id="sD">
+    <div class="head">
+      <div class="kicker">오늘 복습</div>
+      <div class="title">다 외운 문단은<br>잊기 전에 다시</div>
+      <div class="body">6단계를 끝내면 1·3·7·14·30일 뒤에 나와요</div>
+    </div>
+    <div class="card" id="revCard">
+      <div class="cap">2문단 · 이유를 설명해요</div>
+      <div class="next">다음 복습 <b id="nextDay">1일 뒤</b></div>
+      <div class="axis"></div>
+      <div id="rticks"></div>
+    </div>
+  </div>
+
+  <!-- 5. 마무리 -->
+  <div class="layer" id="sE">
+    <div id="end">
+      <svg class="logo" viewBox="0 0 48 48">
+        <rect width="48" height="48" rx="13" fill="#3D33D8"/>
+        <rect class="lg" x="11" y="12.5" width="26" height="5" rx="2.5" fill="#FFFFFF"/>
+        <rect class="lg" x="11" y="21.5" width="8" height="5" rx="2.5" fill="#FFFFFF"/>
+        <rect class="lg" x="22" y="20" width="15" height="8" rx="3" fill="#FFFFFF" fill-opacity=".22" stroke="#FFFFFF" stroke-width="2"/>
+        <rect class="lg" x="11" y="30.5" width="17" height="5" rx="2.5" fill="#FFFFFF"/>
+      </svg>
+      <div class="name">줄줄</div>
+      <div class="line1">긴 글을 문단별로 외우는 공부 앱</div>
+      <div class="cta">웹에서 바로 써 보기</div>
+      <div class="pill line url">sulsul-app.pages.dev</div>
+    </div>
+  </div>
+
+  <div class="tap" id="tap"></div>
+</div>
+
+<script type="module">
+import { start, prog, win, lerp, set, tap, easeOut, clamp } from "../shared/engine.js";
+
+const $ = (s) => document.querySelector(s);
+const $$ = (s) => [...document.querySelectorAll(s)];
+
+// 첫 글자 단계
+const WORDS = ["플라시보", "효과가", "생기는", "첫", "번째", "이유는", "기대이다."];
+$("#initials").innerHTML = WORDS.map((w, i) => {
+  const rest = w.replace(/\.$/, "").length - 1;
+  const last = i === WORDS.length - 1 ? ";margin-right:.05em" : "";
+  return `<span>${w[0]}</span>${rest > 0 ? `<span class="rest" style="width:${rest * 0.9}em${last}"></span>` : '<span style="margin-right:.38em"></span>'}`;
+}).join("") + ".";
+
+// 단계 막대
+const STEP_NAMES = ["읽기", "빈칸", "첫 글자", "순서", "쓰기", "통째로"];
+const SEG_W = (904 - 5 * 12) / 6;
+$("#steps").innerHTML = STEP_NAMES.map((n, i) =>
+  `<div class="seg" style="left:${i * (SEG_W + 12)}px;width:${SEG_W}px"></div>` +
+  `<div class="slab" style="left:${i * (SEG_W + 12)}px;width:${SEG_W}px">${n}</div>`).join("");
+
+// 복습 축 (제곱근 눈금이라 앞쪽이 덜 붙는다)
+const DAYS = [1, 3, 7, 14, 30];
+const AX0 = 72, AXW = 760, dayX = (d) => AX0 + AXW * Math.sqrt(d / 30);
+$("#rticks").innerHTML = `<div class="rlab" style="left:${AX0}px">오늘</div>` + DAYS.map((d) =>
+  `<div class="rtick" style="left:${dayX(d)}px"></div><div class="rlab" style="left:${dayX(d)}px">${d}일</div>`).join("");
+
+// 단계 시간표 (5.0초부터 6초)
+const STEP_LEN = [0.95, 1.0, 0.95, 1.2, 1.0, 0.9];
+const STEP_AT = STEP_LEN.reduce((a, l) => (a.push(a[a.length - 1] + l), a), [5.0]);
+
+// 문단 카드 크기는 글꼴을 읽은 뒤 잰다
+let H = null, TAPB = null;
+function center(el) {
+  const st = $("#stage").getBoundingClientRect(), r = el.getBoundingClientRect(), k = st.width / 1080;
+  return [(r.left + r.width / 2 - st.left) / k, (r.top + r.height / 2 - st.top) / k];
+}
+const TOP = 690, GAP = 28, PAD = 32, CAP_H = 58;
+function init() {
+  H = [0, 1, 2].map((i) => {
+    const el = $("#p" + i);
+    return { full: el.querySelector(".full").offsetHeight + PAD * 2, sum: el.querySelector(".sum").offsetHeight + PAD * 2 + CAP_H };
+  });
+  const tr = $("#stepCard").style.transform;
+  $("#stepCard").style.transform = "none";
+  TAPB = [center($("#b1")), center($("#b2"))];
+  $("#stepCard").style.transform = tr;
+}
+
+// 순서 단계: 문장별 자리(0이 맨 위). 처음 → 첫 문장 고른 뒤 → 둘째 문장 고른 뒤
+const ORDER_S = [[1, 2, 0], [0, 2, 1], [0, 1, 2]];
+const ORDER_AT = [0, 1, 2].map((i) => STEP_AT[3] + 0.25 + i * 0.28);
+const SENT = "플라시보 효과가 생기는 첫 번째 이유는 기대이다.";
+const D = 15;
+
+function render(t) {
+  if (!H) init();
+
+  // ── 1·2. 문단 카드 (0 ~ 5초, 끝에서 다시 돌아옴)
+  const back = t >= 7;
+  const split = back ? 0 : prog(t, 0.15, 0.75);
+  const morph = back ? 0 : prog(t, 1.6, 2.2);
+  const cardsOp = back ? prog(t, 14.62, 15) : 1 - prog(t, 4.75, 5.0);
+  $("#cards").style.opacity = cardsOp;
+  let y = TOP;
+  [0, 1, 2].forEach((i) => {
+    const el = $("#p" + i);
+    const h = lerp(H[i].full, H[i].sum, morph);
+    const r = 48 * split;
+    set(el, {
+      top: y + "px", height: h + "px",
+      borderColor: `rgba(236,236,238,${split})`,
+      borderRadius: `${i === 0 ? 48 : r}px ${i === 0 ? 48 : r}px ${i === 2 ? 48 : r}px ${i === 2 ? 48 : r}px`,
+    });
+    el.querySelector(".full").style.opacity = 1 - prog(t < 7 ? t : 0, 1.6, 1.85);
+    set(el.querySelector(".cap"), { opacity: morph });
+    set(el.querySelector(".sum"), { opacity: back ? 0 : prog(t, 1.85, 2.2), top: PAD + CAP_H + "px" });
+    const kw = el.querySelector(".kw");
+    kw.style.color = !back && t >= 2.8 + i * 0.25 ? "#3D33D8" : "inherit";
+    y += h + GAP * split;
+  });
+  set($("#wrap"), { top: TOP + "px", height: (y - TOP - GAP * split) + "px", opacity: 1 - split });
+
+  $("#hA").style.opacity = back ? 0 : win(t, 0.4, 1.45, 0.25);
+  $("#hA").style.transform = `translateY(${lerp(16, 0, prog(t, 0.4, 0.65))}px)`;
+  $("#hB").style.opacity = back ? 0 : win(t, 1.4, 5.0, 0.25);
+  $("#hB").style.transform = `translateY(${lerp(16, 0, prog(t, 1.4, 1.65))}px)`;
+
+  // ── 3. 여섯 단계 (4.95 ~ 11.0초)
+  const sC = $("#sC");
+  sC.style.opacity = win(t, 4.95, 11.05, 0.3);
+  $("#stepCard").style.transform = `translateY(${lerp(40, 0, prog(t, 4.95, 5.35))}px)`;
+  let cur = 0;
+  for (let i = 0; i < 6; i++) if (t >= STEP_AT[i]) cur = i;
+  $$(".seg").forEach((s, i) => (s.style.background = i < cur || (i === cur && t >= STEP_AT[0]) ? "#3D33D8" : "#E4E4E8"));
+  $$(".slab").forEach((s, i) => set(s, { color: i === cur ? "#0A0A0A" : "#8A8C93", fontWeight: i === cur ? 600 : 400 }));
+  for (let i = 0; i < 6; i++) {
+    const a = STEP_AT[i], b = STEP_AT[i + 1];
+    // 앞 단계가 다 사라진 뒤 다음 단계가 나타나게 해서 글자가 겹치지 않게 한다
+    const op = (i === 0 ? 1 : prog(t, a, a + 0.12)) * (i === 5 ? 1 : 1 - prog(t, b - 0.12, b));
+    $$(`[data-s="${i}"]`).forEach((el) => (el.style.opacity = op));
+  }
+  // 빈칸: 눌러서 정답 보기
+  [["#b1", STEP_AT[1] + 0.35], ["#b2", STEP_AT[1] + 0.6]].forEach(([s, at]) => {
+    const on = t >= at;
+    set($(s), { color: on ? "#3D33D8" : "transparent", background: on ? "#EFEEFD" : "#F1F1F3", fontWeight: on ? 600 : 400 });
+  });
+  // 순서: 섞인 문장을 차례로 누르면 고른 문장이 위로 쌓인다
+  const p1 = prog(t, ORDER_AT[0], ORDER_AT[0] + 0.25), p2 = prog(t, ORDER_AT[1], ORDER_AT[1] + 0.25);
+  [0, 1, 2].forEach((i) => {
+    const slot = lerp(lerp(ORDER_S[0][i], ORDER_S[1][i], p1), ORDER_S[2][i], p2);
+    const picked = t >= ORDER_AT[i] + 0.12;
+    const el = $("#c" + i);
+    set(el, { top: slot * 108 + "px", borderColor: picked ? "#3D33D8" : "#ECECEE" });
+    el.querySelector(".no").textContent = picked ? i + 1 : "";
+  });
+  // 쓰기: 핵심어 입력
+  const typed5 = t < STEP_AT[4] + 0.25 ? "" : t < STEP_AT[4] + 0.45 ? "기" : "기대";
+  const done5 = t >= STEP_AT[4] + 0.6;
+  $("#in5").innerHTML = typed5 + (done5 ? "" : '<span class="caret"></span>');
+  $("#in5").style.borderColor = done5 ? "#3D33D8" : "#D3D4D9";
+  $("#ok5").style.opacity = done5 ? 1 : 0;
+  // 통째로: 보지 않고 쓰기
+  const n6 = Math.round(SENT.length * clamp((t - STEP_AT[5] - 0.05) / 0.6));
+  $("#sheet6").innerHTML = SENT.slice(0, n6) + (n6 < SENT.length ? '<span class="caret"></span>' : "");
+  $("#ok6").style.opacity = t >= STEP_AT[5] + 0.7 ? 1 : 0;
+
+  // ── 4. 복습 (11.0 ~ 13.0초)
+  $("#sD").style.opacity = win(t, 11.0, 13.0, 0.3);
+  $("#revCard").style.transform = `translateY(${lerp(40, 0, prog(t, 11.0, 11.4))}px)`;
+  let shown = 0;
+  $$(".rtick").forEach((el, i) => {
+    const on = t >= 11.35 + i * 0.25;
+    if (on) shown = i;
+    el.style.background = on ? "#3D33D8" : "#E4E4E8";
+  });
+  $("#nextDay").textContent = DAYS[shown] + "일 뒤";
+
+  // ── 5. 마무리 (12.95 ~ 14.7초)
+  $("#sE").style.opacity = win(t, 12.95, 14.7, 0.3);
+  $("#end").style.transform = `translateY(${lerp(24, 0, prog(t, 12.95, 13.35))}px)`;
+  $$("#end .lg").forEach((el, i) => set(el, {
+    transformBox: "fill-box", transformOrigin: "left center",
+    transform: `scaleX(${prog(t, 13.1 + i * 0.1, 13.4 + i * 0.1, easeOut)})`,
+  }));
+
+  // ── 누른 자리
+  const tapEl = $("#tap");
+  tapEl.style.opacity = 0;
+  const bodyX = 88 + 48, bodyY = 800 + 210;
+  const taps = [
+    [STEP_AT[1] + 0.3, ...TAPB[0]],
+    [STEP_AT[1] + 0.55, ...TAPB[1]],
+    ...[0, 1, 2].map((i) => [ORDER_AT[i] - 0.05, bodyX + 400, bodyY + ORDER_S[i][i] * 108 + 46]),
+  ];
+  for (const [at, x, y] of taps) if (t >= at && t <= at + 0.4) tap(tapEl, t, at, x, y);
+}
+
+start({ duration: D, render, init });
+</script>
+</body>
+</html>
