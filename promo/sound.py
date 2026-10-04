@@ -3,6 +3,7 @@
     python3 promo/sound.py blinder   → promo/out/blinder_sound.mp4
     python3 promo/sound.py juljul    → promo/out/juljul_sound.mp4
     python3 promo/sound.py juljul --lead 2.7 --wav-only  → 앞에 2.7초 도입 장면이 붙는 판의 소리(wav)만
+    python3 promo/sound.py blinder --fx-only  → promo/out/blinder_reels.mp4 (음악 없이 효과음만. 릴스 음악을 위에 얹는 용도)
 
 시각은 박(beat) 단위로 적는다. 15초 = 32박 = 8마디라서 끝과 처음이 그대로 이어진다.
 영상 index.html 의 b(n) 시각과 같은 숫자를 쓴다.
@@ -316,6 +317,7 @@ def main():
     if "--lead" in args:
         LEAD = float(args[args.index("--lead") + 1])
     wav_only = "--wav-only" in args
+    fx_only = "--fx-only" in args
     total = N + int(LEAD * SR)
     drums, synth, fx = (array("d", [0.0]) * total for _ in range(3))
     music(drums, synth, TRANSITIONS[name])
@@ -324,9 +326,12 @@ def main():
     if LEAD:
         add(fx, -0.35, whoosh(0.6, 0.16))  # 도입 장면 → 앱 화면으로 넘어갈 때
 
-    mix = [0.6 * drums[k] + 1.0 * synth[k] + 0.9 * fx[k] for k in range(total)]
+    if fx_only:
+        mix = list(fx)
+    else:
+        mix = [0.6 * drums[k] + 1.0 * synth[k] + 0.9 * fx[k] for k in range(total)]
     peak = max(abs(v) for v in mix) or 1
-    gain = 0.95 / peak
+    gain = (0.6 if fx_only else 0.95) / peak  # 효과음만일 때는 릴스 음악 아래에 깔리도록 작게
     out = ROOT / "out"
     wav = out / (f"{name}_lead.wav" if LEAD else f"{name}_sound.wav")
     with wave.open(str(wav), "wb") as w:
@@ -343,7 +348,7 @@ def main():
         return
 
     video = out / f"{name}.mp4"
-    mp4 = out / f"{name}_sound.mp4"
+    mp4 = out / (f"{name}_reels.mp4" if fx_only else f"{name}_sound.mp4")
     subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(video), "-i", str(wav),
                     "-map", "0:v", "-map", "1:a", "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
                     "-shortest", "-movflags", "+faststart", str(mp4)], check=True)

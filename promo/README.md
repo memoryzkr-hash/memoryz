@@ -10,6 +10,7 @@
 | `shared/` | 공통 색·글꼴(프리텐다드)·재생기·예시 그림 |
 | `render.cjs` | 원본을 MP4로 바꾸는 도구 |
 | `out/blinder_higgsfield.mp4`, `out/juljul_higgsfield.mp4` | 힉스필드로 만든 3초 실사 도입 장면 + 앱 영상 + 효과음 (17.7초) |
+| `out/*_reels.mp4`, `out/*_higgsfield_reels.mp4` | **릴스 올릴 때 추천.** 음악 없이 효과음만 작게 넣은 판. 인스타 릴스에서 음악을 골라 위에 얹어요 |
 | `hooks/` | 힉스필드 원본 장면 (Seedance 2.5, 5초, 1080p). 1~4초 구간을 써요 |
 | `hook.sh` | 도입 장면을 앱 영상 앞에 붙이는 도구 |
 | `sound.py` | 128BPM 비트(Am–F–C–G)와 효과음을 직접 합성해 `_sound.mp4`를 만드는 도구. 외부 음원을 쓰지 않아 저작권 걱정이 없어요 |
@@ -23,7 +24,9 @@
 NODE_PATH=$(npm root -g) node promo/render.cjs blinder              # → promo/out/blinder.mp4
 NODE_PATH=$(npm root -g) node promo/render.cjs juljul --shots 0,7.5  # 확인용 PNG만 찍기
 python3 promo/sound.py blinder                                       # → promo/out/blinder_sound.mp4
+python3 promo/sound.py blinder --fx-only                             # → promo/out/blinder_reels.mp4 (효과음만)
 bash promo/hook.sh blinder promo/hooks/blinder_hook.mp4 1.0          # → promo/out/blinder_higgsfield.mp4
+bash promo/hook.sh blinder promo/hooks/blinder_hook.mp4 1.0 reels    # → promo/out/blinder_higgsfield_reels.mp4
 ```
 
 필요한 것: playwright(크로미움), ffmpeg, python3

@@ -3,11 +3,15 @@
 #   bash promo/hook.sh blinder promo/hooks/blinder_hook.mp4 1.0
 #   → promo/out/blinder_higgsfield.mp4 (약 17.7초, 효과음 포함)
 #   세 번째 값은 도입 장면에서 쓸 구간의 시작 초(없으면 0)
+#   네 번째 값에 reels 를 주면 음악 없이 효과음만 넣은 promo/out/<이름>_higgsfield_reels.mp4 를 만든다
 set -euo pipefail
 
 NAME="$1"
 HOOK="$2"
 START="${3:-0}"
+MODE="${4:-}"
+SUFFIX=""; SOUND_OPT=""
+if [ "$MODE" = "reels" ]; then SUFFIX="_reels"; SOUND_OPT="--fx-only"; fi
 DIR="$(cd "$(dirname "$0")" && pwd)"
 OUT="$DIR/out"
 FONT_B="$DIR/shared/fonts/pretendard_bold.otf"
@@ -27,7 +31,7 @@ trap 'rm -rf "$TMP"' EXIT
 printf '%s' "$KICKER" > "$TMP/kicker.txt"
 printf '%s' "$TITLE" > "$TMP/title.txt"
 
-python3 "$DIR/sound.py" "$NAME" --lead "$LEAD" --wav-only > /dev/null
+python3 "$DIR/sound.py" "$NAME" --lead "$LEAD" --wav-only $SOUND_OPT > /dev/null
 
 # 글자는 박자에 맞춰 아래에서 튀어 올라옴(작은 글 0.25초, 큰 글 0.47초).
 # 사진은 글자가 있는 위쪽만 그라데이션으로 어둡게 해서 인물 얼굴은 밝게 둔다
@@ -51,7 +55,7 @@ ffmpeg -y -loglevel error \
   -map "[v]" -map 2:a \
   -c:v libx264 -preset slow -crf 18 -pix_fmt yuv420p -profile:v high \
   -c:a aac -b:a 192k -shortest -movflags +faststart \
-  "$OUT/${NAME}_higgsfield.mp4"
+  "$OUT/${NAME}_higgsfield$SUFFIX.mp4"
 
 rm -f "$OUT/${NAME}_lead.wav"
-echo "$OUT/${NAME}_higgsfield.mp4"
+echo "$OUT/${NAME}_higgsfield$SUFFIX.mp4"
