@@ -25,6 +25,7 @@ import {
   type ScheduleSlot,
   type SlotRange,
 } from './src/planner';
+import { AiPlanScreen } from './src/screens/AiPlanScreen';
 import { DayView } from './src/screens/DayView';
 import { SlotPickerScreen } from './src/screens/SlotPickerScreen';
 import { WeekView } from './src/screens/WeekView';
@@ -33,7 +34,7 @@ import { colors, fonts } from './src/theme';
 import type { DateKey, Day, Schedule, Timetable } from './src/types';
 
 type Tab = 'day' | 'week';
-type Route = 'main' | 'add' | 'plan' | 'changeTime';
+type Route = 'main' | 'ai' | 'add' | 'plan' | 'changeTime';
 type Sheet =
   | { mode: 'add'; draft: ScheduleDraft; slots: ScheduleSlot[] }
   | { mode: 'edit'; schedule: Schedule; draft: ScheduleDraft };
@@ -205,7 +206,7 @@ export default function App() {
               onChangeDate={setDate}
               onOpenCalendar={() => setCalendar('main')}
               onOpenTimetables={() => setTimetableList(true)}
-              onPlan={() => openPicker('plan', date)}
+              onPlan={() => setRoute('ai')}
               onEdit={openEdit}
             />
           )}
@@ -213,6 +214,18 @@ export default function App() {
             <BottomNav />
           </SafeAreaView>
         </SafeAreaView>
+      ) : route === 'ai' ? (
+        <AiPlanScreen
+          state={state}
+          setState={(s) => dispatch({ type: 'load', state: s })}
+          weekOf={date}
+          onBack={() => setRoute('main')}
+          onManual={() => openPicker('plan', date)}
+          onShowWeek={() => {
+            setTab('week');
+            setRoute('main');
+          }}
+        />
       ) : (
         <SlotPickerScreen
           {...pickerProps[route]}
