@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#0f0d0c" />
+    <title>Knockout Burgers</title>
+    <meta name="description" content="Smashed fresh. Hit hard. 스크롤로 해체되는 3D 스매시 버거 브랜드 사이트." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter+Tight:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <!-- Loader: the bell rings, the curtain lifts. -->
+    <div class="loader" aria-hidden="true">
+      <div class="loader__inner">
+        <div class="loader__label">Round 01 — Warming up the flat-top</div>
+        <div class="loader__count"><span data-count>00</span><small>%</small></div>
+        <div class="loader__bar"><i></i></div>
+      </div>
+    </div>
+
+    <div class="cursor" aria-hidden="true"></div>
+
+    <header class="nav" data-nav>
+      <a class="nav__logo" href="#top" aria-label="Knockout Burgers home">
+        <svg viewBox="0 0 40 40" aria-hidden="true">
+          <circle cx="20" cy="20" r="19" fill="#ff4a1c" />
+          <circle cx="20" cy="20" r="15.5" fill="none" stroke="#fff4ea" stroke-width="1.4" />
+          <text x="20" y="25.5" text-anchor="middle" font-family="Anton, Impact" font-size="15" fill="#fff4ea">KO</text>
+        </svg>
+        <span>Knockout Burgers</span>
+      </a>
+      <nav class="nav__links" aria-label="Main">
+        <a href="#menu">Menu</a>
+        <a href="#concept">Concept</a>
+        <a href="#location">Location</a>
+      </nav>
+      <a class="btn btn--fire nav__cta" href="#menu">Order Now</a>
+    </header>
+
+    <main id="top">
+      <!-- ============ Scroll-driven 3D story ============ -->
+      <section class="story" data-story>
+        <div class="story__pin">
+          <canvas class="story__canvas" data-canvas></canvas>
+          <div class="story__scrim" data-scrim></div>
+          <div class="story__tags" data-tags></div>
+
+          <article class="chapter chapter--left" data-from="0" data-to="0.105">
+            <p class="eyebrow">Knockout Burgers · Seoul</p>
+            <h1 class="display"><span class="line"><span>The</span></span><span class="line"><span>Stack.</span></span></h1>
+            <p class="lede">버터에 구운 브리오슈부터 철판에 짓눌러 바삭해진 척 패티까지. 한 층씩, 제대로 쌓았습니다.</p>
+            <div class="scroll-hint"><i></i><span>Scroll to unbox</span></div>
+          </article>
+
+          <article class="chapter chapter--left" data-from="0.2" data-to="0.385">
+            <p class="eyebrow">No. 02 — The Uppercut</p>
+            <h2 class="display"><span class="line"><span>Built to</span></span><span class="line"><span>knock you</span></span><span class="line"><span class="hl">out.</span></span></h2>
+            <p class="lede">더블 스매시 패티, 녹아내린 아메리칸 치즈, 카라멜라이즈드 어니언, 그리고 KO 소스.</p>
+            <div class="actions">
+              <a class="btn btn--fire" href="#menu">Order Now</a>
+              <a class="btn btn--ghost" href="#menu">View Menu</a>
+            </div>
+          </article>
+
+          <article class="chapter chapter--right" data-from="0.425" data-to="0.56">
+            <p class="eyebrow">90 seconds on 260°C steel</p>
+            <h2 class="display"><span class="line"><span>Smashed</span></span><span class="line"><span>to order.</span></span></h2>
+            <p class="lede">주문이 들어오면 그때 공을 굴려 철판에 내리칩니다. 가장자리는 레이스처럼 바삭하게, 속은 육즙 그대로.</p>
+          </article>
+
+          <article class="chapter chapter--right" data-from="0.615" data-to="0.75">
+            <p class="eyebrow">Combo · ₩16,900</p>
+            <h2 class="display"><span class="line"><span>Title fight</span></span><span class="line"><span>combo.</span></span></h2>
+            <p class="lede">버거, 코너 프라이, 라운드 12 쉐이크를 한 박스에. 픽업도, 배달도 그대로 따끈하게.</p>
+          </article>
+
+          <article class="chapter chapter--left" data-from="0.775" data-to="0.875">
+            <p class="eyebrow">Hand-spun · Thick enough to fight back</p>
+            <h2 class="display"><span class="line"><span>Round 12</span></span><span class="line"><span>shakes.</span></span></h2>
+            <p class="lede">오레오 쿠키 앤 크림, 스트로베리. 빨대가 서 있을 만큼 진하게 블렌딩합니다.</p>
+          </article>
+
+          <article class="chapter chapter--center" data-from="0.94" data-to="1.01">
+            <p class="eyebrow">Doors open 11:00 — 23:00</p>
+            <h2 class="display"><span class="line"><span>Ready for</span></span><span class="line"><span class="hl">round one?</span></span></h2>
+            <div class="actions">
+              <a class="btn btn--fire" href="#menu">Order Now</a>
+              <a class="btn btn--ghost" href="#location">Find Us</a>
+            </div>
+          </article>
+
+          <div class="rounds" aria-hidden="true">
+            <span class="rounds__label">RD</span>
+            <span class="rounds__num" data-round>01</span>
+            <span class="rounds__total">/ 06</span>
+            <span class="rounds__bar"><i data-round-bar></i></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ Marquee ============ -->
+      <div class="marquee" aria-hidden="true">
+        <div class="marquee__track">
+          <span>Smashed fresh</span><b>★</b><span>Hit hard</span><b>★</b><span>No freezers</span><b>★</b><span>No shortcuts</span><b>★</b>
+          <span>Smashed fresh</span><b>★</b><span>Hit hard</span><b>★</b><span>No freezers</span><b>★</b><span>No shortcuts</span><b>★</b>
+        </div>
+      </div>
+
+      <!-- ============ Menu ============ -->
+      <section class="lineup" id="menu" data-theme="light">
+        <header class="lineup__head">
+          <h2 class="display reveal">The lineup.</h2>
+          <p class="lineup__sub reveal">여섯 개의 메뉴, 여섯 번의 펀치. 모든 버거는 싱글 · 더블 · 트리플로 주문할 수 있어요.</p>
+        </header>
+
+        <div class="grid">
+          <article class="card reveal" data-thumb="jab">
+            <div class="card__media"><img alt="The Jab burger" /><span class="card__tag">Classic</span></div>
+            <div class="card__body">
+              <span class="card__no">01</span>
+              <h3>The Jab</h3>
+              <p>스매시 패티, 아메리칸 치즈, 피클, 어니언, KO 소스. 가볍지만 정확하게.</p>
+              <ul class="prices"><li><span>Single</span><b>₩8,900</b></li><li><span>Double</span><b>₩11,400</b></li><li><span>Triple</span><b>₩13,900</b></li></ul>
+              <button class="add" type="button" aria-label="Add The Jab to order">+ Add</button>
+            </div>
+          </article>
+
+          <article class="card reveal" data-thumb="uppercut">
+            <div class="card__media"><img alt="The Uppercut burger" /><span class="card__tag card__tag--fire">Signature</span></div>
+            <div class="card__body">
+              <span class="card__no">02</span>
+              <h3>The Uppercut</h3>
+              <p>더블 스매시, 치즈 두 장, 카라멜라이즈드 어니언, 크링클 피클. 녹아웃의 대표 펀치.</p>
+              <ul class="prices"><li><span>Single</span><b>₩9,900</b></li><li><span>Double</span><b>₩12,900</b></li><li><span>Triple</span><b>₩15,400</b></li></ul>
+              <button class="add" type="button" aria-label="Add The Uppercut to order">+ Add</button>
+            </div>
+          </article>
+
+          <article class="card reveal" data-thumb="haymaker">
+            <div class="card__media"><img alt="The Haymaker burger" /><span class="card__tag">Heavyweight</span></div>
+            <div class="card__body">
+              <span class="card__no">03</span>
+              <h3>The Haymaker</h3>
+              <p>트리플 패티에 크리스피 베이컨까지. 배고픔을 한 방에 끝내는 헤비급.</p>
+              <ul class="prices"><li><span>Double</span><b>₩14,400</b></li><li><span>Triple</span><b>₩16,900</b></li></ul>
+              <button class="add" type="button" aria-label="Add The Haymaker to order">+ Add</button>
+            </div>
+          </article>
+
+          <article class="card reveal" data-thumb="southpaw">
+            <div class="card__media"><img alt="The Southpaw chicken burger" /><span class="card__tag">Crispy</span></div>
+            <div class="card__body">
+              <span class="card__no">04</span>
+              <h3>The Southpaw</h3>
+              <p>버터밀크에 재운 크리스피 치킨, 양상추, 토마토, 피클. 예상 못 한 각도에서 들어오는 한 방.</p>
+              <ul class="prices"><li><span>Single</span><b>₩9,400</b></li><li><span>Spicy</span><b>₩9,900</b></li></ul>
+              <button class="add" type="button" aria-label="Add The Southpaw to order">+ Add</button>
+            </div>
+          </article>
+
+          <article class="card reveal" data-thumb="fries">
+            <div class="card__media"><img alt="Corner fries and loaded KO fries" /><span class="card__tag">Sides</span></div>
+            <div class="card__body">
+              <span class="card__no">05</span>
+              <h3>Corner Fries</h3>
+              <p>두 번 튀긴 슈스트링. 치즈 소스와 어니언을 올린 로디드 KO 프라이도 있어요.</p>
+              <ul class="prices"><li><span>Regular</span><b>₩4,400</b></li><li><span>Loaded KO</span><b>₩6,900</b></li></ul>
+              <button class="add" type="button" aria-label="Add Corner Fries to order">+ Add</button>
+            </div>
+          </article>
+
+          <article class="card reveal" data-thumb="shakes">
+            <div class="card__media"><img alt="Round 12 shakes" /><span class="card__tag">Hand-spun</span></div>
+            <div class="card__body">
+              <span class="card__no">06</span>
+              <h3>Round 12 Shakes</h3>
+              <p>쿠키 앤 크림 · 스트로베리. 라운드가 끝나도 녹지 않을 만큼 진하게.</p>
+              <ul class="prices"><li><span>Regular</span><b>₩5,900</b></li><li><span>Large</span><b>₩6,900</b></li></ul>
+              <button class="add" type="button" aria-label="Add Round 12 Shakes to order">+ Add</button>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <!-- ============ Concept ============ -->
+      <section class="concept" id="concept" data-theme="dark">
+        <p class="eyebrow">The concept</p>
+        <p class="manifesto" data-manifesto>
+          No freezers. No shortcuts. Just fresh chuck, a screaming-hot flat-top and ninety seconds of controlled violence.
+        </p>
+        <div class="stats">
+          <div class="stat reveal"><b data-countup="100">0</b><span>% 국내산 척 블렌드<br />매일 아침 직접 분쇄</span></div>
+          <div class="stat reveal"><b data-countup="90">0</b><span>초, 260°C 철판 위<br />스매시 타임</span></div>
+          <div class="stat reveal"><b data-countup="0">0</b><span>개의 냉동고<br />만들 때 바로 굽습니다</span></div>
+          <div class="stat reveal"><b data-countup="12">0</b><span>시간 저온 카라멜라이즈<br />어니언</span></div>
+        </div>
+      </section>
+
+      <!-- ============ Location ============ -->
+      <section class="location" id="location" data-theme="dark">
+        <div class="location__grid">
+          <div class="spot reveal">
+            <span class="spot__no">Corner 01</span>
+            <h3>Seongsu</h3>
+            <p>서울 성동구 연무장길 00<br />11:00 — 23:00 · 연중무휴</p>
+            <a class="link" href="#location">Get directions →</a>
+          </div>
+          <div class="spot reveal">
+            <span class="spot__no">Corner 02</span>
+            <h3>Hannam</h3>
+            <p>서울 용산구 대사관로 00<br />11:30 — 24:00 · 월요일 휴무</p>
+            <a class="link" href="#location">Get directions →</a>
+          </div>
+          <div class="spot spot--cta reveal">
+            <span class="spot__no">Delivery</span>
+            <h3>Ring the bell.</h3>
+            <p>박스째 따끈하게, 30분 안에 도착합니다.</p>
+            <a class="btn btn--fire" href="#menu">Order Now</a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer" data-theme="dark">
+      <div class="footer__mark" aria-hidden="true">KNOCKOUT</div>
+      <div class="footer__row">
+        <span>© 2026 Knockout Burgers</span>
+        <span>Smashed fresh · Hit hard</span>
+        <span>Instagram · TikTok · Careers</span>
+      </div>
+    </footer>
+
+    <div class="toast" role="status" aria-live="polite" data-toast></div>
+
+    <script type="module" src="../src/site/main.ts"></script>
+  </body>
+</html>
