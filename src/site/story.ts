@@ -25,6 +25,13 @@ export interface Scene {
    * For clips shot on a seamless background, so phones see the whole subject.
    */
   narrowScale?: number;
+  /**
+   * Shot on a seamless backdrop: the frame may be zoomed out or slid off-centre,
+   * with the backdrop colour filling the rest and the frame's edges feathered into it.
+   */
+  seamless?: boolean;
+  /** Optional sharper still (in the scene folder) shown instead of the first frame. */
+  still?: string;
 }
 
 export interface Cover {
@@ -32,6 +39,21 @@ export interface Cover {
   dy: number;
   dw: number;
   dh: number;
+  /** Frame is shrunk onto a backdrop (portrait screens) rather than filling the screen. */
+  contained: boolean;
+}
+
+/**
+ * A camera move layered on the first scene: zoom by `scale` around image point
+ * (x, y) and carry that point to screen anchor (ax, ay), blended in by `amount`.
+ */
+export interface View {
+  amount: number;
+  scale: number;
+  x: number;
+  y: number;
+  ax: number;
+  ay: number;
 }
 
 export class Story {
@@ -42,6 +64,8 @@ export class Story {
   private dpr = 1;
   private lastKey = '';
   private backdrop: (string | null)[];
+  private stills: (HTMLImageElement | null)[];
+  private view: View = { amount: 0, scale: 1, x: 0.5, y: 0.5, ax: 0.5, ay: 0.5 };
 
   constructor(
     private canvas: HTMLCanvasElement,
@@ -51,6 +75,7 @@ export class Story {
     this.ctx = canvas.getContext('2d', { alpha: false })!;
     this.frames = scenes.map((s) => new Array(s.frames).fill(null));
     this.backdrop = scenes.map(() => null);
+    this.stills = scenes.map(() => null);
     this.resize();
     window.addEventListener('resize', () => this.resize());
   }
@@ -62,6 +87,18 @@ export class Story {
   /** Loads every frame of a scene, a few at a time, reporting progress 0..1. */
   async load(scene: number, onProgress: (f: number) => void = () => {}): Promise<void> {
     const n = this.scenes[scene].frames;
+    const still = this.scenes[scene].still;
+    if (still) {
+      const img = new Image();
+      img.src = `${this.base}${this.scenes[scene].name}/${still}`;
+      img.decode().then(
+        () => {
+          this.stills[scene] = img;
+          this.lastKey = '';
+        },
+        () => {},
+      );
+    }
     let done = 0;
     // Key frames first (every 8th) so scrubbing works while the rest stream in.
     const order = [...Array(n).keys()].sort((a, b) => (a % 8 === 0 ? 0 : 1) - (b % 8 === 0 ? 0 : 1) || a - b);
@@ -109,7 +146,32 @@ export class Story {
     const dh = ih * k;
     const dx = Math.min(0, Math.max(this.width - dw, this.width / 2 - focus * dw));
     const dy = shrink ? this.height - dh - this.height * 0.04 : (this.height - dh) / 2;
-    return { dx, dy, dw, dh };
+    const base = { dx, dy, dw, dh, contained: !!s.seamless };
+    return this.view.amount > 0 ? this.zoomed(base) : base;
+  }
+
+  setView(v: View): void {
+    const o = this.view;
+    if (v.amount === o.amount && v.scale === o.scale && v.x === o.x && v.y === o.y && v.ax === o.ax && v.ay === o.ay) return;
+    this.view = { ...v };
+    this.lastKey = '';
+  }
+
+  private zoomed(c: Cover): Cover {
+    const v = this.view;
+    const S = 1 + (v.scale - 1) * v.amount;
+    const dw = c.dw * S;
+    const dh = c.dh * S;
+    const px = c.dx + v.x * c.dw + (v.ax * this.width - (c.dx + v.x * c.dw)) * v.amount;
+    const py = c.dy + v.y * c.dh + (v.ay * this.height - (c.dy + v.y * c.dh)) * v.amount;
+    let dx = px - v.x * dw;
+    let dy = py - v.y * dh;
+    if (!c.contained) {
+      // Never reveal an edge of footage that has no backdrop to fall back on.
+      dx = Math.min(0, Math.max(this.width - dw, dx));
+      dy = Math.min(0, Math.max(this.height - dh, dy));
+    }
+    return { dx, dy, dw, dh, contained: c.contained };
   }
 
   local(scene: number, p: number): number {
@@ -166,22 +228,32 @@ export class Story {
   }
 
   private drawScene(scene: number, p: number): void {
-    const img = this.nearest(scene, this.frameIndex(scene, p));
+    const i = this.frameIndex(scene, p);
+    const img = (i === 0 && this.stills[scene]) || this.nearest(scene, i);
     if (!img) return;
     const c = this.cover(scene, p);
     const ctx = this.ctx;
-    if (c.dh < this.height - 1) {
-      // Shrunk frame: paint the backdrop, the frame, then feather its top edge into it.
+    if (c.contained) {
+      // Paint the backdrop, the frame, then feather any frame edge that falls on screen.
       const bg = this.backdropOf(scene, img);
+      // Fade to the same colour at zero alpha; fading to transparent black would grey the edge.
+      const clear = bg.replace('rgb(', 'rgba(').replace(')', ', 0)');
       ctx.fillStyle = bg;
       ctx.fillRect(0, 0, this.width, this.height);
       ctx.drawImage(img, c.dx, c.dy, c.dw, c.dh);
-      const g = ctx.createLinearGradient(0, c.dy, 0, c.dy + c.dh * 0.18);
-      g.addColorStop(0, bg);
-      // Fade to the same colour at zero alpha; fading to transparent black would grey the edge.
-      g.addColorStop(1, bg.replace('rgb(', 'rgba(').replace(')', ', 0)'));
-      ctx.fillStyle = g;
-      ctx.fillRect(0, c.dy - 1, this.width, c.dh * 0.18 + 1);
+      const fy = c.dh * 0.16;
+      const fx = c.dw * 0.1;
+      const edge = (x0: number, y0: number, x1: number, y1: number, rx: number, ry: number, rw: number, rh: number) => {
+        const g = ctx.createLinearGradient(x0, y0, x1, y1);
+        g.addColorStop(0, bg);
+        g.addColorStop(1, clear);
+        ctx.fillStyle = g;
+        ctx.fillRect(rx, ry, rw, rh);
+      };
+      if (c.dy > -1) edge(0, c.dy, 0, c.dy + fy, 0, c.dy - 1, this.width, fy + 1);
+      if (c.dy + c.dh < this.height + 1) edge(0, c.dy + c.dh, 0, c.dy + c.dh - fy, 0, c.dy + c.dh - fy, this.width, fy + 1);
+      if (c.dx > -1) edge(c.dx, 0, c.dx + fx, 0, c.dx - 1, 0, fx + 1, this.height);
+      if (c.dx + c.dw < this.width + 1) edge(c.dx + c.dw, 0, c.dx + c.dw - fx, 0, c.dx + c.dw - fx, 0, fx + 1, this.height);
       return;
     }
     ctx.drawImage(img, c.dx, c.dy, c.dw, c.dh);

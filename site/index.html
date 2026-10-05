@@ -47,42 +47,39 @@
           <div class="story__scrim" data-scrim></div>
           <div class="story__tags" data-tags></div>
 
-          <article class="chapter chapter--left" data-from="0" data-to="0.04">
+          <article class="chapter chapter--left" data-from="0" data-to="0.045">
             <p class="eyebrow">Knockout Burgers · Seoul</p>
             <h1 class="display"><span class="line"><span>The</span></span><span class="line"><span>Stack.</span></span></h1>
-            <p class="lede">버터에 구운 브리오슈부터 철판에 짓눌러 바삭해진 척 패티까지. 한 층씩, 제대로 쌓았습니다.</p>
-            <div class="scroll-hint"><i></i><span>Scroll to unbox</span></div>
+            <p class="lede">일곱 개의 재료, 일곱 번의 펀치. 스크롤하면서 한 층씩 왜 들어갔는지 확인해 보세요.</p>
+            <div class="scroll-hint"><i></i><span>Scroll to meet the lineup</span></div>
           </article>
 
-          <article class="chapter chapter--left chapter--top-m" data-from="0.17" data-to="0.255">
+          <!-- One ingredient at a time; main.ts fills it from INGREDIENTS. -->
+          <aside class="tour" data-tour aria-live="polite">
+            <div class="tour__top">
+              <span class="tour__no" data-tour-no>01 / 07</span>
+              <span class="tour__dots" data-tour-dots></span>
+            </div>
+            <p class="eyebrow" data-tour-role>The Stance</p>
+            <h2 class="tour__name" data-tour-name>Toasted Heel</h2>
+            <p class="tour__ko" data-tour-ko>토스티드 힐</p>
+            <p class="tour__text" data-tour-text></p>
+            <ul class="tour__meta" data-tour-meta></ul>
+          </aside>
+
+          <article class="chapter chapter--left chapter--top-m" data-from="0.5" data-to="0.58">
             <p class="eyebrow">No. 02 — The Uppercut</p>
             <h2 class="display"><span class="line"><span>Built to</span></span><span class="line"><span>knock you</span></span><span class="line"><span class="hl">out.</span></span></h2>
-            <p class="lede">더블 스매시 패티, 녹아내린 아메리칸 치즈, 카라멜라이즈드 어니언, 그리고 KO 소스.</p>
-            <div class="actions">
-              <a class="btn btn--fire" href="#menu">Order Now</a>
-              <a class="btn btn--ghost" href="#menu">View Menu</a>
-            </div>
+            <p class="lede">일곱 가지가 한 번에 내려앉아 하나의 펀치가 됩니다.</p>
           </article>
 
-          <article class="chapter chapter--left" data-from="0.31" data-to="0.5">
-            <p class="eyebrow">90 seconds on 260°C steel</p>
-            <h2 class="display"><span class="line"><span>Smashed</span></span><span class="line"><span>to order.</span></span></h2>
-            <p class="lede">주문이 들어오면 그때 공을 굴려 철판에 내리칩니다. 가장자리는 레이스처럼 바삭하게, 속은 육즙 그대로.</p>
+          <article class="chapter chapter--left chapter--top-m" data-from="0.61" data-to="0.755">
+            <p class="eyebrow">Packed hot · Built to travel</p>
+            <h2 class="display"><span class="line"><span>Packed for</span></span><span class="line"><span>the fight.</span></span></h2>
+            <p class="lede">무너지지 않게 딱 맞는 KO 박스에, 만든 그대로 담아요.</p>
           </article>
 
-          <article class="chapter chapter--right" data-from="0.555" data-to="0.665">
-            <p class="eyebrow">Combo · ₩16,900</p>
-            <h2 class="display"><span class="line"><span>Title fight</span></span><span class="line"><span>combo.</span></span></h2>
-            <p class="lede">버거, 코너 프라이, 라운드 12 쉐이크를 한 박스에. 픽업도, 배달도 그대로 따끈하게.</p>
-          </article>
-
-          <article class="chapter chapter--left" data-from="0.705" data-to="0.815">
-            <p class="eyebrow">Hand-spun · Thick enough to fight back</p>
-            <h2 class="display"><span class="line"><span>Round 12</span></span><span class="line"><span>shakes.</span></span></h2>
-            <p class="lede">오레오 쿠키 앤 크림, 스트로베리. 빨대가 서 있을 만큼 진하게 블렌딩합니다.</p>
-          </article>
-
-          <article class="chapter chapter--right chapter--top-m" data-from="0.87" data-to="1.01">
+          <article class="chapter chapter--left chapter--top-m" data-from="0.79" data-to="1.01">
             <p class="eyebrow">Doors open 11:00 — 23:00</p>
             <h2 class="display"><span class="line"><span>Ready for</span></span><span class="line"><span class="hl">round one?</span></span></h2>
             <div class="actions">
@@ -94,7 +91,7 @@
           <div class="rounds" aria-hidden="true">
             <span class="rounds__label">RD</span>
             <span class="rounds__num" data-round>01</span>
-            <span class="rounds__total">/ 06</span>
+            <span class="rounds__total">/ 04</span>
             <span class="rounds__bar"><i data-round-bar></i></span>
           </div>
         </div>

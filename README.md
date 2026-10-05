@@ -55,12 +55,13 @@ https://memoryzkr-hash.github.io/memoryz/ 로 자동 배포합니다. 처음 한
 
 ## 브랜드 사이트: Knockout Burgers (`/site/`)
 
-스크롤에 맞춰 실사 영상이 앞뒤로 재생되는 버거 브랜드 랜딩 페이지입니다. 모든 사진과 영상은 Higgsfield로 생성했습니다.
+재료 하나하나의 의미를 보여준 뒤, 재료가 합쳐져 버거가 되고 KO 박스에 담기는 과정을 스크롤로 재생하는 버거 브랜드 랜딩 페이지입니다. 모든 사진과 영상은 Higgsfield로 생성했습니다.
 
 ![Knockout Burgers](docs/site.jpg)
 
-- **The Stack**: 공중에 분해된 버거의 각 재료에 라벨이 붙고, 스크롤하면 층층이 내려앉아 조립됩니다.
-- 이어서 어두운 스틸 카운터 위 버거 오빗 → 콤보 박스에서 쉐이크로 다가가는 숏 → 닫힌 KO 박스 피날레까지 6라운드.
+- **The Stack**: 공중에 분해된 버거, 재료마다 라벨.
+- **재료 투어**: 스크롤할 때마다 카메라가 재료 하나로 다가가고, 그 재료가 왜 들어갔는지 설명이 바뀝니다 (바닥 번 → 브리오슈, 7개).
+- **조립 → 포장 → 닫힘**: 재료가 내려앉아 버거가 되고, KO 박스가 올라와 담은 뒤 뚜껑이 닫힙니다. 세 클립이 같은 프레임으로 이어져 한 번에 찍은 것처럼 이어집니다.
 - **The Lineup**: 메뉴 6종 사진, 컨셉 문구(스크롤 하이라이트), 숫자 카운트업, 매장 정보, 대형 워드마크 푸터.
 
 ```bash
@@ -71,13 +72,13 @@ npm run dev      # http://localhost:5173/site/
 
 ```
 site/index.html            페이지 마크업
-src/site/main.ts           로더, 스크롤 진행도, 장면/챕터 구성, 라벨, 리빌·카운트업·주문 토스트
-src/site/story.ts          프레임 시퀀스를 캔버스에 그리는 스크럽 플레이어 (cover 맞춤, 장면 크로스페이드)
+src/site/main.ts           재료 데이터(INGREDIENTS), 장면 구성, 재료 투어 카메라, 라벨, 리빌·카운트업·주문 토스트
+src/site/story.ts          프레임 시퀀스를 캔버스에 그리는 스크럽 플레이어 (cover 맞춤, 줌/팬, 배경색 채움)
 public/site/seq/<장면>/    영상에서 16fps로 뽑은 WebP 프레임 (001.webp …)
 public/site/menu/          메뉴 사진
 ```
 
-장면 영상을 바꾸려면 새 클립에서 프레임을 다시 뽑고 `main.ts`의 `SCENES` 프레임 수를 맞추면 됩니다.
+재료 설명은 `main.ts`의 `INGREDIENTS`에서 고치면 됩니다. 장면 영상을 바꾸려면 새 클립에서 프레임을 다시 뽑고 `SCENES`의 프레임 수를 맞추세요.
 
 ```bash
 ffmpeg -i clip.mp4 -vf "fps=16,scale=1280:-2" -c:v libwebp -quality 72 public/site/seq/stack/%03d.webp
