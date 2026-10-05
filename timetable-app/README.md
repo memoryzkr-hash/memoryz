@@ -14,6 +14,8 @@ npm test           # 플래너 로직 단위 테스트
 npm run typecheck
 ```
 
+`EXPO_PUBLIC_DEMO=1 npx expo export --platform web`로 빌드하면, 저장된 데이터가 없을 때 이번 주에 맞춘 피그마 예시 일정이 들어간 데모가 만들어집니다.
+
 ## 화면 (피그마 프레임 → 구현)
 
 | 피그마 | 기능 |

@@ -141,3 +141,17 @@ describe('schedule editing', () => {
     expect(reducer(state, { type: 'deleteTimetable', id: state.activeTimetableId })).toBe(state);
   });
 });
+
+describe('demoState', () => {
+  it('fills the current week without overlaps', async () => {
+    const { demoState } = await import('../src/demo');
+    const now = new Date(2026, 9, 5, 10);
+    const state = demoState(now);
+    for (const d of weekDates('2026-10-05')) {
+      const list = schedulesOn(state, d);
+      list.forEach((s, i) => i && expect(s.start).toBeGreaterThanOrEqual(list[i - 1].end));
+    }
+    expect(schedulesOn(state, '2026-10-06').map((s) => s.title)).toEqual(['예방 약학', '생의학(ⅠⅠⅠ)', '감염 질환 제어', '면역학']);
+    expect(studySummary(state, '2026-10-05').done).toBe(120);
+  });
+});

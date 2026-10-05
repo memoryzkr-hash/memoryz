@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useReducer, useRef } from 'react';
 
+import { demoState } from './demo';
 import { initialState, newId } from './planner';
 import type { DateKey, PlannerState, Schedule } from './types';
 
@@ -59,6 +60,7 @@ export function usePlanner() {
     AsyncStorage.getItem(KEY)
       .then((raw) => {
         if (raw) dispatch({ type: 'load', state: JSON.parse(raw) as PlannerState });
+        else if (process.env.EXPO_PUBLIC_DEMO === '1') dispatch({ type: 'load', state: demoState(new Date()) });
       })
       .catch(() => {})
       .finally(() => {
