@@ -33,6 +33,7 @@ button {
   cursor: pointer;
 }
 button:hover { background: rgba(255, 255, 255, 0.16); }
+button:disabled { opacity: 0.35; cursor: not-allowed; box-shadow: none; }
 button.primary {
   background: linear-gradient(90deg, #ff2bd6, #8a3dff);
   border: none;
