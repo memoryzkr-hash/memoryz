@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#1b1446" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Neon Rider" />
+    <meta name="description" content="웹캠으로 몸을 기울여 조종하는 네온 고속도로 오토바이 게임" />
+    <title>Neon Rider</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Orbitron:wght@700;900&display=swap" rel="stylesheet" />
+    <script type="module" crossorigin src="./assets/ride-MpUfjFL_.js"></script>
+    <link rel="modulepreload" crossorigin href="./assets/three.module-DxDfxYIA.js">
+    <link rel="stylesheet" crossorigin href="./assets/ride-B1Xmuuzj.css">
+  </head>
+  <body>
+    <div id="stage"></div>
+
+    <div id="hud" hidden>
+      <div class="hud-tl">
+        <div id="score">0</div>
+        <div id="dist">0.00 km</div>
+        <div id="combo"></div>
+      </div>
+      <div class="hud-tr">
+        <div id="best">최고 0</div>
+        <button id="mute" type="button" aria-label="소리 끄기/켜기">🔊</button>
+      </div>
+      <div class="hud-bottom">
+        <div class="boost"><div id="boost-fill"></div></div>
+        <div id="boost-label">BOOST</div>
+      </div>
+      <div id="popups"></div>
+      <div id="center-msg"></div>
+    </div>
+
+    <div id="cam" hidden>
+      <video id="video" playsinline muted></video>
+      <canvas id="skel"></canvas>
+      <div id="cam-status"></div>
+    </div>
+
+    <section id="title" class="overlay">
+      <h1 class="logo"><span>NEON</span><span>RIDER</span></h1>
+      <p class="tag">몸으로 타는 오토바이</p>
+      <div class="buttons">
+        <button id="play-cam" class="primary" type="button">📷 웹캠으로 플레이</button>
+        <button id="play-keys" type="button">⌨️ 키보드 · 터치로 플레이</button>
+      </div>
+      <div id="title-status"></div>
+      <ul class="howto">
+        <li><b>✊ ✊</b><span>두 주먹을 가슴 앞에 들면 출발</span></li>
+        <li><b>↙ ↘</b><span>핸들 돌리듯 손을 내리거나 몸을 기울이면 방향 전환</span></li>
+        <li><b>🙇</b><span>화면 쪽으로 몸을 숙이면 부스터</span></li>
+        <li><b>🙌</b><span>두 손을 머리 위로 올리면 다시 시작</span></li>
+      </ul>
+      <p class="keys">키보드: ← → 방향 · ↓ 브레이크 · Space 부스터 · R 다시 시작 · M 소리<br />터치: 화면 왼쪽/오른쪽을 누르기 · 두 손가락 부스터</p>
+      <p class="fine">카메라 영상은 이 기기 안에서만 처리되고 어디로도 전송되지 않아요. · <a href="index.html">⚔️ Memoryz Royale</a></p>
+    </section>
+
+    <section id="calib" class="overlay" hidden>
+      <h2>핸들을 잡아 주세요</h2>
+      <p>상체가 카메라에 다 보이게 앉아서, 두 주먹을 가슴 앞에 들고 잠깐 가만히 계세요.</p>
+      <div class="bar"><div id="calib-fill"></div></div>
+      <button id="calib-skip" type="button">키보드로 하기</button>
+    </section>
+
+    <section id="wasted" class="overlay" hidden>
+      <div class="wasted-text">WASTED</div>
+      <div id="new-best" hidden>🏆 최고 기록!</div>
+      <dl class="stats">
+        <div><dt>점수</dt><dd id="st-score">0</dd></div>
+        <div><dt>거리</dt><dd id="st-dist">0</dd></div>
+        <div><dt>최고 속도</dt><dd id="st-speed">0</dd></div>
+        <div><dt>아슬아슬</dt><dd id="st-miss">0</dd></div>
+        <div><dt>최고 콤보</dt><dd id="st-combo">0</dd></div>
+      </dl>
+      <div id="restart-hint"></div>
+      <div class="bar small"><div id="restart-fill"></div></div>
+    </section>
+
+  </body>
+</html>
