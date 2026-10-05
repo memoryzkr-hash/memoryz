@@ -22,6 +22,11 @@ export class MenuScene extends Phaser.Scene {
       setMuted(!isMuted());
       sound.setText(isMuted() ? '🔇' : '🔊');
     });
+    // The other game in this repo: a webcam-controlled motorcycle ride (ride.html).
+    this.add
+      .text(24, 30, '🏍️ 네온 라이더 →', { fontFamily: FONT, fontSize: '26px', color: '#ff7be5', fontStyle: 'bold' })
+      .setInteractive({ useHandCursor: true })
+      .on('pointerup', () => location.assign('ride.html'));
     this.add.text(cx, 170, '⚔️', { fontFamily: FONT, fontSize: '96px' }).setOrigin(0.5);
     this.add
       .text(cx, 290, 'Memoryz Royale', { fontFamily: FONT, fontSize: '56px', color: '#fde047', fontStyle: 'bold', stroke: '#000', strokeThickness: 8 })
