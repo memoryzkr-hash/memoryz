@@ -90,4 +90,3 @@ export class PoseTracker {
   }
 }
 
-export const POSE_CONNECTIONS = PoseLandmarker.POSE_CONNECTIONS;

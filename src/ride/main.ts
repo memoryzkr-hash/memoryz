@@ -5,7 +5,7 @@ import { PoseControls, type PoseControlsOutput } from './core/controls';
 import { isWasted, newRide, step, timeScale, type RideInput, type RideState } from './core/sim';
 import { RideAudio } from './audio';
 import { KeyControls } from './input/keyboard';
-import { PoseTracker } from './input/pose';
+import type { PoseTracker } from './input/pose';
 import { RideRenderer } from './render/scene';
 import { Hud } from './ui/hud';
 import { drawSkeleton } from './ui/skeleton';
@@ -59,6 +59,17 @@ hud.setBest(best);
 hud.setMuted(audio.muted);
 hud.show('title');
 
+/** False when the page is embedded somewhere that blocks the camera (Chromium reports this up front). */
+function cameraAllowed(): boolean {
+  if (!navigator.mediaDevices?.getUserMedia) return false;
+  const policy = (document as Document & { featurePolicy?: { allowsFeature(name: string): boolean } }).featurePolicy;
+  return policy ? policy.allowsFeature('camera') : true;
+}
+if (!cameraAllowed()) {
+  hud.playCam.disabled = true;
+  hud.titleMessage('이 화면에서는 카메라를 쓸 수 없어요. 키보드나 터치로 플레이하세요.');
+}
+
 function startCountdown(): void {
   state = newRide();
   acc = 0;
@@ -74,7 +85,14 @@ async function startWithCamera(): Promise<void> {
   hud.playCam.disabled = hud.playKeys.disabled = true;
   hud.cam.hidden = false;
   try {
-    tracker ??= await PoseTracker.start(hud.video, (msg) => hud.titleMessage(msg));
+    if (!tracker) {
+      hud.titleMessage('자세 인식 기능을 불러오는 중…');
+      // Loaded on demand so keyboard players never download MediaPipe.
+      const { PoseTracker } = await import('./input/pose').catch(() => {
+        throw new Error('자세 인식 기능을 불러오지 못했어요. 인터넷 연결을 확인해 주세요.');
+      });
+      tracker = await PoseTracker.start(hud.video, (msg) => hud.titleMessage(msg));
+    }
     usingPose = true;
     poseControls.recalibrate();
     hud.titleMessage('');
@@ -84,7 +102,8 @@ async function startWithCamera(): Promise<void> {
     hud.cam.hidden = true;
     hud.titleMessage(`${(e as Error).message} 키보드로도 플레이할 수 있어요.`, true);
   } finally {
-    hud.playCam.disabled = hud.playKeys.disabled = false;
+    hud.playKeys.disabled = false;
+    hud.playCam.disabled = !cameraAllowed();
   }
 }
 
