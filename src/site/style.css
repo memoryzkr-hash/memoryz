@@ -62,7 +62,7 @@ img {
   line-height: 0.88;
   letter-spacing: -0.01em;
   margin: 0;
-  font-size: clamp(56px, 9.2vw, 168px);
+  font-size: clamp(56px, 7.2vw, 140px);
 }
 
 .eyebrow {
@@ -402,7 +402,7 @@ body.nav-solid .nav::before {
 
 .story__scrim[data-side='center'] {
   opacity: 1;
-  background: linear-gradient(180deg, rgba(15, 13, 12, 0.6) 0%, rgba(15, 13, 12, 0) 45%);
+  background: linear-gradient(180deg, rgba(15, 13, 12, 0.82) 0%, rgba(15, 13, 12, 0.5) 30%, rgba(15, 13, 12, 0) 55%);
 }
 
 @media (max-width: 700px) {
@@ -460,6 +460,9 @@ body.nav-solid .nav::before {
 }
 
 @media (max-width: 700px) {
+  .story__tags {
+    display: none;
+  }
   .tag__text {
     font-size: 9.5px;
     letter-spacing: 0.08em;
@@ -473,7 +476,7 @@ body.nav-solid .nav::before {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  width: min(560px, 44vw);
+  width: min(480px, 31vw);
   color: var(--fg);
   pointer-events: none;
   z-index: 2;
@@ -493,7 +496,7 @@ body.nav-solid .nav::before {
 
 .chapter--center {
   left: 50%;
-  top: 13vh;
+  top: 10vh;
   transform: translateX(-50%);
   width: min(900px, 92vw);
   text-align: center;
@@ -505,7 +508,7 @@ body.nav-solid .nav::before {
 }
 
 .chapter--center .display {
-  font-size: clamp(56px, 8vw, 140px);
+  font-size: clamp(52px, 6.4vw, 108px);
 }
 
 .chapter .line {
@@ -663,10 +666,14 @@ body.nav-solid .nav::before {
     bottom: calc(76px + env(safe-area-inset-bottom));
     transform: none;
   }
-  /* The stack sits left on phones, so its copy goes on top. */
-  .chapter[data-from='0'] {
+  /* Over the light opener and the finale the subject sits low, so the copy goes on top. */
+  .chapter[data-from='0'],
+  .chapter--top-m {
     top: 92px;
     bottom: auto;
+  }
+  .chapter--top-m .lede {
+    display: none;
   }
   .chapter[data-from='0'] .lede,
   .chapter[data-from='0'] .scroll-hint {

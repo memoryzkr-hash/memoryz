@@ -55,14 +55,13 @@ https://memoryzkr-hash.github.io/memoryz/ 로 자동 배포합니다. 처음 한
 
 ## 브랜드 사이트: Knockout Burgers (`/site/`)
 
-스크롤에 맞춰 움직이는 3D 버거 브랜드 랜딩 페이지입니다. 사진이나 영상 에셋 없이 모든 음식과 박스를 Three.js로 직접 모델링했습니다.
+스크롤에 맞춰 실사 영상이 앞뒤로 재생되는 버거 브랜드 랜딩 페이지입니다. 모든 사진과 영상은 Higgsfield로 생성했습니다.
 
 ![Knockout Burgers](docs/site.jpg)
 
-- **The Stack**: 버거가 층별로 분해되고, 각 재료에 라벨이 따라붙습니다.
-- 스크롤하면 버거가 조립되고 배경이 어두워지면서 클로즈업 → 콤보 박스 → 쉐이크 → 뚜껑이 닫히는 피날레까지 6라운드로 이어집니다.
-- **The Lineup**: 메뉴 카드 이미지도 같은 3D 모델을 로딩 중에 오프스크린으로 렌더링해서 만듭니다.
-- 컨셉 문구(스크롤 하이라이트), 숫자 카운트업, 매장 정보, 대형 워드마크 푸터.
+- **The Stack**: 공중에 분해된 버거의 각 재료에 라벨이 붙고, 스크롤하면 층층이 내려앉아 조립됩니다.
+- 이어서 어두운 스틸 카운터 위 버거 오빗 → 콤보 박스에서 쉐이크로 다가가는 숏 → 닫힌 KO 박스 피날레까지 6라운드.
+- **The Lineup**: 메뉴 6종 사진, 컨셉 문구(스크롤 하이라이트), 숫자 카운트업, 매장 정보, 대형 워드마크 푸터.
 
 ```bash
 npm run dev      # http://localhost:5173/site/
@@ -71,12 +70,17 @@ npm run dev      # http://localhost:5173/site/
 배포 후 주소는 https://memoryzkr-hash.github.io/memoryz/site/ 입니다.
 
 ```
-site/index.html     페이지 마크업
-src/site/main.ts    로더, 스크롤 → 3D 진행도, 챕터 전환, 리빌/카운트업/주문 토스트
-src/site/stage.ts   3D 씬과 스크롤 안무(카메라·버거·박스 키프레임 트랙)
-src/site/food.ts    번, 패티, 치즈, 어니언, 감자튀김, 쉐이크, 박스 모델
-src/site/textures.ts 캔버스로 그린 텍스처(크러스트, 피클, 박스 로고 등)
-src/site/thumbs.ts  메뉴 카드용 오프스크린 렌더
+site/index.html            페이지 마크업
+src/site/main.ts           로더, 스크롤 진행도, 장면/챕터 구성, 라벨, 리빌·카운트업·주문 토스트
+src/site/story.ts          프레임 시퀀스를 캔버스에 그리는 스크럽 플레이어 (cover 맞춤, 장면 크로스페이드)
+public/site/seq/<장면>/    영상에서 16fps로 뽑은 WebP 프레임 (001.webp …)
+public/site/menu/          메뉴 사진
+```
+
+장면 영상을 바꾸려면 새 클립에서 프레임을 다시 뽑고 `main.ts`의 `SCENES` 프레임 수를 맞추면 됩니다.
+
+```bash
+ffmpeg -i clip.mp4 -vf "fps=16,scale=1280:-2" -c:v libwebp -quality 72 public/site/seq/stack/%03d.webp
 ```
 
 ## 구조
