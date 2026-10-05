@@ -1,6 +1,6 @@
 # 프로덕트 런칭 모션그래픽 영상 제작 계획
 
-> 진행 현황: **Phase 1 완료** (셋업 + 13개 빈 씬 타임라인). 다음은 Phase 2.
+> 진행 현황: **Phase 1–7 완료.** `npm run render`로 `out/video.mp4` 생성. 남은 선택 작업: 배경음악, 세로(9:16) 버전.
 > `[대괄호]` 값은 현재 기본값(Tally) 그대로 사용 중. 바꾸려면 `src/theme.ts`와 각 씬을 수정.
 
 ---
@@ -57,6 +57,10 @@ src/
   Video.tsx             # <Series>로 씬 배치
   timeline.ts           # 씬 순서/길이 (위 표와 동일)
   theme.ts              # 컬러, 폰트, 공통 spring 설정
+  anim.ts               # enter()/ramp() 애니메이션 헬퍼
+  data.ts               # 서비스 목록, 씬 2의 탭 14개
+  Audio.tsx             # 선택적 배경음악
+  Gallery.tsx           # 개발용: 공통 컴포넌트 한 장 확인 (Dev/Gallery)
   components/
     CountUp.tsx         # 숫자 카운트업 (자리별 롤링)
     TypeWriter.tsx      # 타이핑 + 커서
@@ -65,8 +69,10 @@ src/
     PhoneMockup.tsx     # 아이폰 목업 (CSS로 직접 그림)
     Particles.tsx       # 결정론적 파티클 (random(seed) 사용)
     AccentWord.tsx      # 오렌지 이탤릭 세리프 강조 단어
+    DirectionalBlur.tsx # 축 방향 모션 블러 (SVG filter)
   scenes/
     S01_Clock.tsx ... S13_Outro.tsx
+    shared.tsx          # 씬 8~10이 공유하는 숫자 레이아웃
 public/
   fonts/                # Inter Tight, Instrument Serif (OFL)
   music.mp3             # 배경음악 (직접 준비, 없으면 무음)
@@ -75,12 +81,13 @@ public/
 ## 4. 작업 단계 (Phase별로 진행하고 각 단계 끝에 확인받기)
 
 - [x] **Phase 1 — 셋업**: 프로젝트 생성, `theme.ts`에 컬러/폰트/spring 프리셋, 빈 13개 씬을 `<Series>`로 연결해 타임라인 확인.
-- [ ] **Phase 2 — 공통 컴포넌트**: CountUp, TypeWriter, TabCard, Logo, PhoneMockup, Particles, AccentWord를 만들고 각각 `remotion still`로 확인.
-- [ ] **Phase 3 — 다크 파트 (씬 1~5)**: 화면이 점점 복잡하고 정신없어지는 느낌.
-- [ ] **Phase 4 — 라이트 파트 (씬 6~10)**: 화이트 플래시 전환 후 여백 많고 차분한 톤. 숫자가 주인공.
-- [ ] **Phase 5 — 마무리 (씬 11~13)**: 일상 장면과 슬로건, 로고.
-- [ ] **Phase 6 — 오디오 & 폴리싱**: `public/music.mp3`가 있으면 `<Audio>`로 넣고 비트에 맞춰 컷 타이밍 조정. 씬 전환에 2~4프레임 `<CameraMotionBlur>`.
-- [ ] **Phase 7 — 렌더**: `npm run render`. 세로 버전이 필요하면 1080×1920 Composition 추가.
+- [x] **Phase 2 — 공통 컴포넌트**: CountUp, TypeWriter, TabCard, Logo, PhoneMockup, Particles, AccentWord를 만들고 각각 `remotion still`로 확인.
+- [x] **Phase 3 — 다크 파트 (씬 1~5)**: 화면이 점점 복잡하고 정신없어지는 느낌.
+- [x] **Phase 4 — 라이트 파트 (씬 6~10)**: 화이트 플래시 전환 후 여백 많고 차분한 톤. 숫자가 주인공.
+- [x] **Phase 5 — 마무리 (씬 11~13)**: 일상 장면과 슬로건, 로고.
+- [x] **Phase 6 — 오디오 & 폴리싱**: `src/Audio.tsx`가 `public/music.mp3`가 있을 때만 재생(페이드 인/아웃). 아직 음악이 없어 비트 싱크는 미적용 — 음악을 넣으면 `src/timeline.ts`의 씬 길이로 컷을 맞춘다.
+  모션블러: 씬 5 소용돌이는 `<CameraMotionBlur>`(6 samples), 직선 이동(씬 4 휩팬, 씬 10 퇴장)은 가볍게 SVG 방향성 블러(`DirectionalBlur`), 날아오는 탭/롤링 숫자는 속도 비례 blur.
+- [x] **Phase 7 — 렌더**: `npm run render` → `out/video.mp4` (h264, crf 18). 세로 버전은 미착수(필요 시 1080×1920 Composition 추가).
 
 ## 5. 품질 기준 (각 Phase마다 스스로 체크)
 
@@ -89,3 +96,10 @@ public/
 - 모든 등장 모션은 spring 기반, damping 12~20 범위 (`springs` 프리셋 사용).
 - 한 화면에 메시지는 하나만. 텍스트가 많아지면 씬을 쪼갤 것.
 - 다크 파트는 빠른 컷(1~2.5초), 라이트 파트는 조금 느리게(2~4초).
+
+## 6. 구현 메모
+
+- 씬 9 차감 항목: `− $96.30 payment fees`, `− $561.70 tax set aside` → $626, `− $214.00 subscriptions` → $412.00.
+  씬 10 막대의 구독료($55 + $119 + $40)도 합계 $214로 맞췄다.
+- 씬 8 → 9 → 10의 큰 숫자는 `scenes/shared.tsx`의 같은 위치/크기를 써서 하드컷에서도 튀지 않는다.
+- 숫자 롤링: `CountUp`(오도미터, 씬 8), `NumberMorph`(자리별로 이전 숫자 → 새 숫자, 씬 9), `DigitColumn`(시계/탭 카운터).

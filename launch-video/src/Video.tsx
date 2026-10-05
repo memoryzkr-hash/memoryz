@@ -1,4 +1,5 @@
-import { Series } from 'remotion';
+import { AbsoluteFill, Series } from 'remotion';
+import { Soundtrack } from './Audio';
 import { SCENES, type SceneId } from './timeline';
 import { ClockScene } from './scenes/S01_Clock';
 import { TabsScene } from './scenes/S02_Tabs';
@@ -31,7 +32,9 @@ const sceneComponents: Record<SceneId, React.FC> = {
 };
 
 export const Video: React.FC = () => (
-  <Series>
+  <AbsoluteFill>
+    <Soundtrack />
+    <Series>
     {SCENES.map(({ id, duration }) => {
       const Scene = sceneComponents[id];
       return (
@@ -40,5 +43,6 @@ export const Video: React.FC = () => (
         </Series.Sequence>
       );
     })}
-  </Series>
+    </Series>
+  </AbsoluteFill>
 );
