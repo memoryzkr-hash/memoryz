@@ -1,5 +1,5 @@
 import { interpolate, spring, type EasingFunction } from 'remotion';
-import { springs } from './theme';
+import { springs } from './config';
 
 export type SpringPreset = keyof typeof springs;
 

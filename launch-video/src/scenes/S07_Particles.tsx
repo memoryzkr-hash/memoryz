@@ -4,6 +4,7 @@ import { Logo } from '../components/Logo';
 import { buildParticles, Particles } from '../components/Particles';
 import { ServiceLabel } from '../components/TabCard';
 import { SERVICES, type ServiceKey } from '../data';
+import { GATHER } from '../cues';
 import { colors, fonts } from '../theme';
 
 const RING: { key: ServiceKey; x: number; y: number }[] = [
@@ -21,11 +22,7 @@ const CENTER = { x: 960, y: 540 };
 const PARTICLES = buildParticles({
   sources: RING.map(({ key, x, y }) => ({ x: CENTER.x + x, y: CENTER.y + y, color: SERVICES[key].color })),
   target: CENTER,
-  count: 120,
-  start: 12,
-  spread: 30,
-  travel: [20, 30],
-  seed: 'gather',
+  ...GATHER,
 });
 
 /** Every source drains into one place. */
@@ -40,7 +37,7 @@ export const ParticlesScene: React.FC = () => {
   return (
     <AbsoluteFill style={{ backgroundColor: colors.light, fontFamily: fonts.sans }}>
       {RING.map(({ key, x, y }, i) => {
-        const appear = enter(frame, fps, i * 1.5, 'snappy');
+        const appear = enter(frame, fps, i * GATHER.labelStagger, 'snappy');
         const drained = ramp(frame, [30, 70], [1, 0.35]);
         return (
           <div

@@ -1,6 +1,6 @@
 # 프로덕트 런칭 모션그래픽 영상 제작 계획
 
-> 진행 현황: **Phase 1–7 완료.** `npm run render`로 `out/video.mp4` 생성. 남은 선택 작업: 배경음악, 세로(9:16) 버전.
+> 진행 현황: **Phase 1–7 완료.** `npm run render`(1080p) / `npm run render:4k`. 남은 선택 작업: 세로(9:16) 버전.
 > `[대괄호]` 값은 현재 기본값(Tally) 그대로 사용 중. 바꾸려면 `src/theme.ts`와 각 씬을 수정.
 
 ---
@@ -56,10 +56,12 @@ src/
   Root.tsx              # Composition 등록 (1920x1080, 30fps)
   Video.tsx             # <Series>로 씬 배치
   timeline.ts           # 씬 순서/길이 (위 표와 동일)
-  theme.ts              # 컬러, 폰트, 공통 spring 설정
+  config.ts             # 해상도/fps, spring 프리셋 (Node에서도 import 가능)
+  cues.ts               # 씬별 이벤트 타이밍 — 화면과 사운드트랙이 공유
+  theme.ts              # 컬러, 폰트
   anim.ts               # enter()/ramp() 애니메이션 헬퍼
   data.ts               # 서비스 목록, 씬 2의 탭 14개
-  Audio.tsx             # 선택적 배경음악
+  Audio.tsx             # 음악(music.mp3 또는 생성된 bed) + 효과음 재생
   Gallery.tsx           # 개발용: 공통 컴포넌트 한 장 확인 (Dev/Gallery)
   components/
     CountUp.tsx         # 숫자 카운트업 (자리별 롤링)
@@ -75,7 +77,10 @@ src/
     shared.tsx          # 씬 8~10이 공유하는 숫자 레이아웃
 public/
   fonts/                # Inter Tight, Instrument Serif (OFL)
-  music.mp3             # 배경음악 (직접 준비, 없으면 무음)
+  audio/                # npm run sound가 생성 (music.wav, sfx.wav), git 제외
+  music.mp3             # (선택) 직접 준비한 음악 — 있으면 생성 음악 대신 사용
+scripts/
+  soundtrack.ts         # 사운드트랙 합성기
 ```
 
 ## 4. 작업 단계 (Phase별로 진행하고 각 단계 끝에 확인받기)
@@ -85,9 +90,11 @@ public/
 - [x] **Phase 3 — 다크 파트 (씬 1~5)**: 화면이 점점 복잡하고 정신없어지는 느낌.
 - [x] **Phase 4 — 라이트 파트 (씬 6~10)**: 화이트 플래시 전환 후 여백 많고 차분한 톤. 숫자가 주인공.
 - [x] **Phase 5 — 마무리 (씬 11~13)**: 일상 장면과 슬로건, 로고.
-- [x] **Phase 6 — 오디오 & 폴리싱**: `src/Audio.tsx`가 `public/music.mp3`가 있을 때만 재생(페이드 인/아웃). 아직 음악이 없어 비트 싱크는 미적용 — 음악을 넣으면 `src/timeline.ts`의 씬 길이로 컷을 맞춘다.
-  모션블러: 씬 5 소용돌이는 `<CameraMotionBlur>`(6 samples), 직선 이동(씬 4 휩팬, 씬 10 퇴장)은 가볍게 SVG 방향성 블러(`DirectionalBlur`), 날아오는 탭/롤링 숫자는 속도 비례 blur.
-- [x] **Phase 7 — 렌더**: `npm run render` → `out/video.mp4` (h264, crf 18). 세로 버전은 미착수(필요 시 1080×1920 Composition 추가).
+- [x] **Phase 6 — 오디오 & 폴리싱**: 사운드트랙을 코드로 합성한다(`scripts/soundtrack.ts`, `npm run sound`).
+  `src/cues.ts`의 이벤트 타이밍을 화면과 공유하므로 효과음이 프레임 단위로 맞는다. 120 BPM이라 모든 씬 컷이 박자 위에 떨어진다.
+  `public/music.mp3`를 넣으면 생성된 음악 대신 그 파일을 쓰고, 효과음은 그대로 유지된다.
+  모션블러: 씬 5 소용돌이는 `<CameraMotionBlur>`(6 samples), 직선 이동(씬 4 휩팬, 씬 10 퇴장)은 SVG 방향성 블러(`DirectionalBlur`), 날아오는 탭/롤링 숫자는 속도 비례 blur.
+- [x] **Phase 7 — 렌더**: `npm run render` → `out/video.mp4`, `npm run render:4k` → `out/video-4k.mp4`. PNG 프레임 + BT.709 + CRF 12(x264 slow) + AAC 320k (`remotion.config.ts`). 세로 버전은 미착수.
 
 ## 5. 품질 기준 (각 Phase마다 스스로 체크)
 

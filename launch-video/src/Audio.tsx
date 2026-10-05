@@ -1,20 +1,32 @@
 import { Audio, getStaticFiles, interpolate, staticFile, useVideoConfig } from 'remotion';
 
-const TRACK = 'music.mp3';
+const has = (name: string) => getStaticFiles().some((f) => f.name === name);
 
-/** Plays public/music.mp3 if it exists (fades in/out); otherwise the film is silent. */
+/**
+ * Music: public/music.mp3 if you drop one in, otherwise the generated bed (public/audio/music.wav).
+ * Sound effects: public/audio/sfx.wav. Both generated files come from `npm run sound`.
+ */
 export const Soundtrack: React.FC = () => {
   const { durationInFrames } = useVideoConfig();
-  if (!getStaticFiles().some((f) => f.name === TRACK)) return null;
+  const custom = has('music.mp3');
+  const music = custom ? 'music.mp3' : has('audio/music.wav') ? 'audio/music.wav' : null;
   return (
-    <Audio
-      src={staticFile(TRACK)}
-      volume={(f) =>
-        interpolate(f, [0, 10, durationInFrames - 45, durationInFrames], [0, 0.9, 0.9, 0], {
-          extrapolateLeft: 'clamp',
-          extrapolateRight: 'clamp',
-        })
-      }
-    />
+    <>
+      {music ? (
+        <Audio
+          src={staticFile(music)}
+          volume={(f) =>
+            // A supplied track gets faded to the film's length; the generated bed already is.
+            custom
+              ? interpolate(f, [0, 10, durationInFrames - 45, durationInFrames], [0, 0.9, 0.9, 0], {
+                  extrapolateLeft: 'clamp',
+                  extrapolateRight: 'clamp',
+                })
+              : 1
+          }
+        />
+      ) : null}
+      {has('audio/sfx.wav') ? <Audio src={staticFile('audio/sfx.wav')} /> : null}
+    </>
   );
 };

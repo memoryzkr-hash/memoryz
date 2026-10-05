@@ -2,6 +2,7 @@ import { AbsoluteFill, Easing, useCurrentFrame, useVideoConfig } from 'remotion'
 import { enter, ramp } from '../anim';
 import { AccentWord } from '../components/AccentWord';
 import { DirectionalBlur } from '../components/DirectionalBlur';
+import { SUBS } from '../cues';
 import { colors, fonts } from '../theme';
 import { Cents, KeptLabel, labelStyle, NUMBER_Y, numberStyle } from './shared';
 import { NumberMorph } from '../components/CountUp';
@@ -11,7 +12,7 @@ const BARS = [
   { name: 'Cloud storage', price: '$119/mo', height: 1 },
   { name: 'Course you forgot', price: '$40/mo', height: 0.38 },
 ];
-const EXIT = [0, 9] as const;
+const EXIT = SUBS.exit;
 const exitAt = (f: number) => ramp(f, [EXIT[0], EXIT[1]], [0, 1], Easing.in(Easing.cubic));
 
 /** $412.00 whips away; the reason it isn't more slides in. */
@@ -20,7 +21,7 @@ export const SubsScene: React.FC = () => {
   const { fps } = useVideoConfig();
   const exit = exitAt(frame);
   const exitSpeed = (exit - exitAt(frame - 1)) * 900;
-  const card = enter(frame, fps, 6, 'smooth');
+  const card = enter(frame, fps, SUBS.card, 'smooth');
 
   return (
     <AbsoluteFill style={{ backgroundColor: colors.light, fontFamily: fonts.sans }}>
@@ -62,7 +63,7 @@ export const SubsScene: React.FC = () => {
           </div>
           <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: 80, height: 300, marginTop: 40 }}>
             {BARS.map((bar, i) => {
-              const grow = enter(frame, fps, 16 + i * 5, 'snappy');
+              const grow = enter(frame, fps, SUBS.barStart + i * SUBS.barStagger, 'snappy');
               return (
                 <div key={bar.name} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 220 }}>
                   <div style={{ fontSize: 30, fontWeight: 700, color: colors.inkOnLight, opacity: grow, marginBottom: 12 }}>{bar.price}</div>

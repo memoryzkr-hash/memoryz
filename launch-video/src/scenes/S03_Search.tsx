@@ -3,6 +3,7 @@ import { enter, ramp } from '../anim';
 import { TabCard } from '../components/TabCard';
 import { TypeWriter } from '../components/TypeWriter';
 import { SERVICES, TABS } from '../data';
+import { SEARCH } from '../cues';
 import { colors, fonts } from '../theme';
 
 const GHOSTS: [number, number, number][] = [
@@ -46,7 +47,7 @@ export const SearchScene: React.FC = () => {
             <circle cx={10.5} cy={10.5} r={7} />
             <path d="M16 16l5.5 5.5" />
           </svg>
-          <TypeWriter text="did i make money today" start={8} seed="search" style={{ fontSize: 62, fontWeight: 500, color: colors.inkOnDark, letterSpacing: '-0.01em' }} />
+          <TypeWriter text={SEARCH.text} start={SEARCH.start} seed={SEARCH.seed} style={{ fontSize: 62, fontWeight: 500, color: colors.inkOnDark, letterSpacing: '-0.01em' }} />
         </div>
       </AbsoluteFill>
     </AbsoluteFill>

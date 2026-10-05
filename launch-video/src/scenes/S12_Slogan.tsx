@@ -1,5 +1,6 @@
 import { AbsoluteFill, useCurrentFrame, useVideoConfig } from 'remotion';
 import { enter, ramp } from '../anim';
+import { SLOGAN } from '../cues';
 import { colors, fonts } from '../theme';
 
 const FEWER = 'Fewer'.split('');
@@ -33,7 +34,7 @@ export const SloganScene: React.FC = () => {
         }}
       >
         {FEWER.map((ch, i) => {
-          const p = enter(frame, fps, 2 + i * 2.5, 'snappy');
+          const p = enter(frame, fps, SLOGAN.fewerStart + i * SLOGAN.fewerStagger, 'snappy');
           return (
             <span key={i} style={{ display: 'inline-block', color: colors.inkOnLight, opacity: p, transform: `translateY(${(1 - p) * 0.45 * SIZE}px)` }}>
               {ch}
@@ -43,7 +44,7 @@ export const SloganScene: React.FC = () => {
         <span style={{ display: 'inline-block', width: '0.2em' }} />
         <span style={{ display: 'flex', perspective: 900 }}>
           {TABS.map((ch, i) => {
-            const delay = 18 + i * 4;
+            const delay = SLOGAN.tabsStart + i * SLOGAN.tabsStagger;
             const fold = enter(frame, fps, delay, 'snappy');
             const shed = ramp(frame, [delay + 8, delay + 18], [1, 0]);
             return (

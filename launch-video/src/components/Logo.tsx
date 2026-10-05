@@ -1,6 +1,7 @@
 import { Easing, interpolate, spring, useCurrentFrame, useVideoConfig } from 'remotion';
 import { CLAMP } from '../anim';
-import { colors, fonts, springs } from '../theme';
+import { springs } from '../config';
+import { colors, fonts } from '../theme';
 
 // Tally mark "||||/": four bars and an orange stroke crossing them. viewBox 0 0 112 100.
 const BARS = [14, 36, 58, 80];

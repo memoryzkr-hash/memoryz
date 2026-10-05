@@ -4,9 +4,10 @@ import { AccentWord } from '../components/AccentWord';
 import { DirectionalBlur } from '../components/DirectionalBlur';
 import { AmountCard } from '../components/TabCard';
 import { SERVICES } from '../data';
+import { HERE_THERE } from '../cues';
 import { colors, fonts } from '../theme';
 
-const PAN = [33, 41] as const;
+const PAN = HERE_THERE.pan;
 const panAt = (f: number) => ramp(f, [PAN[0], PAN[1]], [0, 1], Easing.inOut(Easing.cubic));
 
 const Line: React.FC<{ word: string; progress: number; align: 'left' | 'right' }> = ({ word, progress, align }) => (
@@ -33,12 +34,12 @@ export const HereThereScene: React.FC = () => {
   const pan = panAt(frame);
   const panSpeed = (pan - panAt(frame - 1)) * 1920;
 
-  const cardA = enter(frame, fps, 0, 'snappy');
-  const cardASpeed = (cardA - enter(frame - 1, fps, 0, 'snappy')) * 1100;
-  const textA = enter(frame, fps, 7, 'snappy');
-  const cardB = enter(frame, fps, PAN[0] + 4, 'snappy');
-  const cardBSpeed = (cardB - enter(frame - 1, fps, PAN[0] + 4, 'snappy')) * 700;
-  const textB = enter(frame, fps, PAN[1], 'snappy');
+  const cardA = enter(frame, fps, HERE_THERE.cardA, 'snappy');
+  const cardASpeed = (cardA - enter(frame - 1, fps, HERE_THERE.cardA, 'snappy')) * 1100;
+  const textA = enter(frame, fps, HERE_THERE.textA, 'snappy');
+  const cardB = enter(frame, fps, HERE_THERE.cardB, 'snappy');
+  const cardBSpeed = (cardB - enter(frame - 1, fps, HERE_THERE.cardB, 'snappy')) * 700;
+  const textB = enter(frame, fps, HERE_THERE.textB, 'snappy');
 
   return (
     <AbsoluteFill style={{ backgroundColor: colors.dark, fontFamily: fonts.sans, overflow: 'hidden' }}>

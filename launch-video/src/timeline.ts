@@ -1,4 +1,4 @@
-import { VIDEO } from './theme';
+import { VIDEO } from './config';
 
 const s = (seconds: number) => Math.round(seconds * VIDEO.fps);
 

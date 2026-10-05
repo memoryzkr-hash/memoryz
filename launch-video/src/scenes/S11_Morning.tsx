@@ -2,6 +2,7 @@ import { AbsoluteFill, useCurrentFrame, useVideoConfig } from 'remotion';
 import { enter, ramp } from '../anim';
 import { AccentWord } from '../components/AccentWord';
 import { PhoneMockup } from '../components/PhoneMockup';
+import { MORNING } from '../cues';
 import { colors, fonts } from '../theme';
 
 const PHONE_W = 400;
@@ -98,10 +99,10 @@ const Side: React.FC<{ progress: number; side: 'left' | 'right'; children: React
 export const MorningScene: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const phone = enter(frame, fps, 0, 'smooth');
-  const notification = enter(frame, fps, 34, 'snappy');
-  const left = enter(frame, fps, 16, 'smooth');
-  const right = enter(frame, fps, 52, 'smooth');
+  const phone = enter(frame, fps, MORNING.phone, 'smooth');
+  const notification = enter(frame, fps, MORNING.notification, 'snappy');
+  const left = enter(frame, fps, MORNING.left, 'smooth');
+  const right = enter(frame, fps, MORNING.right, 'smooth');
   const float = Math.sin(frame / 22) * 6;
   const glow = ramp(frame, [10, 60], [0, 1]);
 

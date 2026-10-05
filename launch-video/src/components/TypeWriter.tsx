@@ -1,17 +1,7 @@
 import { useMemo } from 'react';
-import { random, useCurrentFrame } from 'remotion';
+import { useCurrentFrame } from 'remotion';
+import { typingSchedule } from '../cues';
 import { colors } from '../theme';
-
-/** Frame (relative to the sequence) at which each character appears; 2–3 frames apart, seeded. */
-export const typingSchedule = (text: string, start: number, seed: string) => {
-  const times: number[] = [];
-  let t = start;
-  for (let i = 0; i < text.length; i++) {
-    times.push(t);
-    t += random(`${seed}-${i}`) < 0.5 ? 2 : 3;
-  }
-  return { times, end: t };
-};
 
 export const TypeWriter: React.FC<{
   text: string;

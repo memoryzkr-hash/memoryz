@@ -4,6 +4,7 @@ import { enter, ramp } from '../anim';
 import { AccentWord } from '../components/AccentWord';
 import { AmountCard } from '../components/TabCard';
 import { SERVICES, type ServiceKey } from '../data';
+import { EVERYWHERE } from '../cues';
 import { colors, fonts } from '../theme';
 
 const KEYS = Object.keys(SERVICES) as ServiceKey[];
@@ -28,7 +29,7 @@ const Vortex: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const t = frame / 75;
-  const spread = ramp(frame, [0, 60], [0.35, 1.05], Easing.out(Easing.cubic)) + ramp(frame, [58, 75], [0, 0.9], Easing.in(Easing.cubic));
+  const spread = ramp(frame, [0, 60], [0.35, 1.05], Easing.out(Easing.cubic)) + ramp(frame, [EVERYWHERE.burst, 75], [0, 0.9], Easing.in(Easing.cubic));
   const tilt = ramp(frame, [0, 75], [16, 34]);
   const roll = ramp(frame, [0, 75], [-6, 10]);
 
@@ -65,7 +66,7 @@ const Vortex: React.FC = () => {
 export const EverywhereScene: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const word = enter(frame, fps, 8, 'bouncy');
+  const word = enter(frame, fps, EVERYWHERE.word, 'bouncy');
 
   return (
     <AbsoluteFill style={{ backgroundColor: colors.dark, fontFamily: fonts.sans }}>

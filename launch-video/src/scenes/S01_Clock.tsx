@@ -1,6 +1,7 @@
 import { AbsoluteFill, useCurrentFrame, useVideoConfig } from 'remotion';
 import { enter, ramp } from '../anim';
 import { DigitColumn, Glyph, RollRow } from '../components/CountUp';
+import { CLOCK } from '../cues';
 import { colors, fonts } from '../theme';
 
 const LockIcon: React.FC<{ size: number; color: string }> = ({ size, color }) => (
@@ -15,7 +16,7 @@ export const ClockScene: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const appear = enter(frame, fps, 0, 'smooth');
-  const tick = enter(frame, fps, 34, 'bouncy');
+  const tick = enter(frame, fps, CLOCK.minuteTick, 'bouncy');
   const zoom = ramp(frame, [0, 90], [1, 1.07]);
 
   return (

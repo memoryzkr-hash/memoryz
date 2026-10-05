@@ -3,6 +3,7 @@ import { enter, ramp } from '../anim';
 import { DigitColumn, Glyph, RollRow } from '../components/CountUp';
 import { TabCard } from '../components/TabCard';
 import { SERVICES, TABS } from '../data';
+import { TABS_CUES } from '../cues';
 import { colors, fonts } from '../theme';
 
 // Resting centre of each card, relative to the frame centre. Hand-placed so the pile fills the frame.
@@ -10,16 +11,15 @@ const SLOTS: [number, number][] = [
   [-650, -330], [-200, -390], [260, -360], [690, -310], [-760, 20], [-360, -130], [330, -150],
   [740, 70], [-560, 330], [-110, 300], [400, 320], [740, 380], [-30, -430], [-820, 400], [790, -120],
 ];
-// First ten land in a quick barrage; the last four arrive one by one and bump the counter.
-const DELAYS = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 27, 35, 43, 51];
-const COUNTER_AT = 22;
+const DELAYS = TABS_CUES.delays;
+const COUNTER_AT = TABS_CUES.counterAt;
 
 export const TabsScene: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const camera = ramp(frame, [0, 75], [1, 1.06]);
   const counterIn = enter(frame, fps, COUNTER_AT, 'bouncy');
-  const bumps = DELAYS.slice(10).map((d) => d + 5);
+  const bumps = DELAYS.slice(10).map((d) => d + TABS_CUES.bumpLag);
   const ones = bumps.reduce((sum, t) => sum + enter(frame, fps, t, 'snappy'), 0);
   const pop = bumps.reduce((sum, t) => sum + ramp(frame, [t, t + 3], [0, 1]) - ramp(frame, [t + 3, t + 12], [0, 1]), 0);
 

@@ -1,6 +1,6 @@
 import { Easing, interpolate, spring, useCurrentFrame, useVideoConfig } from 'remotion';
 import { CLAMP } from '../anim';
-import { springs } from '../theme';
+import { springs } from '../config';
 
 /** Line box of every rolling glyph, in em. Leaves room so digits never touch the clip edge. */
 export const LINE = 1.15;

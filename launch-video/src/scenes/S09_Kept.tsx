@@ -1,26 +1,20 @@
 import { AbsoluteFill, useCurrentFrame, useVideoConfig } from 'remotion';
 import { enter, ramp } from '../anim';
 import { NumberMorph } from '../components/CountUp';
+import { KEPT } from '../cues';
 import { colors, fonts } from '../theme';
 import { Cents, KeptLabel, labelStyle, NUMBER_Y, numberStyle } from './shared';
 
-const DEDUCTIONS = [
-  { at: 10, amount: '$96.30', what: 'payment fees' },
-  { at: 20, amount: '$561.70', what: 'tax set aside' },
-  { at: 58, amount: '$214.00', what: 'subscriptions' },
-];
-const FIRST_MORPH = 32;
-const SECOND_MORPH = 68;
-const LABEL_SWAP = 86;
+const { deductions: DEDUCTIONS, firstMorph: FIRST_MORPH, secondMorph: SECOND_MORPH, labelSwap: LABEL_SWAP } = KEPT;
 
 /** $1,284 → $626 → $412.00 as each deduction attaches. */
 export const KeptScene: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const second = frame >= SECOND_MORPH;
-  const cents = enter(frame, fps, SECOND_MORPH + 14, 'smooth');
+  const cents = enter(frame, fps, SECOND_MORPH + KEPT.centsLag, 'smooth');
   const swap = enter(frame, fps, LABEL_SWAP, 'smooth');
-  const listOut = ramp(frame, [92, 102], [0, 1]);
+  const listOut = ramp(frame, KEPT.listOut, [0, 1]);
   const emphasis = 1 + 0.05 * enter(frame, fps, LABEL_SWAP + 4, 'smooth');
 
   return (

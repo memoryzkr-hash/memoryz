@@ -4,9 +4,13 @@
   "version": "0.1.0",
   "description": "35s Tally launch motion graphic, built with Remotion",
   "scripts": {
+    "sound": "tsx scripts/soundtrack.ts",
+    "predev": "npm run sound",
     "dev": "remotion studio",
     "still": "remotion still",
-    "render": "remotion render Video out/video.mp4 --codec h264 --crf 18",
+    "prerender": "npm run sound",
+    "render": "remotion render Video out/video.mp4",
+    "render:4k": "npm run sound && remotion render Video out/video-4k.mp4 --scale=2",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -20,6 +24,7 @@
   "devDependencies": {
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
+    "tsx": "^4.23.15",
     "typescript": "^5.9.3"
   }
 }
