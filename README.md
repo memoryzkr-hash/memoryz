@@ -4,6 +4,8 @@
 
 ![배틀 화면](docs/screenshot.png)
 
+> 📅 같은 저장소의 [`timetable-app/`](timetable-app/)에는 Expo(React Native) 시간표 앱이 있습니다.
+
 ## 실행
 
 ```bash
