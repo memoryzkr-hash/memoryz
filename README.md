@@ -45,6 +45,30 @@ npm run build    # dist/ 에 정적 빌드 (GitHub Pages 등에 그대로 배포
 
 밸런스는 `cards.json`의 숫자만 바꾸면 됩니다.
 
+## 🏍️ 네온 라이더 (`ride.html`)
+
+웹캠으로 **몸을 기울여 조종하는** 네온 고속도로 오토바이 게임. 기획서: [docs/RIDE_PLAN.md](docs/RIDE_PLAN.md)
+
+| 주행 | 충돌 → WASTED |
+| --- | --- |
+| ![주행](docs/ride.jpg) | ![충돌](docs/ride-crash.jpg) |
+
+- `npm run dev` 후 http://localhost:5173/ride.html (배포본은 `/memoryz/ride.html`, Royale 메뉴 왼쪽 위 링크로도 이동)
+- **웹캠**: 두 주먹을 가슴 앞에 들면 핸들을 잡은 것으로 인식해 출발합니다(처음 1.5초 보정).
+  핸들 돌리듯 한 손을 내리거나 몸을 기울이면 방향 전환, 화면 쪽으로 숙이면 부스터,
+  손을 내리면 브레이크, 두 손을 머리 위로 1초 올리면 다시 시작.
+- **키보드/터치**: ← → 방향 · ↓ 브레이크 · Space 부스터 · R 다시 시작 · M 소리 / 화면 좌우 누르기, 두 손가락 부스터
+- 차 사이를 1.3m 이내로 스치면 아슬아슬 보너스(콤보) + 부스터 충전. 차에 부딪히면 라이더가 날아가며 슬로모션 → 흑백 → **WASTED**.
+- 자세 인식은 MediaPipe Pose(lite)로 브라우저 안에서만 처리합니다. wasm은 빌드에 포함되고, 모델 파일(5.7MB)만 Google 저장소에서 받습니다.
+
+```
+src/ride/core/     순수 로직: 바이크·교통·충돌·점수·충돌 후 물리(sim.ts), 포즈→조작 변환(controls.ts)
+src/ride/input/    웹캠 + MediaPipe(pose.ts), 키보드/터치(keyboard.ts)
+src/ride/render/   Three.js: 도로·도시·네온(road.ts), 차량(vehicles.ts), 콕핏·라이더(bike.ts), 속도계(dashboard.ts), 카메라·후처리(scene.ts)
+src/ride/ui/       HUD·오버레이(hud.ts), 웹캠 스켈레톤(skeleton.ts)
+tests/ride/        sim / controls 단위 테스트
+```
+
 ## 배포 (GitHub Pages)
 
 `.github/workflows/ci.yml`이 모든 push에서 테스트와 빌드를 돌리고, 저장소 **기본 브랜치**에 push되면
