@@ -551,7 +551,8 @@ def advance(run: str, state: Dict) -> None:
             one, two = m["order"]
             m["winner"] = one if verdict["winner"] == "1" else two
             m["scores"] = {one: verdict["1"], two: verdict["2"]}
-            m["reason"] = verdict["reason"]
+            # The judge saw "답 1/답 2" in shuffled order; name the agents so the report reads right.
+            m["reason"] = re.sub(r"답\s*([12])(?!\d)", lambda x: one if x.group(1) == "1" else two, verdict["reason"])
             if verdict["judge_said"] and verdict["judge_said"] != verdict["winner"]:
                 m["reason"] += " (심판의 winner와 점수가 어긋나 점수를 따름)"
         order = {aid: i for i, aid in enumerate(sorted(state["cards"]))}

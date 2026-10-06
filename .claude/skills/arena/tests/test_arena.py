@@ -38,7 +38,7 @@ def fake_agent(job, strength):
                 s = strength[aid]
                 side[key] = {"accuracy": s, "completeness": 20, "robustness": 15, "specificity": 10,
                              "clarity": 8, "fatal": False}
-            text = "```json\n" + json.dumps({**side, "winner": "1", "reason": "테스트"}) + "\n```"
+            text = "```json\n" + json.dumps({**side, "winner": "1", "reason": "답 1이 답 2보다 낫다"}) + "\n```"
         elif "attack_by_" in out:
             text = "## 공격 1\n등급: **MAJOR**\n지적: x\n근거: y\n\n## 공격 2\n등급: MINOR\n지적: x\n근거: y\n"
         else:
@@ -138,6 +138,7 @@ class FullRun(unittest.TestCase):
         self.assertEqual(len(byes), len(set(byes)))
         result = read(os.path.join(run, "result.md"))
         self.assertIn("우승: **a001**", result)
+        self.assertNotIn("답 1", result)  # judge labels are mapped back to agent ids
         self.assertIn("MAJOR 4", result)  # two MAJOR per attack, survived in each of the matches it played
         self.assertTrue(read(os.path.join(run, "final.md")).startswith("답 내용"))
 
