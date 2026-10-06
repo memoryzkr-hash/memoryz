@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#0b0a08" />
+    <meta name="description" content="Memoryz — 브라우저에서 몸으로 느끼는 게임과 인터랙션을 만드는 스튜디오" />
+    <title>Memoryz Studio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300..700&family=Geist+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" rel="stylesheet" />
+  </head>
+  <body>
+    <div class="loader" aria-hidden="true">
+      <span class="loader-brand">memoryz<sup>®</sup></span>
+      <span class="loader-count mono"><span id="loader-num">000</span></span>
+    </div>
+
+    <div class="cursor" aria-hidden="true"><span class="cursor-label"></span></div>
+    <div class="grain" aria-hidden="true"></div>
+
+    <header class="nav">
+      <a class="logo" href="#top">memoryz<sup>®</sup></a>
+      <nav class="nav-links">
+        <a href="#work">Work</a>
+        <a href="#capabilities">Studio</a>
+        <a href="#process">Process</a>
+      </nav>
+      <span class="clock mono" aria-label="서울 현재 시각"><span class="clock-dot"></span>SEOUL <span id="clock">--:--:--</span></span>
+      <a class="pill magnetic" href="#contact"><span>Say hello</span></a>
+    </header>
+
+    <main id="top">
+      <section class="hero">
+        <canvas id="gl" aria-hidden="true"></canvas>
+        <div class="hero-inner">
+          <p class="hero-meta mono"><span>(01)</span> Interactive game studio — Seoul, KR</p>
+          <h1 class="hero-title" data-hero-title>
+            Games you <em>feel</em><br />with your body.
+          </h1>
+          <div class="hero-bottom">
+            <p class="hero-lede">메모리즈는 브라우저 안에서 돌아가는 게임과 인터랙션을 만듭니다. 설치 없이, 링크 하나로.</p>
+            <a class="scroll-cue mono" href="#about">Scroll <span aria-hidden="true">↓</span></a>
+          </div>
+        </div>
+      </section>
+
+      <div class="marquee" aria-label="Three.js, GSAP, WebGL, MediaPipe, WebAudio, TypeScript">
+        <div class="marquee-track">
+          <div class="marquee-group">
+            <span>Three.js</span><i>✦</i><span>GSAP</span><i>✦</i><span><em>WebGL</em></span><i>✦</i>
+            <span>MediaPipe</span><i>✦</i><span>WebAudio</span><i>✦</i><span><em>TypeScript</em></span><i>✦</i>
+          </div>
+        </div>
+      </div>
+
+      <section class="manifesto" id="about">
+        <p class="label mono">(02) Manifesto</p>
+        <p class="manifesto-text" data-manifesto>
+          우리는 화면을 누르는 게임보다 <em>몸이 먼저 반응하는</em> 게임을 좋아합니다. 카드 한 장의 무게, 커브를 도는 순간의 기울기,
+          아슬아슬하게 스치는 1.3미터. 그 감각을 브라우저 안에서, 설치 없이, 링크 하나로 전합니다.
+        </p>
+      </section>
+
+      <section class="work" id="work">
+        <div class="work-track">
+          <div class="work-intro">
+            <p class="label mono">(03) Selected work</p>
+            <h2 class="section-title" data-reveal>Two games,<br /><em>one</em> obsession.</h2>
+            <p class="muted">직접 플레이해 보세요. 카드를 누르면 게임이 열립니다.</p>
+            <div class="work-progress" aria-hidden="true"><span></span></div>
+          </div>
+
+          <a class="work-card spot" href="./index.html" data-cursor="Play">
+            <div class="work-media"><img src="/docs/screenshot.png" alt="Memoryz Royale 배틀 화면" loading="lazy" /></div>
+            <div class="work-info">
+              <span class="mono muted">01 — 2026</span>
+              <h3>Memoryz Royale</h3>
+              <p>3D 전장 위에서 펼치는 실시간 카드 배틀. 결정적 20Hz 시뮬레이션과 규칙 기반 AI.</p>
+              <ul class="tags mono"><li>Three.js</li><li>Phaser</li><li>Game AI</li></ul>
+            </div>
+          </a>
+
+          <a class="work-card spot" href="./ride.html" data-cursor="Ride">
+            <div class="work-media"><img src="/docs/ride.jpg" alt="Neon Rider 주행 화면" loading="lazy" /></div>
+            <div class="work-info">
+              <span class="mono muted">02 — 2026</span>
+              <h3>Neon Rider</h3>
+              <p>웹캠 앞에서 몸을 기울여 조종하는 네온 고속도로. 자세 인식은 전부 브라우저 안에서.</p>
+              <ul class="tags mono"><li>MediaPipe</li><li>Post FX</li><li>WebAudio</li></ul>
+            </div>
+          </a>
+
+          <div class="work-card lab spot" data-cursor="Soon">
+            <div class="work-media"><div class="lab-orb"></div><span class="lab-badge mono">In the lab</span></div>
+            <div class="work-info">
+              <span class="mono muted">03 — 2027</span>
+              <h3>Next drop</h3>
+              <p>다음 실험을 만드는 중입니다. 소리로 조종하는 무언가가 될지도 모릅니다.</p>
+              <ul class="tags mono"><li>Prototype</li><li>???</li></ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="capabilities" id="capabilities">
+        <div class="section-head">
+          <p class="label mono">(04) What we do</p>
+          <h2 class="section-title" data-reveal>Built in code,<br />down to the <em>last</em> pixel.</h2>
+        </div>
+
+        <div class="bento">
+          <article class="bento-card spot b-3d">
+            <div class="orbit" aria-hidden="true">
+              <span class="ring r1"><i></i></span><span class="ring r2"><i></i></span><span class="ring r3"><i></i></span>
+              <span class="core"></span>
+            </div>
+            <div class="bento-copy">
+              <h3>Real-time 3D</h3>
+              <p>유닛, 타워, 도시까지 외부 에셋 없이 코드로 만든 오리지널 모델. 카툰 셰이딩과 후처리까지 직접.</p>
+            </div>
+          </article>
+
+          <article class="bento-card spot b-body">
+            <svg class="pose" viewBox="0 0 120 120" aria-hidden="true">
+              <g class="pose-figure">
+                <line x1="60" y1="30" x2="60" y2="70" /><line x1="60" y1="42" x2="38" y2="56" /><line x1="60" y1="42" x2="82" y2="56" />
+                <line x1="60" y1="70" x2="46" y2="100" /><line x1="60" y1="70" x2="74" y2="100" />
+                <circle cx="60" cy="20" r="8" /><circle class="j" cx="38" cy="56" r="3" /><circle class="j" cx="82" cy="56" r="3" />
+                <circle class="j" cx="60" cy="42" r="3" /><circle class="j" cx="60" cy="70" r="3" />
+              </g>
+            </svg>
+            <div class="bento-copy">
+              <h3>Body as controller</h3>
+              <p>두 주먹을 들면 핸들, 몸을 기울이면 커브. 카메라 영상은 기기 밖으로 나가지 않습니다.</p>
+            </div>
+          </article>
+
+          <article class="bento-card spot b-stat">
+            <span class="stat"><span data-count="20">0</span><small>Hz</small></span>
+            <p class="stat-note muted">결정적 시뮬레이션 틱</p>
+          </article>
+
+          <article class="bento-card spot b-stat">
+            <span class="stat"><span data-count="15">0</span><small>cards</small></span>
+            <p class="stat-note muted">숫자만 바꾸면 되는 밸런스</p>
+          </article>
+
+          <article class="bento-card spot b-sound">
+            <div class="wave" aria-hidden="true"></div>
+            <div class="bento-copy">
+              <h3>Synthesized sound</h3>
+              <p>효과음 파일 0개. 모든 소리는 WebAudio로 그 자리에서 합성합니다.</p>
+            </div>
+          </article>
+
+          <article class="bento-card spot b-link">
+            <span class="stat"><span data-count="0">0</span><small>MB install</small></span>
+            <div class="bento-copy">
+              <h3>One link, any screen</h3>
+              <p>폰에서는 홈 화면에 추가하면 앱처럼 전체 화면으로.</p>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="process" id="process">
+        <div class="section-head">
+          <p class="label mono">(05) Process</p>
+          <h2 class="section-title" data-reveal>From a sketch<br />to a <em>shared</em> link.</h2>
+        </div>
+        <ol class="steps">
+          <li class="step" style="--i: 0">
+            <span class="step-num mono">01</span>
+            <div><h3>Sketch</h3><p>종이 한 장 위에 규칙을 적습니다. 무엇이 재미있어야 하는지부터.</p></div>
+            <span class="step-tag mono">Day 0</span>
+          </li>
+          <li class="step" style="--i: 1">
+            <span class="step-num mono">02</span>
+            <div><h3>Prototype</h3><p>회색 상자로 하루 만에 플레이 가능한 버전. 렌더링과 분리된 순수 로직부터.</p></div>
+            <span class="step-tag mono">Day 1</span>
+          </li>
+          <li class="step" style="--i: 2">
+            <span class="step-num mono">03</span>
+            <div><h3>Feel</h3><p>타격감, 슬로모션, 카메라 흔들림, 소리. 손맛이 날 때까지 숫자를 만집니다.</p></div>
+            <span class="step-tag mono">Week 1</span>
+          </li>
+          <li class="step" style="--i: 3">
+            <span class="step-num mono">04</span>
+            <div><h3>Ship</h3><p>push 한 번이면 테스트, 빌드, 배포. 결과물은 언제나 링크 하나.</p></div>
+            <span class="step-tag mono">Always</span>
+          </li>
+        </ol>
+      </section>
+
+      <footer class="cta" id="contact">
+        <p class="label mono">(06) Next</p>
+        <h2 class="cta-title" data-cta>Let’s make it <em>playable.</em></h2>
+        <div class="cta-actions">
+          <a class="round magnetic" href="./index.html" data-cursor="Go"><span>Royale<br />플레이</span></a>
+          <a class="pill pill-ghost magnetic" href="https://github.com/memoryzkr-hash/memoryz" target="_blank" rel="noopener"><span>Source on GitHub ↗</span></a>
+        </div>
+        <div class="footer-bar mono">
+          <span>© 2026 Memoryz</span>
+          <span>Three.js · GSAP · Vite</span>
+          <a href="#top">Back to top ↑</a>
+        </div>
+      </footer>
+    </main>
+
+    <script type="module" src="/src/studio/main.ts"></script>
+  </body>
+</html>

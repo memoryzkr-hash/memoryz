@@ -69,6 +69,21 @@ src/ride/ui/       HUD·오버레이(hud.ts), 웹캠 스켈레톤(skeleton.ts)
 tests/ride/        sim / controls 단위 테스트
 ```
 
+## ✨ 스튜디오 소개 페이지 (`studio.html`)
+
+Three.js + GSAP로 만든 랜딩 페이지 예시. `npm run dev` 후 http://localhost:5173/studio.html (배포본은 `/memoryz/studio.html`)
+
+- 히어로: 셰이더로 녹아내리는 금속 덩어리(심플렉스 노이즈 변위 + 프레넬), 포인터 쪽으로 부풀고 스크롤하면 커집니다.
+- GSAP ScrollTrigger / SplitText: 로더 → 헤드라인 마스크 리빌, 스크롤 속도에 반응하는 마키, 단어가 차례로 켜지는 선언문,
+  가로 스크롤로 넘기는 작업물(카드를 누르면 게임 실행), 숫자가 올라가는 벤토 그리드, 쌓이는 프로세스 카드.
+- 마그네틱 버튼, 커서 라벨, 카드 스포트라이트 테두리. 터치 기기와 `prefers-reduced-motion`에서는 정적으로 보입니다.
+
+```
+src/studio/hero.ts    Three.js 히어로 장면 (블롭 셰이더, 먼지 입자)
+src/studio/main.ts    GSAP 애니메이션, 커서, 마그네틱 버튼
+src/studio/studio.css 스타일
+```
+
 ## 배포 (GitHub Pages)
 
 `.github/workflows/ci.yml`이 모든 push에서 테스트와 빌드를 돌리고, 저장소 **기본 브랜치**에 push되면
