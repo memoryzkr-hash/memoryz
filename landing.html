@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#07060f" />
+    <meta name="description" content="설치 없이 브라우저에서 바로 즐기는 Memoryz 게임 — 3D 카드 배틀 Memoryz Royale, 몸으로 타는 Neon Rider." />
+    <script>
+      // Start reveal targets hidden before first paint (skipped when the viewer prefers reduced motion).
+      if (!matchMedia('(prefers-reduced-motion: reduce)').matches) document.documentElement.classList.add('js');
+    </script>
+    <title>Memoryz — 브라우저에서 바로 플레이</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Russo+One&family=Chakra+Petch:wght@400;600;700&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <a class="skip" href="#games">본문으로 건너뛰기</a>
+    <div class="progress" aria-hidden="true"></div>
+
+    <header class="nav glass">
+      <a class="brand" href="#top" aria-label="Memoryz 처음으로">
+        <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M4 26V6l12 12L28 6v20" /></svg>
+        <span>MEMORYZ</span>
+      </a>
+      <nav aria-label="페이지 섹션">
+        <a href="#games">게임</a>
+        <a href="#ride">네온 라이더</a>
+        <a href="#royale">로얄</a>
+      </nav>
+      <a class="btn btn-sm btn-primary" href="ride.html">지금 플레이</a>
+    </header>
+
+    <main id="top">
+      <!-- Hero -->
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="hero-bg" aria-hidden="true">
+          <div class="orb orb-a"></div>
+          <div class="orb orb-b"></div>
+          <div class="orb orb-c"></div>
+          <div class="grid-floor"></div>
+          <div class="noise"></div>
+        </div>
+        <div class="hero-inner">
+          <p class="eyebrow" data-hero>BROWSER GAMES · NO INSTALL</p>
+          <h1 id="hero-title" class="hero-title">
+            <span class="line" data-hero>몸으로 달리고,</span>
+            <span class="line gradient-text" data-hero>머리로 이긴다.</span>
+          </h1>
+          <p class="hero-sub" data-hero>
+            웹캠 앞에서 몸을 기울여 네온 고속도로를 질주하고, 3D 전장에서 카드 한 장으로 판을 뒤집으세요.
+            설치도 가입도 없이, 링크 하나면 끝.
+          </p>
+          <div class="hero-cta" data-hero>
+            <a class="btn btn-primary" href="ride.html">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
+              네온 라이더 플레이
+            </a>
+            <a class="btn btn-glass" href="index.html">Memoryz Royale</a>
+          </div>
+        </div>
+        <a class="scroll-cue" href="#strip" aria-label="아래로 스크롤">
+          <span></span>
+        </a>
+      </section>
+
+      <!-- Value strip -->
+      <section id="strip" class="strip" aria-label="핵심 특징">
+        <ul class="strip-list">
+          <li class="glass reveal">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14" /></svg>
+            <div><b>설치 0</b><span>브라우저에서 바로 실행</span></div>
+          </li>
+          <li class="glass reveal">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="2" width="10" height="20" rx="2" /><path d="M11 18h2" /></svg>
+            <div><b>폰 · PC</b><span>터치와 키보드 모두 지원</span></div>
+          </li>
+          <li class="glass reveal">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z" /><path d="M9 12l2 2 4-4" /></svg>
+            <div><b>영상은 기기 안에서만</b><span>카메라 영상 전송 없음</span></div>
+          </li>
+          <li class="glass reveal">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.9 6.9L22 9.6l-5.5 4.8L18.2 22 12 18.3 5.8 22l1.7-7.6L2 9.6l7.1-.7z" /></svg>
+            <div><b>완전 무료</b><span>광고도 결제도 없음</span></div>
+          </li>
+        </ul>
+      </section>
+
+      <!-- Games -->
+      <section id="games" class="section" aria-labelledby="games-title">
+        <header class="section-head reveal">
+          <p class="eyebrow">TWO GAMES</p>
+          <h2 id="games-title">오늘은 어떤 걸로 할까요?</h2>
+        </header>
+
+        <article id="ride" class="game glass reveal" aria-labelledby="ride-title">
+          <div class="game-media media-wide">
+            <img data-parallax src="./docs/ride.jpg" width="1280" height="720" loading="lazy" alt="네온 라이더 주행 화면: 보라빛 네온 도시 사이 고속도로를 오토바이로 달리는 모습" />
+            <span class="badge badge-pink">WEBCAM</span>
+          </div>
+          <div class="game-body">
+            <p class="eyebrow pink">NEON RIDER</p>
+            <h3 id="ride-title">몸으로 타는 오토바이</h3>
+            <p>
+              두 주먹을 가슴 앞에 들면 시동이 걸립니다. 몸을 기울여 차 사이를 아슬아슬하게 스치고,
+              화면 쪽으로 숙이면 부스터. 부딪히는 순간엔 슬로모션 — <b>WASTED</b>.
+            </p>
+            <ol class="steps">
+              <li>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="9" width="6" height="8" rx="2" /><rect x="14" y="9" width="6" height="8" rx="2" /></svg>
+                <span>두 주먹을 들면 출발</span>
+              </li>
+              <li>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l-4 4 4 4M17 7l4 4-4 4M3 11h18" /></svg>
+                <span>기울여서 방향 전환</span>
+              </li>
+              <li>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2L4 14h7l-1 8 9-12h-7z" /></svg>
+                <span>숙이면 부스터</span>
+              </li>
+              <li>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 3-6.2M4 4v5h5" /></svg>
+                <span>두 손 위로 다시 시작</span>
+              </li>
+            </ol>
+            <div class="game-cta">
+              <a class="btn btn-primary" href="ride.html">웹캠으로 달리기</a>
+              <span class="hint">웹캠이 없으면 키보드 · 터치로도 OK</span>
+            </div>
+          </div>
+        </article>
+
+        <article id="royale" class="game game-flip glass reveal" aria-labelledby="royale-title">
+          <div class="game-media media-tall">
+            <img data-parallax src="./docs/screenshot.png" width="720" height="1280" loading="lazy" alt="Memoryz Royale 배틀 화면: 3D 전장 위의 타워와 유닛, 아래쪽에 카드 손패" />
+            <span class="badge badge-cyan">3D CARD BATTLE</span>
+          </div>
+          <div class="game-body">
+            <p class="eyebrow cyan">MEMORYZ ROYALE</p>
+            <h3 id="royale-title">3분 안에 끝나는 실시간 카드 배틀</h3>
+            <p>
+              15장 중 8장으로 나만의 덱을 짜고, 엘릭서를 아껴 쓰며 상대 타워를 무너뜨리세요.
+              마지막 1분은 엘릭서 2배. 킹타워를 부수면 즉시 3크라운 승리.
+            </p>
+            <dl class="stats">
+              <div><dt>카드</dt><dd><span data-count="15">15</span></dd></div>
+              <div><dt>덱 슬롯</dt><dd><span data-count="8">8</span></dd></div>
+              <div><dt>AI 난이도</dt><dd><span data-count="3">3</span></dd></div>
+              <div><dt>한 판</dt><dd><span data-count="3">3</span><small>분</small></dd></div>
+            </dl>
+            <div class="game-cta">
+              <a class="btn btn-cyan" href="index.html">배틀 시작</a>
+              <span class="hint">덱은 브라우저에 자동 저장</span>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <!-- Final CTA -->
+      <section class="final" aria-labelledby="final-title">
+        <div class="final-card glass reveal">
+          <h2 id="final-title">준비됐나요? <span class="gradient-text">시동 거세요.</span></h2>
+          <p>폰에서는 브라우저 메뉴의 <b>홈 화면에 추가</b>를 누르면 앱처럼 전체 화면으로 즐길 수 있어요.</p>
+          <div class="hero-cta">
+            <a class="btn btn-primary" href="ride.html">네온 라이더</a>
+            <a class="btn btn-glass" href="index.html">Memoryz Royale</a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <span>© Memoryz</span>
+      <a href="https://github.com/memoryzkr-hash/memoryz" rel="noopener">GitHub</a>
+    </footer>
+
+    <script type="module" src="/src/landing/main.ts"></script>
+  </body>
+</html>
