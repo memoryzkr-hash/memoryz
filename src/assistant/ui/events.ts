@@ -304,7 +304,7 @@ export function eventsScreen(app: App): Screen {
       label: '되돌리기',
       run: () => {
         const r = undo.take();
-        if (r) app.store.restoreEvent(r);
+        if (r && !app.store.restoreEvent(r)) toast('되돌리지 못했어요');
         rerender();
       },
     });

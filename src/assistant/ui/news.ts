@@ -172,7 +172,7 @@ export function newsScreen(app: App): Screen {
       label: '되돌리기',
       run: () => {
         const r = undo.take();
-        if (r) app.store.restoreTopic(r);
+        if (r && !app.store.restoreTopic(r)) toast(`주제는 ${LIMITS.topics}개까지예요`);
         rerender();
       },
     });

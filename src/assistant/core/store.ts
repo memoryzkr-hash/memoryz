@@ -1,6 +1,6 @@
 /** localStorage persistence (docs/assistant/03-data.md §2). The DOM never touches storage directly. */
 import { browserTimeZone } from './dates';
-import { checkEvent, checkTopic, compareEvents, DEFAULT_SETTINGS, keepBriefing, normalizeSettings, type EventCheck, type TopicCheck } from './rules';
+import { checkEvent, checkTopic, compareEvents, DEFAULT_SETTINGS, keepBriefing, LIMITS, normalizeSettings, type EventCheck, type TopicCheck } from './rules';
 import type { Briefing, BriefingItem, CalEvent, EventDraft, Settings, Topic } from './types';
 
 export const KEYS = {
@@ -132,7 +132,8 @@ export class AssistantStore {
     }
     try {
       const briefings = key === KEYS.briefings ? (value as Briefing[]) : this.briefings();
-      if (briefings.length === 0) return false;
+      // When saving briefings, the first one is the one being saved: only older ones may go.
+      if (briefings.length <= (key === KEYS.briefings ? 1 : 0)) return false;
       const trimmed = briefings.slice(0, -1);
       this.storage.setItem(KEYS.briefings, JSON.stringify(trimmed));
       if (key !== KEYS.briefings) this.storage.setItem(key, json);
@@ -212,8 +213,9 @@ export class AssistantStore {
     return this.removeFrom(KEYS.topics, this.topics(), id);
   }
 
+  /** False when 5 topics already exist again (another one was added after the delete). */
   restoreTopic(r: Removed<Topic>): boolean {
-    return this.restoreInto(KEYS.topics, this.topics(), r);
+    return this.restoreInto(KEYS.topics, this.topics(), r, LIMITS.topics);
   }
 
   // ---------- briefings ----------
@@ -285,7 +287,7 @@ export class AssistantStore {
   }
 
   restoreEvent(r: Removed<CalEvent>): boolean {
-    return this.restoreInto(KEYS.events, this.events(), r);
+    return this.restoreInto(KEYS.events, this.events(), r, LIMITS.events);
   }
 
   // ---------- undo helpers ----------
@@ -298,8 +300,9 @@ export class AssistantStore {
     return { item, index };
   }
 
-  private restoreInto<T extends { id: string }>(key: string, list: T[], r: Removed<T>): boolean {
+  private restoreInto<T extends { id: string }>(key: string, list: T[], r: Removed<T>, max: number): boolean {
     if (list.some((x) => x.id === r.item.id)) return true;
+    if (list.length >= max) return false;
     const next = [...list];
     next.splice(Math.min(r.index, next.length), 0, r.item);
     return this.write(key, next);
