@@ -61,7 +61,7 @@
 - 완료 기준: 최대 길이를 **글자 수로 셀지(이모지 포함)** 정해져 있음 — 글의 예제가 여기서 버그가 났습니다.
   날짜·시간대(한국 시간) 처리 규칙이 있음 — "다음 주 화요일"을 계산하는 기준이 됩니다.
 
-### 04 구현 (App Builder)
+### 04 구현 (App Builder) ✅
 - 입력: 01~03 문서 → 출력: `assistant.html`, `src/assistant/*`
 - 프롬프트:
   ```
@@ -74,6 +74,7 @@
   문서에 없는 기능은 추가하지 말고, 실행해 보지 못한 부분이 있으면 따로 표시해 줘.
   ```
 - 완료 기준: `npm run dev` 후 http://localhost:5173/assistant.html 에서 01-scope.md의 완료 조건 체크박스를 직접 하나씩 확인
+- 결과: [`docs/assistant/04-build.md`](assistant/04-build.md) — 가짜 응답으로 22개 확인, 진짜 API로 확인할 것 목록 포함
 
 ### 05 테스트 (Test Engineer)
 - 입력: 구현 코드 → 출력: `tests/assistant/*.test.ts`, 실패 로그
