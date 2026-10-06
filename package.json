@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@mediapipe/tasks-vision": "^1.0.1",
+    "motion": "^14.0.0",
     "phaser": "^3.90.0",
     "three": "^0.186.0"
   },
