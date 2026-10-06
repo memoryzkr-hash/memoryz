@@ -69,6 +69,34 @@ src/ride/ui/       HUD·오버레이(hud.ts), 웹캠 스켈레톤(skeleton.ts)
 tests/ride/        sim / controls 단위 테스트
 ```
 
+## 🥊 아레나 스킬 (`.claude/skills/arena`)
+
+Claude 답이 마음에 안 들 때, 같은 과제를 하위 에이전트 여럿에게 **서로 다른 사고 카드**
+(사고법 15 × 작업흐름 12 × 전략 12 = 2,160장)로 풀게 하고, 1:1 토너먼트로 한 답만 남기는 Claude Code 스킬입니다.
+
+- 경기마다 **공격**(서로의 답에서 FATAL · MAJOR · MINOR 결함 찾기) → **방어**(인정하거나 근거로 반박하고 답 고치기)
+  → **심판**(정확성 30 · 완결성 25 · 견고성 20 · 구체성 15 · 명료성 10). 치명적 결함이 남은 답은 결함 없는 답을 못 이깁니다.
+- 이 저장소를 Claude Code로 열면 바로 쓸 수 있습니다: `/arena <과제>` 또는 "이거 대결 붙여줘".
+  다른 프로젝트에서도 쓰려면 `cp -r .claude/skills/arena ~/.claude/skills/`.
+- 필요한 것: Claude Code + Python 3.8+ (표준 라이브러리만). 결과는 `.arena/<id>/result.md`, `final.md`.
+
+| 옵션 | 참가 | 라운드 | 하위 에이전트 호출 |
+| --- | --- | --- | --- |
+| `--quick` | 8 | 3 | 43 |
+| (기본) | 16 | 4 | 91 |
+| `--agents 32` / `64` | 32 / 64 | 5 / 6 | 187 / 379 |
+| `--full` | 100 | 7 | 595 |
+
+토큰은 쓰는 사람의 Claude 구독/요금에서 나갑니다. 같은 모델이 다른 지시로 푸는 것이지 "서로 다른 AI 100개"가 아니고,
+과제가 나쁘면 결과도 나쁩니다. 하위 에이전트는 대화를 못 보고 `task.md`만 읽기 때문에 스킬이 과제를 먼저 정리해서 씁니다.
+
+```
+.claude/skills/arena/SKILL.md            Claude가 따르는 진행 순서
+.claude/skills/arena/scripts/arena.py    장부: 카드 뽑기, 대진·부전승, 프롬프트 파일, 판정 집계, 결과 파일
+.claude/skills/arena/scripts/cards.py    카드 2,160장
+.claude/skills/arena/tests/              가짜 에이전트로 토너먼트 전체를 돌리는 테스트
+```
+
 ## 배포 (GitHub Pages)
 
 `.github/workflows/ci.yml`이 모든 push에서 테스트와 빌드를 돌리고, 저장소 **기본 브랜치**에 push되면
