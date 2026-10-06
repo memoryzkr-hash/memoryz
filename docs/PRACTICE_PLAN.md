@@ -76,7 +76,7 @@
 - 완료 기준: `npm run dev` 후 http://localhost:5173/assistant.html 에서 01-scope.md의 완료 조건 체크박스를 직접 하나씩 확인
 - 결과: [`docs/assistant/04-build.md`](assistant/04-build.md) — 가짜 응답으로 22개 확인, 진짜 API로 확인할 것 목록 포함
 
-### 05 테스트 (Test Engineer)
+### 05 테스트 (Test Engineer) ✅
 - 입력: 구현 코드 → 출력: `tests/assistant/*.test.ts`, 실패 로그
 - 프롬프트:
   ```
@@ -86,6 +86,7 @@
   npm test를 실행하고 통과/실패 개수와 실패 로그를 그대로 보여 줘. 아직 고치지는 마.
   ```
 - 완료 기준: 테스트가 실제로 실행됐고 결과 숫자가 있음. 실패가 0개여도 괜찮지만, 그럴 땐 "일부러 깨뜨려서 테스트가 잡는지" 한 번 확인
+- 결과: [`docs/assistant/05-tests.md`](assistant/05-tests.md) — 150개 중 2개 실패 (되돌리기로 주제 6개, 저장 공간 가득 찰 때 브리핑 유실)
 - (선택) 브라우저 테스트: Playwright로 390px 화면에서 클릭·입력 흐름 확인 — 글에서는 로직 테스트는 다 통과했는데 브라우저 테스트에서 `maxlength`와 이모지 문제가 나왔습니다.
 
 ### 06 버그 수정 (Bug Fixer)
