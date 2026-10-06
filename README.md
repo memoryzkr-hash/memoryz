@@ -71,6 +71,8 @@ tests/ride/        sim / controls 단위 테스트
 
 ## 🥊 아레나 스킬 (`.claude/skills/arena`)
 
+소개 페이지와 실제 경기 다시보기: `arena.html` (배포본 `/memoryz/arena.html`)
+
 Claude 답이 마음에 안 들 때, 같은 과제를 하위 에이전트 여럿에게 **서로 다른 사고 카드**
 (사고법 15 × 작업흐름 12 × 전략 12 = 2,160장)로 풀게 하고, 1:1 토너먼트로 한 답만 남기는 Claude Code 스킬입니다.
 

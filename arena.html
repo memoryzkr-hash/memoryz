@@ -1,0 +1,601 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="description" content="같은 과제를 여러 에이전트가 서로 다른 사고 카드로 풀고 토너먼트로 한 답만 남기는 Claude Code 스킬" />
+<title>Memoryz Arena</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+KR:wght@400;500;700&display=swap">
+<style>
+/* Layout: a fight-night bout sheet. Bracket strip on top, the selected bout's scorecard below, reference sections after. */
+:root {
+  --paper: #eceff4;
+  --sheet: #f9fafc;
+  --ink: #141a2e;
+  --muted: #586079;
+  --line: #cdd3df;
+  --accent: #2a43cf;
+  --accent-soft: #dfe4fb;
+  --fatal: #c4302a;
+  --major: #a86b12;
+  --minor: #5a6880;
+  --win: #1d7547;
+  --win-soft: #dcefe4;
+  --font-display: "Black Han Sans", "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --font-body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --font-data: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0e1220; --sheet: #161b2d; --ink: #e7eaf3; --muted: #99a1b9; --line: #2b3252;
+    --accent: #8e9fff; --accent-soft: #232c55; --fatal: #f0786f; --major: #e0ae58; --minor: #9ba7be;
+    --win: #63c899; --win-soft: #173628; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0e1220; --sheet: #161b2d; --ink: #e7eaf3; --muted: #99a1b9; --line: #2b3252;
+  --accent: #8e9fff; --accent-soft: #232c55; --fatal: #f0786f; --major: #e0ae58; --minor: #9ba7be;
+  --win: #63c899; --win-soft: #173628; color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--paper); color: var(--ink);
+  font-family: var(--font-body); font-size: 15px; line-height: 1.6;
+}
+.wrap { max-width: 1080px; margin: 0 auto; padding-inline: 20px; padding-block: 36px 64px; display: grid; gap: 56px; }
+h1, h2 { font-family: var(--font-display); font-weight: 400; text-wrap: balance; margin: 0; letter-spacing: 0.01em; }
+h2 { font-size: clamp(24px, 3.4vw, 32px); line-height: 1.15; }
+h3 { margin: 0; font-size: 15px; font-weight: 700; }
+p { margin: 0; }
+.eyebrow { font-family: var(--font-data); font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.mono { font-family: var(--font-data); font-variant-numeric: tabular-nums; }
+.muted { color: var(--muted); }
+a { color: var(--accent); }
+button { font: inherit; color: inherit; cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.section { display: grid; gap: 20px; }
+.section-head { display: grid; gap: 8px; max-width: 68ch; }
+
+/* ---------- header */
+.top { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 28px; align-items: end; border-bottom: 3px solid var(--ink); padding-bottom: 28px; }
+.top h1 { font-size: clamp(64px, 12vw, 132px); line-height: 0.9; }
+.top .lede { font-size: 18px; max-width: 34ch; margin-top: 14px; }
+.deckcount { text-align: right; display: grid; gap: 2px; }
+.deckcount .n { font-family: var(--font-data); font-weight: 600; font-size: clamp(40px, 7vw, 64px); line-height: 1; font-variant-numeric: tabular-nums; }
+.deckcount .eq { font-family: var(--font-data); font-size: 13px; color: var(--muted); }
+.flow { display: flex; flex-wrap: wrap; gap: 8px 6px; align-items: center; margin-top: 18px; font-size: 14px; }
+.flow span.step { border: 1.5px solid var(--ink); border-radius: 999px; padding: 2px 12px; font-weight: 500; }
+.flow span.arrow { color: var(--muted); }
+
+/* ---------- replay */
+.replay-bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.btn { border: 1.5px solid var(--ink); background: var(--sheet); border-radius: 6px; padding: 6px 14px; font-weight: 500; }
+.btn:hover { background: var(--accent-soft); }
+.btn.primary { background: var(--ink); color: var(--paper); }
+.btn.primary:hover { background: var(--accent); border-color: var(--accent); color: var(--sheet); }
+.btn:disabled { opacity: 0.4; cursor: default; }
+.phase { flex: 1 1 260px; min-width: 0; font-size: 14px; }
+.phase b { font-family: var(--font-data); font-weight: 600; margin-right: 6px; }
+.track { height: 4px; background: var(--line); border-radius: 2px; overflow: hidden; }
+.track i { display: block; height: 100%; background: var(--accent); width: 0; transition: width 0.3s ease; }
+
+.bracket { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 28px; align-items: center; }
+.col { display: grid; gap: 18px; }
+.col-label { font-family: var(--font-data); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); padding-bottom: 6px; border-bottom: 1px solid var(--line); }
+.bout { text-align: left; border: 1.5px solid var(--line); background: var(--sheet); border-radius: 8px; padding: 0; display: grid; width: 100%; transition: border-color 0.15s; }
+.bout:hover { border-color: var(--muted); }
+.bout[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.bout .bid { font-family: var(--font-data); font-size: 11px; color: var(--muted); padding: 6px 12px 0; }
+.slot { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 8px 12px; }
+.slot + .slot { border-top: 1px dashed var(--line); }
+.slot .who { font-family: var(--font-data); font-weight: 600; }
+.slot .card { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.slot .pts { font-family: var(--font-data); font-variant-numeric: tabular-nums; font-size: 14px; color: var(--muted); }
+.slot.won { background: var(--win-soft); }
+.slot.won .who, .slot.won .pts { color: var(--win); }
+.slot.lost .who, .slot.lost .card { text-decoration: line-through; text-decoration-color: var(--muted); }
+.slot.pending .pts { opacity: 0.5; }
+.champ { border: 3px solid var(--ink); border-radius: 8px; padding: 18px; background: var(--sheet); display: grid; gap: 6px; }
+.champ .who { font-family: var(--font-display); font-size: 44px; line-height: 1; }
+.champ.empty { border-style: dashed; border-color: var(--line); color: var(--muted); }
+
+/* bout sheet */
+.sheet { border: 1.5px solid var(--ink); border-radius: 10px; background: var(--sheet); overflow: hidden; }
+.sheet-head { display: flex; flex-wrap: wrap; gap: 8px 16px; justify-content: space-between; align-items: baseline; padding: 14px 20px; border-bottom: 1.5px solid var(--ink); }
+.sheet-head h3 { font-family: var(--font-display); font-weight: 400; font-size: 22px; }
+.corners { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.corner { padding: 18px 20px; display: grid; gap: 16px; align-content: start; min-width: 0; }
+.corner + .corner { border-left: 1.5px solid var(--line); }
+.corner-top { display: flex; justify-content: space-between; align-items: start; gap: 12px; }
+.corner-top .who { font-family: var(--font-display); font-size: 32px; line-height: 1; }
+.corner-top .total { font-family: var(--font-data); font-weight: 600; font-size: 32px; line-height: 1; font-variant-numeric: tabular-nums; text-align: right; }
+.corner-top .total small { font-size: 13px; color: var(--muted); font-weight: 400; }
+.corner.winner .who, .corner.winner .total { color: var(--win); }
+.tag { display: inline-block; font-family: var(--font-data); font-size: 11px; letter-spacing: 0.08em; border-radius: 4px; padding: 1px 6px; border: 1px solid currentColor; vertical-align: middle; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font-size: 12px; border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; }
+.chip b { font-weight: 500; color: var(--muted); margin-right: 4px; }
+.score-rows { display: grid; gap: 6px; }
+.srow { display: grid; grid-template-columns: 4.2em minmax(0, 1fr) 3.6em; gap: 10px; align-items: center; font-size: 13px; }
+.srow .bar { height: 8px; background: var(--line); border-radius: 4px; overflow: hidden; }
+.srow .bar i { display: block; height: 100%; background: var(--ink); border-radius: 4px; }
+.corner.winner .srow .bar i { background: var(--win); }
+.srow .v { font-family: var(--font-data); font-variant-numeric: tabular-nums; text-align: right; color: var(--muted); }
+.hits { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.hit { display: grid; grid-template-columns: 5.4em minmax(0, 1fr); gap: 10px; font-size: 13.5px; line-height: 1.5; }
+.sev { font-family: var(--font-data); font-size: 11px; font-weight: 600; letter-spacing: 0.06em; border-left: 3px solid; padding-left: 6px; height: fit-content; }
+.sev.FATAL { color: var(--fatal); } .sev.MAJOR { color: var(--major); } .sev.MINOR { color: var(--minor); }
+.reply { display: block; margin-top: 3px; font-size: 12px; color: var(--muted); }
+.reply b { color: var(--ink); font-weight: 500; }
+.verdict { border-top: 1.5px solid var(--ink); padding: 16px 20px; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 14px; align-items: start; }
+.verdict .stamp { font-family: var(--font-display); font-size: 18px; color: var(--win); border: 2px solid var(--win); border-radius: 6px; padding: 2px 10px; transform: rotate(-3deg); white-space: nowrap; }
+.sheet-empty { padding: 28px 20px; color: var(--muted); }
+
+details.task { border: 1px solid var(--line); border-radius: 8px; background: var(--sheet); }
+details.task summary { cursor: pointer; padding: 10px 14px; font-weight: 500; }
+details.task pre { margin: 0; padding: 0 14px 14px; white-space: pre-wrap; font-family: var(--font-body); font-size: 14px; }
+
+/* final answer */
+.answer { display: grid; gap: 14px; min-width: 0; }
+.answer pre { margin: 0; background: var(--ink); color: var(--paper); border-radius: 8px; padding: 16px 18px; overflow-x: auto; font-family: var(--font-data); font-size: 13px; line-height: 1.55; }
+.answer p { max-width: 72ch; }
+.answer code { font-family: var(--font-data); font-size: 0.92em; background: var(--accent-soft); border-radius: 3px; padding: 0 4px; }
+.answer pre code { background: none; padding: 0; font-size: inherit; }
+
+/* two-up reference sections */
+.duo { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 40px; }
+.panel { border: 1.5px solid var(--line); border-radius: 10px; background: var(--sheet); padding: 20px; display: grid; gap: 16px; align-content: start; min-width: 0; }
+
+.drawn { display: grid; gap: 10px; }
+.dcard { display: grid; grid-template-columns: 5.6em minmax(0, 1fr); gap: 12px; padding: 12px 0; border-top: 1px solid var(--line); }
+.dcard:first-child { border-top: none; padding-top: 0; }
+.dcard .k { font-family: var(--font-data); font-size: 12px; color: var(--muted); padding-top: 3px; }
+.dcard .name { font-weight: 700; font-size: 17px; }
+.dcard .how { font-size: 13.5px; color: var(--muted); }
+.draw-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
+
+.calc-out { display: flex; flex-wrap: wrap; gap: 8px 28px; }
+.calc-out div { display: grid; }
+.calc-out .n { font-family: var(--font-data); font-weight: 600; font-size: 30px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.calc-out .l { font-size: 12px; color: var(--muted); }
+input[type="range"] { width: 100%; accent-color: var(--accent); }
+.presets { display: flex; flex-wrap: wrap; gap: 6px; }
+.presets .btn { padding: 3px 10px; font-size: 13px; font-family: var(--font-data); }
+.presets .btn[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+.rounds { display: grid; gap: 4px; }
+.rrow { display: grid; grid-template-columns: 4.4em minmax(0, 1fr) 3em; gap: 10px; align-items: center; font-size: 12px; }
+.rrow .bar { height: 12px; }
+.rrow .bar i { display: block; height: 100%; background: var(--accent); border-radius: 2px; min-width: 2px; }
+.rrow .v { font-family: var(--font-data); text-align: right; font-variant-numeric: tabular-nums; }
+
+.howto { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; counter-reset: s; }
+.howto li { display: grid; grid-template-columns: 2em minmax(0, 1fr); gap: 12px; counter-increment: s; }
+.howto li::before { content: counter(s); font-family: var(--font-display); font-size: 22px; line-height: 1.2; }
+.cmd { display: flex; gap: 8px; align-items: stretch; margin-top: 6px; min-width: 0; }
+.cmd code { flex: 1; min-width: 0; overflow-x: auto; white-space: nowrap; font-family: var(--font-data); font-size: 13px; background: var(--ink); color: var(--paper); border-radius: 6px; padding: 7px 12px; }
+.cmd .btn { padding: 4px 10px; font-size: 13px; }
+.notes { margin: 0; padding-left: 1.2em; display: grid; gap: 6px; max-width: 72ch; }
+footer { border-top: 1px solid var(--line); padding-top: 18px; font-size: 13px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 6px 18px; }
+
+@media (max-width: 760px) {
+  .top { grid-template-columns: minmax(0, 1fr); }
+  .deckcount { text-align: left; }
+  .bracket { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+  .corners { grid-template-columns: minmax(0, 1fr); }
+  .corner + .corner { border-left: none; border-top: 1.5px solid var(--line); }
+  .duo { grid-template-columns: minmax(0, 1fr); }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}
+
+[hidden]{display:none!important}
+body{margin:0}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="eyebrow">Memoryz · Claude Code 스킬</div>
+      <h1>아레나</h1>
+      <p class="lede">같은 과제를 여러 에이전트가 서로 다른 사고 카드로 풀고, 토너먼트에서 끝까지 버틴 답 하나만 받습니다.</p>
+      <div class="flow" aria-label="경기 순서">
+        <span class="step">풀이</span><span class="arrow">→</span>
+        <span class="step">공격</span><span class="arrow">→</span>
+        <span class="step">방어</span><span class="arrow">→</span>
+        <span class="step">심판</span><span class="arrow">→</span>
+        <span class="step">탈락 · 다음 라운드</span>
+      </div>
+    </div>
+    <div class="deckcount">
+      <span class="n">2,160</span>
+      <span>장의 사고 카드</span>
+      <span class="eq">사고법 15 × 작업흐름 12 × 전략 12</span>
+    </div>
+  </header>
+
+  <section class="section" id="replay">
+    <div class="section-head">
+      <div class="eyebrow">실제 경기 기록</div>
+      <h2>참가 4명, 2라운드, 하위 에이전트 호출 19회</h2>
+      <p class="muted">이 스킬을 만들고 실제로 돌려 본 경기입니다. 과제는 시간 문자열을 초로 바꾸는 파이썬 함수였습니다. 경기를 누르면 받은 공격, 방어, 채점표가 나옵니다.</p>
+    </div>
+    <details class="task"><summary>과제 원문 (task.md)</summary><pre id="task-text"></pre></details>
+
+    <div class="replay-bar">
+      <button class="btn" id="prev" type="button" aria-label="이전 단계">◀</button>
+      <button class="btn primary" id="play" type="button">처음부터 재생</button>
+      <button class="btn" id="next" type="button" aria-label="다음 단계">▶</button>
+      <div class="phase" aria-live="polite"><b id="phase-step"></b><span id="phase-text"></span></div>
+    </div>
+    <div class="track"><i id="track"></i></div>
+
+    <div class="bracket" id="bracket"></div>
+    <div class="sheet" id="sheet"></div>
+  </section>
+
+  <section class="section" id="answer">
+    <div class="section-head">
+      <div class="eyebrow">최종 답 · final.md</div>
+      <h2>살아남은 답</h2>
+      <p class="muted" id="answer-meta"></p>
+    </div>
+    <div class="answer" id="answer-body"></div>
+  </section>
+
+  <div class="duo">
+    <section class="section" id="draw">
+      <div class="section-head">
+        <div class="eyebrow">카드 뽑기</div>
+        <h2>참가자마다 다른 카드 한 장</h2>
+        <p class="muted">같은 카드를 두 명이 받지 않습니다. 카드는 접근 방법일 뿐이고, 채점은 답의 품질로만 합니다.</p>
+      </div>
+      <div class="panel">
+        <div class="draw-row">
+          <span class="mono muted" id="card-no"></span>
+          <button class="btn primary" id="draw-btn" type="button">한 장 뽑기</button>
+        </div>
+        <div class="drawn" id="drawn"></div>
+      </div>
+    </section>
+
+    <section class="section" id="cost">
+      <div class="section-head">
+        <div class="eyebrow">규모와 비용</div>
+        <h2>몇 명을 붙일까</h2>
+        <p class="muted">경기마다 공격 2번, 방어 2번, 심판 1번을 부릅니다. 한 경기에 한 명씩 떨어지니 호출 수는 N + 5 × (N − 1)입니다.</p>
+      </div>
+      <div class="panel">
+        <label for="n-range" class="eyebrow">참가자 수</label>
+        <input type="range" id="n-range" min="2" max="100" value="16">
+        <div class="presets" id="presets"></div>
+        <div class="calc-out">
+          <div><span class="n" id="o-n"></span><span class="l">참가</span></div>
+          <div><span class="n" id="o-r"></span><span class="l">라운드</span></div>
+          <div><span class="n" id="o-c"></span><span class="l">하위 에이전트 호출</span></div>
+        </div>
+        <div class="rounds" id="rounds" aria-label="라운드별 남은 인원"></div>
+      </div>
+    </section>
+  </div>
+
+  <section class="section" id="use">
+    <div class="section-head">
+      <div class="eyebrow">사용법</div>
+      <h2>Claude Code에서 부르기</h2>
+    </div>
+    <ol class="howto">
+      <li><div><h3>이 저장소를 Claude Code로 열고 과제와 함께 부릅니다</h3>
+        <p class="muted">"이거 대결 붙여줘"라고 해도 됩니다. Claude가 과제를 task.md로 정리하고, 호출 수를 알려 준 뒤 시작합니다.</p>
+        <div class="cmd"><code>/arena --quick 회원가입 폼 검증 로직을 짜줘</code><button class="btn copy" type="button">복사</button></div></div></li>
+      <li><div><h3>다른 프로젝트에서도 쓰려면 스킬 폴더를 복사합니다</h3>
+        <p class="muted">Python 3.8 이상만 있으면 됩니다. 표준 라이브러리만 씁니다.</p>
+        <div class="cmd"><code>cp -r .claude/skills/arena ~/.claude/skills/</code><button class="btn copy" type="button">복사</button></div></div></li>
+      <li><div><h3>결과는 실행 폴더에 남습니다</h3>
+        <p class="muted">final.md에 최종 답이, result.md에 경기별 점수와 판정 이유, 대진표가 있습니다. 중간에 끊겨도 같은 폴더에서 이어 갈 수 있습니다.</p>
+        <div class="cmd"><code>python3 .claude/skills/arena/scripts/arena.py status latest</code><button class="btn copy" type="button">복사</button></div></div></li>
+    </ol>
+    <ul class="notes muted">
+      <li>같은 모델이 서로 다른 지시로 푸는 방식입니다. 서로 다른 AI 여럿이 겨루는 것은 아닙니다.</li>
+      <li>가장 좋은 답을 보장하지는 않습니다. 과제가 모호하면 결과도 흐려집니다.</li>
+      <li>토큰은 쓰는 사람의 Claude 사용량에서 나갑니다. 평소에는 --quick(8명, 43회)이면 충분합니다.</li>
+    </ul>
+  </section>
+
+  <footer>
+    <span>Memoryz Arena</span>
+    <a href="https://github.com/memoryzkr-hash/memoryz/tree/claude/hopeful-ptolemy-dfg2ce/.claude/skills/arena">스킬 코드 보기</a>
+    <a href="https://rebornlabs.kr/arena">아이디어: rebornlabs.kr/arena</a>
+  </footer>
+</div>
+
+<script id="arena-data" type="application/json">{"task": "# 과제\n\n파이썬 3 함수 `parse_duration(text: str) -> int` 를 작성하세요. \"1h30m\", \"45s\", \"2h\", \"1h 5m 10s\", \"90m\" 같은 문자열을 받아 총 초(int)를 돌려줍니다.\n\n조건\n- 단위는 h, m, s (대소문자 무시). 단위 사이 공백 허용.\n- 같은 단위가 두 번 나오거나, 순서가 h → m → s 가 아니거나, 숫자 없는 단위, 빈 문자열, 알 수 없는 문자가 있으면 `ValueError`.\n- 표준 라이브러리만.\n\n출력: 함수 코드 하나와, 위 조건을 확인하는 짧은 테스트 예시(assert 5~10줄). 설명은 3줄 이내. 한국어.\n", "final": "```python\nimport re\n\n# 숫자는 [0-9], 단위는 [hH][mM][sS]로 명시(re.IGNORECASE를 쓰면 유니코드 'ſ'가 s로 오인됨).\n# 공백(\\s)은 파이썬의 공백 정의를 따름: 전각 공백(U+3000)·NBSP 포함.\n_PATTERN = re.compile(r\"(?:([0-9]+)[hH])?(?:\\s*([0-9]+)[mM])?(?:\\s*([0-9]+)[sS])?\")\n\ndef parse_duration(text: str) -> int:\n    if not isinstance(text, str):\n        raise TypeError(\"text는 str이어야 합니다\")\n    m = _PATTERN.fullmatch(text.strip())\n    if m is None or all(g is None for g in m.groups()):\n        raise ValueError(f\"잘못된 시간 형식: {text!r}\")\n    h, mi, s = (int(g) if g else 0 for g in m.groups())\n    return h * 3600 + mi * 60 + s\n```\n\n```python\ndef err(s):  # 값 또는 \"ERR\"\n    try: return parse_duration(s)\n    except ValueError: return \"ERR\"\nassert err(\"1h30m\") == 5400 and err(\"1h 5m 10s\") == 3910        # 기본, 공백\nassert err(\"45s\") == 45 and err(\"2H\") == 7200 and err(\"90m\") == 5400\nassert err(\"1h　5m\") == 3900 and err(\" 1h 5m \") == 3900  # 전각·NBSP 공백\nassert all(err(s) == \"ERR\" for s in (\"1h1h\", \"5m1m\", \"1s2s\"))      # 단위 중복\nassert all(err(s) == \"ERR\" for s in (\"30m1h\", \"5s1m\", \"1s1h\"))     # 순서 위반\nassert all(err(s) == \"ERR\" for s in (\"h\", \"1h m\", \"\", \"  \"))       # 숫자 없는 단위·빈 입력\nassert all(err(s) == \"ERR\" for s in (\"1x\", \"5\", \"1 h\", \"-1h\", \"5ſ\", \"１h\", \"1h\" + \" \" * 20000 + \"x\"))  # 알 수 없는 문자·긴 공백\n```\n\n설명: 정규식 하나가 h→m→s 순서와 단위별 1회를 강제하고, 양끝을 `strip()`한 뒤 `fullmatch`로 알 수 없는 문자를, 모든 그룹이 비는 경우로 빈 문자열을 거릅니다.\n공백은 단위 묶음 사이에만 허용(전각 공백·NBSP 포함, 역추적 선형)하고, 숫자는 `[0-9]`·단위는 `[hH]` 등으로 명시해 유니코드 숫자·문자(`１`, `ſ`)는 거부하며 `\"1 h\"`·소수·음수도 오류입니다.\n`\"90m\"`처럼 범위를 넘는 값은 그대로 환산(5400초)하고, 문자열이 아닌 입력만 파이썬 관례대로 `TypeError`입니다.\n", "winner": "a004", "cards": {"a001": ["구조적 분해", "초안 후 세 번 퇴고", "정확성 최우선"], "a002": ["역발상", "뼈대 먼저", "바로 쓸 수 있게"], "a003": ["제1원리", "검증 기준 먼저", "독창성"], "a004": ["트레이드오프 비교", "질문 목록", "견고함"]}, "rounds": [{"round": 1, "matches": [{"id": "m01", "a": "a001", "b": "a002", "winner": "a001", "reason": "두 답 모두 직접 실행해 통과했고 ſ 공격도 re.ASCII로 고쳤지만, a001는 정규식 하나로 간결하게 요구를 충족하고 설명도 두 줄로 지킨 반면 a002은 설명이 지나치게 길어 '3줄 이내' 제약을 사실상 어겼다(a001는 테스트가 1줄 정도 길지만 경미).", "side": {"a001": {"scores": [28, 23, 17, 14, 9], "total": 91, "fatal": false, "attacks": [{"sev": "MAJOR", "text": "`re.IGNORECASE`를 유니코드 str 패턴에 그대로 써서, 알 수 없는 문자인 'ſ'(U+017F, 긴 s)가 단위 `s`로 받아들여져 `ValueError`가 나야 할 입력이 통과합니다."}, {"sev": "MINOR", "text": "공백 허용 범위를 `\\s*`로 넓게 잡아 줄바꿈, NBSP 같은 유니코드 공백까지 단위 사이 구분자로 받아들입니다."}, {"sev": "MINOR", "text": "답이 \"숫자와 단위 사이('1 h')는 허용하지 않는다\"고 가정했지만, 이를 확인하는 테스트가 없고 공백 처리 기준이 \"1h 5m\"과 일관되지 않습니다."}, {"sev": "MINOR", "text": "설명이 \"3줄 이내\" 제한을 사실상 넘기려는 형태로, 둘째 줄에 가정 여러 개를 길게 이어 붙였습니다."}], "defense": ["인정", "일부 인정", "인정", "일부 인정"]}, "a002": {"scores": [28, 23, 18, 14, 7], "total": 90, "fatal": false, "attacks": [{"sev": "MAJOR", "text": "`re.IGNORECASE`가 유니코드 모드에서 `[hms]`에 비ASCII 문자까지 매칭시켜, \"알 수 없는 문자는 ValueError\"라는 요구를 어기고 `KeyError`가 난다."}, {"sev": "MINOR", "text": "문자열이 아닌 입력에 `ValueError`를 던지는 것은 과제에 없는 동작이며 파이썬 관례(TypeError)와도 어긋난다."}], "defense": ["인정", "일부 인정"]}}}, {"id": "m02", "a": "a003", "b": "a004", "winner": "a004", "reason": "a004은 strip과 단위 묶음 사이에만 \\s*를 둬 역추적이 선형이라 공백 20000개 뒤 잘못된 문자도 즉시 ValueError가 나고(직접 실행 확인), 모든 조건 테스트를 통과한다. a003는 \\s*가 4개 연달아 있어 ' '*80+'x'만 해도 지수적으로 느려지는 ReDoS가 최종본에도 남아 있고, 방어문의 '양끝 공백은 ValueError' 주장도 실제 코드(' 1h'가 3600 반환)와 어긋난다.", "side": {"a003": {"scores": [25, 22, 8, 12, 8], "total": 75, "fatal": false, "attacks": [{"sev": "MINOR", "text": "테스트가 과제가 요구한 \"assert 5~10줄\"의 형식을 지키지 않고, 약 20개 검사를 assert 3개에 `and`/`all()`로 뭉쳐 놓았다."}, {"sev": "MINOR", "text": "숫자와 단위 사이 공백(\"1 h\", \"5 m\")을 일괄 거부하는 것은 과제 문구(\"단위 사이 공백 허용\")의 한 가지 해석일 뿐인데, 과제가 요구하지 않은 거부 조건을 추가해 같은 입력군의 일관성이 약하다."}, {"sev": "MINOR", "text": "견고성 면에서 `str` 이외 입력이나 양끝/내부 공백 처리가 일관되지 않다."}], "defense": ["인정", "반박 (테스트는 일부 수용)", "일부 인정"]}, "a004": {"scores": [29, 24, 19, 14, 8], "total": 94, "fatal": false, "attacks": [{"sev": "MAJOR", "text": "정규식에 `\\s*`가 선택 그룹 사이에 4개 연달아 있어, 공백이 많고 끝에 잘못된 문자가 있는 입력에서 치명적 역추적(ReDoS, 대략 입력 길이의 3제곱 시간)이 발생한다."}, {"sev": "MINOR", "text": "과제 시그니처는 `text: str`이고 조건 목록에 비문자열 입력이 없는데, `None` 등을 ValueError로 바꾸고 이를 테스트와 설명에 넣어 파이썬 관례(TypeError)를 어긴다."}, {"sev": "MINOR", "text": "테스트가 설명 3줄·assert 5~10줄이라는 형식 제한을 형식상으로만 맞추고, 한 줄에 여러 assert를 `and`로 묶고 반복문 안에서 예외를 검사해 실패 지점을 알기 어렵다."}], "defense": ["인정", "일부 인정", "일부 인정"]}}}]}, {"round": 2, "matches": [{"id": "m01", "a": "a001", "b": "a004", "winner": "a004", "reason": "두 답 모두 직접 실행해 테스트 통과와 긴 공백 입력의 선형 처리를 확인했고 치명적 결함은 없다. a004는 '단위 사이 공백 허용'을 파이썬 공백 정의(전각·NBSP 포함)로 과제 문구대로 받아들이고 테스트가 10줄 이내인 반면, a001은 NBSP를 임의로 거부하고 테스트가 헬퍼 포함 11줄로 늘어났다.", "side": {"a001": {"scores": [26, 22, 18, 13, 8], "total": 87, "fatal": false, "attacks": [{"sev": "MAJOR", "text": "정규식에 `\\s*`가 선택 그룹 사이로 4개 연달아 놓여 있어, 공백이 길고 끝이 잘못된 입력에서 파국적 백트래킹(약 O(n^4))이 일어나 `ValueError` 대신 사실상 멈춘다."}, {"sev": "MINOR", "text": "설명에 적은 공백 가정(\"스페이스·탭·개행만 허용\")이 실제 동작과 다르다."}, {"sev": "MINOR", "text": "요구한 \"assert 5~10줄\" 형식 중 실제 assert 줄은 3줄뿐이고, 나머지는 try/except 루프로 대신했다."}], "defense": ["인정", "일부 인정", "인정"]}, "a004": {"scores": [27, 22, 18, 13, 8], "total": 88, "fatal": false, "attacks": [{"sev": "MINOR", "text": "\"공백 허용\"을 ASCII 공백으로만 좁혀 해석해서, 한국어 입력에서 흔한 전각 공백(U+3000)이나 NBSP로 단위를 띄운 정상 입력도 ValueError가 난다."}, {"sev": "MINOR", "text": "\"설명은 3줄 이내\" 제한을 줄바꿈 개수만 맞추고, 실제로는 길고 여러 절을 이어 붙인 문장 세 덩어리로 채웠다."}, {"sev": "MINOR", "text": "테스트 예시가 \"assert 5~10줄\" 형식을 지키지 않고, 실패 케이스 11개를 한 줄짜리 리스트와 try/except 반복문에 몰아넣어 줄 수 제한을 우회했다."}], "defense": ["인정", "일부 인정", "일부 인정"]}}}]}], "deck": {"thinking": [["제1원리", "관행과 기존 답을 내려놓고, 문제를 더 쪼갤 수 없는 사실까지 분해한 뒤 거기서부터 다시 쌓아 올린다."], ["역발상", "'어떻게 하면 완전히 실패할까'를 먼저 떠올리고, 그 실패를 하나씩 뒤집어 답을 만든다."], ["유추", "전혀 다른 분야에서 같은 구조의 문제를 찾아 그 분야의 검증된 해법을 빌려 온다."], ["시스템 사고", "부분이 아니라 요소 사이의 관계, 되먹임 고리, 병목을 먼저 그리고 거기서 답을 찾는다."], ["확률적 사고", "확신 대신 가능성의 크기로 생각한다. 각 주장에 얼마나 확실한지 매기고 불확실한 곳을 줄인다."], ["반례 사냥", "떠오른 답마다 그것을 깨뜨리는 반례를 먼저 찾고, 반례가 안 나올 때까지 다듬는다."], ["단순화", "같은 결과를 내는 가장 단순한 답을 찾는다. 필요 없는 가정, 단계, 장식을 걷어 낸다."], ["사용자 관점", "이 답을 실제로 받아서 쓸 사람의 자리에 앉아, 그 사람이 막히거나 헷갈릴 곳부터 해결한다."], ["사전 부검", "이 답이 6개월 뒤 실패했다고 가정하고, 그 이유를 최대한 많이 적은 다음 미리 막는다."], ["제약 중심", "시간·비용·환경·규칙 같은 제약을 먼저 전부 적고, 그 안에서만 가능한 답을 고른다."], ["구조적 분해", "문제를 겹치지도 빠지지도 않는(MECE) 하위 문제로 나누고 각각을 끝까지 푼다."], ["트레이드오프 비교", "가능한 접근을 여러 개 놓고 장단점을 비교해서, 왜 이것을 골랐는지 근거와 함께 답한다."], ["시간축 사고", "지금 당장의 결과뿐 아니라 2차 효과, 장기적 결과, 시간이 지나면 바뀌는 조건까지 따진다."], ["증거 우선", "검증 가능한 사실, 수치, 출처, 실행 결과에만 기대고, 추측은 추측이라고 표시한다."], ["악마의 변호인", "가장 그럴듯한 통념을 의심하고, 다수가 놓친 반대 입장을 진지하게 검토한 뒤 결론을 낸다."]], "workflow": [["초안 후 세 번 퇴고", "빠르게 전체 초안을 쓴 뒤 정확성 → 빠진 것 → 표현 순서로 세 번 고친다."], ["뼈대 먼저", "목차와 핵심 주장부터 확정한 다음, 각 칸을 채운다."], ["예시에서 일반화", "구체적인 예시 두세 개를 먼저 풀어 보고, 거기서 공통 규칙을 끌어내 답으로 정리한다."], ["검증 기준 먼저", "답을 쓰기 전에 '좋은 답이면 반드시 만족할 조건'을 목록으로 적고, 마지막에 하나씩 확인한다."], ["가장 어려운 부분부터", "제일 불확실하고 어려운 부분을 먼저 해결하고, 쉬운 부분은 나중에 채운다."], ["작은 단계로 순서대로", "문제를 작은 단계로 쪼개 한 단계씩 확정하며 앞으로 간다. 앞 단계가 틀리면 되돌아간다."], ["세 가지 안 중 고르기", "서로 다른 안을 세 개 만들고, 비교해서 가장 나은 것을 골라 다듬는다."], ["결론부터 역산", "결론을 먼저 한 문장으로 정하고, 그 결론을 받치는 근거와 단계를 거꾸로 채운다."], ["체크리스트", "과제의 요구사항을 한 줄씩 체크리스트로 옮기고, 답의 어디서 각각을 충족하는지 대응시킨다."], ["질문 목록", "이 과제에 답하려면 풀어야 할 질문을 전부 적고, 질문마다 답한 뒤 하나로 엮는다."], ["가정 명시", "답이 기대는 가정을 먼저 드러내 적고, 각 가정이 틀리면 어떻게 되는지까지 처리한다."], ["최소판 → 확장", "핵심만 되는 가장 작은 답을 먼저 완성하고, 남는 여력으로 범위와 깊이를 넓힌다."]], "strategy": [["정확성 최우선", "틀린 내용을 하나라도 넣느니 덜 말한다. 확실한 것만 확실하게 말한다."], ["완결성", "과제가 요구한 것을 하나도 빠뜨리지 않는다. 빠진 요구사항이 없는지 끝까지 확인한다."], ["바로 쓸 수 있게", "읽은 사람이 그대로 복사해 쓰거나 바로 실행할 수 있는 수준까지 만든다."], ["간결함", "같은 내용을 가장 짧고 명확하게 전달한다. 반복과 군더더기를 뺀다."], ["핵심 깊게", "가장 중요한 한두 지점을 누구보다 깊게 파고든다."], ["견고함", "엣지 케이스, 잘못된 입력, 예외 상황에서도 무너지지 않게 만든다."], ["독창성", "뻔한 답보다 더 나은, 남들이 생각 못 한 접근을 찾는다. 단, 정확성은 지킨다."], ["구체성", "추상적인 말 대신 숫자, 예시, 이름, 단계, 코드처럼 손에 잡히는 것으로 말한다."], ["위험 관리", "무엇이 잘못될 수 있는지, 그때 어떻게 알아채고 대응하는지까지 답에 넣는다."], ["모범 사례 준수", "해당 분야의 표준, 관례, 검증된 모범 사례를 따르고 거기서 벗어나면 이유를 밝힌다."], ["눈높이 맞춤", "과제를 낸 사람의 수준과 목적을 추정해서, 그 사람에게 딱 맞는 깊이와 용어로 답한다."], ["반박 대비", "상대가 공격할 만한 약점을 미리 찾아 답 안에서 먼저 막아 둔다."]]}}</script>
+<script>
+(function () {
+  "use strict";
+  var D = JSON.parse(document.getElementById("arena-data").textContent);
+  var RUBRIC = [["정확성", 30], ["완결성", 25], ["견고성", 20], ["구체성", 15], ["명료성", 10]];
+  var reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function el(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    return e;
+  }
+  function cardShort(id) { return D.cards[id].join(" · "); }
+
+  document.getElementById("task-text").textContent = D.task.trim();
+
+  // ---------- replay steps
+  var r1 = D.rounds[0].matches, fin = D.rounds[1].matches[0];
+  function sumAttacks(m) { return m.side[m.a].attacks.length + m.side[m.b].attacks.length; }
+  var STEPS = [
+    { label: "풀이", text: "4명이 각자 카드대로 과제를 풉니다. 서로의 답은 보지 못합니다.", r1: "none", fin: "none", focus: null },
+    { label: "R1 공격", text: "1라운드 공격. 서로의 답에서 결함 " + (sumAttacks(r1[0]) + sumAttacks(r1[1])) + "개를 찾아냈습니다.", r1: "fight", fin: "none", focus: r1[0].id + "@1" },
+    { label: "R1 방어", text: "각자 지적을 인정하거나 근거로 반박하고 답을 고쳐 씁니다.", r1: "fight", fin: "none", focus: r1[1].id + "@1" },
+    { label: "R1 심판", text: "심판이 고친 답 두 개를 채점합니다. 누가 누구인지는 가린 채로 봅니다.", r1: "done", fin: "none", focus: r1[1].id + "@1" },
+    { label: "결승 공격·방어", text: "결승. 남은 두 답이 다시 공격하고 방어합니다. 결함 " + sumAttacks(fin) + "개.", r1: "done", fin: "fight", focus: fin.id + "@2" },
+    { label: "결승 심판", text: "1점 차 판정. " + fin.winner + "가 마지막 답으로 남았습니다.", r1: "done", fin: "done", focus: fin.id + "@2" }
+  ];
+  var step = STEPS.length - 1, selected = fin.id + "@2", timer = null;
+
+  function slot(m, id, state) {
+    var s = el("div", "slot");
+    var won = state === "done" && m.winner === id, lost = state === "done" && m.winner !== id;
+    if (won) s.classList.add("won");
+    if (lost) s.classList.add("lost");
+    if (state !== "done") s.classList.add("pending");
+    s.appendChild(el("span", "who", id));
+    s.appendChild(el("span", "card", cardShort(id)));
+    s.appendChild(el("span", "pts", state === "done" ? m.side[id].total + "점" : state === "fight" ? "경기 중" : ""));
+    return s;
+  }
+  function boutButton(m, rnd, state) {
+    var key = m.id + "@" + rnd;
+    var b = el("button", "bout");
+    b.type = "button";
+    b.setAttribute("aria-pressed", String(selected === key));
+    b.setAttribute("aria-label", (rnd === 2 ? "결승" : "라운드 1 " + m.id) + ": " + m.a + " 대 " + m.b);
+    b.appendChild(el("span", "bid", (rnd === 2 ? "결승" : "R1 · " + m.id)));
+    if (state === "none" && rnd === 2) {
+      var tbd = el("div", "slot pending"); tbd.appendChild(el("span", "who", "?")); tbd.appendChild(el("span", "card", "1라운드 승자")); tbd.appendChild(el("span", "pts", ""));
+      var tbd2 = tbd.cloneNode(true);
+      b.appendChild(tbd); b.appendChild(tbd2);
+      b.disabled = true;
+    } else {
+      b.appendChild(slot(m, m.a, state));
+      b.appendChild(slot(m, m.b, state));
+      b.addEventListener("click", function () { stopPlay(); selected = key; render(); });
+    }
+    return b;
+  }
+  function renderBracket() {
+    var s = STEPS[step], root = document.getElementById("bracket");
+    root.textContent = "";
+    var c1 = el("div", "col"); c1.appendChild(el("div", "col-label", "라운드 1"));
+    r1.forEach(function (m) { c1.appendChild(boutButton(m, 1, s.r1)); });
+    var c2 = el("div", "col"); c2.appendChild(el("div", "col-label", "결승"));
+    c2.appendChild(boutButton(fin, 2, s.fin));
+    var c3 = el("div", "col"); c3.appendChild(el("div", "col-label", "우승"));
+    var champ = el("div", "champ" + (s.fin === "done" ? "" : " empty"));
+    if (s.fin === "done") {
+      champ.appendChild(el("span", "who", D.winner));
+      champ.appendChild(el("span", "", cardShort(D.winner)));
+      champ.appendChild(el("span", "mono muted", "2승 · 받은 공격 " + (fin.side[D.winner].attacks.length + r1.filter(function (m) { return m.winner === D.winner; })[0].side[D.winner].attacks.length) + "개를 버팀"));
+    } else {
+      champ.appendChild(el("span", "", "아직 경기 중"));
+    }
+    c3.appendChild(champ);
+    root.appendChild(c1); root.appendChild(c2); root.appendChild(c3);
+  }
+
+  function findBout(key) {
+    var parts = key.split("@"), rnd = Number(parts[1]);
+    var list = D.rounds[rnd - 1].matches;
+    for (var i = 0; i < list.length; i++) if (list[i].id === parts[0]) return { m: list[i], rnd: rnd };
+    return null;
+  }
+  function boutState(rnd) { var s = STEPS[step]; return rnd === 1 ? s.r1 : s.fin; }
+
+  function corner(m, id, state) {
+    var side = m.side[id], done = state === "done";
+    var c = el("div", "corner" + (done && m.winner === id ? " winner" : ""));
+    var top = el("div", "corner-top");
+    var left = el("div");
+    left.appendChild(el("div", "who", id));
+    if (done && m.winner === id) { var t = el("span", "tag", "승"); t.style.color = "var(--win)"; left.appendChild(t); }
+    top.appendChild(left);
+    var tot = el("div", "total");
+    if (done) { tot.textContent = side.total; tot.appendChild(el("small", "", " / 100")); }
+    else { tot.appendChild(el("small", "", "채점 전")); }
+    top.appendChild(tot);
+    c.appendChild(top);
+
+    var chips = el("div", "chips");
+    ["사고법", "작업흐름", "전략"].forEach(function (k, i) {
+      var ch = el("span", "chip"); ch.appendChild(el("b", "", k)); ch.appendChild(document.createTextNode(D.cards[id][i])); chips.appendChild(ch);
+    });
+    c.appendChild(chips);
+
+    if (done) {
+      var rows = el("div", "score-rows");
+      RUBRIC.forEach(function (r, i) {
+        var row = el("div", "srow");
+        row.appendChild(el("span", "", r[0]));
+        var bar = el("span", "bar"), fill = el("i"); fill.style.width = (side.scores[i] / r[1] * 100) + "%"; bar.appendChild(fill);
+        row.appendChild(bar);
+        row.appendChild(el("span", "v", side.scores[i] + "/" + r[1]));
+        rows.appendChild(row);
+      });
+      c.appendChild(rows);
+    }
+
+    var showDefense = !(state === "fight" && step === 1);
+    var hd = el("h3", "", "받은 공격 " + side.attacks.length + "개");
+    c.appendChild(hd);
+    var ul = el("ul", "hits");
+    side.attacks.forEach(function (a, i) {
+      var li = el("li", "hit");
+      li.appendChild(el("span", "sev " + a.sev, a.sev));
+      var body = el("div", "", a.text);
+      if (showDefense && side.defense[i]) {
+        var rep = el("span", "reply"); rep.appendChild(document.createTextNode("방어: ")); rep.appendChild(el("b", "", side.defense[i]));
+        body.appendChild(rep);
+      }
+      li.appendChild(body);
+      ul.appendChild(li);
+    });
+    c.appendChild(ul);
+    return c;
+  }
+
+  function renderSheet() {
+    var root = document.getElementById("sheet");
+    root.textContent = "";
+    var found = selected && findBout(selected);
+    var state = found ? boutState(found.rnd) : "none";
+    if (!found || state === "none") {
+      root.appendChild(el("div", "sheet-empty", "풀이 단계입니다. 경기가 시작되면 여기에 채점표가 나옵니다."));
+      return;
+    }
+    var m = found.m;
+    var head = el("div", "sheet-head");
+    head.appendChild(el("h3", "", (found.rnd === 2 ? "결승" : "라운드 1 · " + m.id) + "  " + m.a + " 대 " + m.b));
+    head.appendChild(el("span", "eyebrow", state === "done" ? "채점 완료" : "공격 · 방어 중"));
+    root.appendChild(head);
+    var cs = el("div", "corners");
+    cs.appendChild(corner(m, m.a, state));
+    cs.appendChild(corner(m, m.b, state));
+    root.appendChild(cs);
+    if (state === "done") {
+      var v = el("div", "verdict");
+      v.appendChild(el("span", "stamp", m.winner + " 승"));
+      v.appendChild(el("p", "", m.reason));
+      root.appendChild(v);
+    }
+  }
+
+  function render() {
+    var s = STEPS[step];
+    document.getElementById("phase-step").textContent = (step + 1) + "/" + STEPS.length + " " + s.label;
+    document.getElementById("phase-text").textContent = s.text;
+    document.getElementById("track").style.width = ((step + 1) / STEPS.length * 100) + "%";
+    document.getElementById("prev").disabled = step === 0;
+    document.getElementById("next").disabled = step === STEPS.length - 1;
+    renderBracket();
+    renderSheet();
+  }
+  function go(i) { step = Math.max(0, Math.min(STEPS.length - 1, i)); if (STEPS[step].focus) selected = STEPS[step].focus; render(); }
+  function stopPlay() { if (timer) { clearInterval(timer); timer = null; document.getElementById("play").textContent = "처음부터 재생"; } }
+  document.getElementById("prev").addEventListener("click", function () { stopPlay(); go(step - 1); });
+  document.getElementById("next").addEventListener("click", function () { stopPlay(); go(step + 1); });
+  document.getElementById("play").addEventListener("click", function () {
+    if (timer) { stopPlay(); return; }
+    go(0);
+    this.textContent = "멈춤";
+    timer = setInterval(function () {
+      if (step >= STEPS.length - 1) { stopPlay(); return; }
+      go(step + 1);
+    }, reduced ? 3200 : 2400);
+  });
+  render();
+
+  // ---------- final answer (small markdown: fenced code + paragraphs + inline code)
+  (function () {
+    var root = document.getElementById("answer-body");
+    var parts = D.final.split(/^```[a-zA-Z]*\s*$/m);
+    parts.forEach(function (chunk, i) {
+      if (i % 2 === 1) {
+        var pre = el("pre"); pre.appendChild(el("code", "", chunk.replace(/^\n|\n$/g, ""))); root.appendChild(pre);
+      } else {
+        chunk.split(/\n{2,}|\n(?=\S)/).forEach(function (para) {
+          para = para.trim(); if (!para) return;
+          var p = el("p");
+          para.split(/(`[^`]+`)/).forEach(function (bit) {
+            if (/^`[^`]+`$/.test(bit)) p.appendChild(el("code", "", bit.slice(1, -1)));
+            else p.appendChild(document.createTextNode(bit));
+          });
+          root.appendChild(p);
+        });
+      }
+    });
+    document.getElementById("answer-meta").textContent =
+      D.winner + " (" + cardShort(D.winner) + ")의 답입니다. 1라운드에서 정규식이 지수적으로 느려지는 공격(ReDoS)을 받고 고쳤고, 결승에서 1점 차로 이겼습니다.";
+  })();
+
+  // ---------- card draw
+  (function () {
+    var deck = D.deck, order = [["사고법", "thinking"], ["작업흐름", "workflow"], ["전략", "strategy"]];
+    function show(t, w, s) {
+      var idx = [t, w, s], root = document.getElementById("drawn");
+      root.textContent = "";
+      order.forEach(function (o, i) {
+        var item = deck[o[1]][idx[i]], row = el("div", "dcard");
+        row.appendChild(el("span", "k", o[0]));
+        var body = el("div"); body.appendChild(el("div", "name", item[0])); body.appendChild(el("div", "how", item[1]));
+        row.appendChild(body); root.appendChild(row);
+      });
+      var no = t * deck.workflow.length * deck.strategy.length + w * deck.strategy.length + s + 1;
+      document.getElementById("card-no").textContent = "#" + no.toLocaleString("ko-KR") + " / 2,160";
+    }
+    function indexOf(list, name) { for (var i = 0; i < list.length; i++) if (list[i][0] === name) return i; return 0; }
+    var wc = D.cards[D.winner];
+    show(indexOf(deck.thinking, wc[0]), indexOf(deck.workflow, wc[1]), indexOf(deck.strategy, wc[2]));
+    document.getElementById("draw-btn").addEventListener("click", function () {
+      function r(n) { return Math.floor(Math.random() * n); }
+      show(r(deck.thinking.length), r(deck.workflow.length), r(deck.strategy.length));
+    });
+  })();
+
+  // ---------- cost calculator
+  (function () {
+    var range = document.getElementById("n-range"), presets = document.getElementById("presets");
+    var P = [[8, "--quick"], [16, "기본"], [32, ""], [64, ""], [100, "--full"]];
+    P.forEach(function (p) {
+      var b = el("button", "btn", p[0] + (p[1] ? " " + p[1] : "")); b.type = "button"; b.dataset.n = p[0];
+      b.addEventListener("click", function () { range.value = p[0]; update(); });
+      presets.appendChild(b);
+    });
+    function sizes(n) { var s = [n]; while (s[s.length - 1] > 1) s.push(Math.ceil(s[s.length - 1] / 2)); return s; }
+    function update() {
+      var n = Number(range.value), s = sizes(n);
+      document.getElementById("o-n").textContent = n;
+      document.getElementById("o-r").textContent = s.length - 1;
+      document.getElementById("o-c").textContent = (n + 5 * (n - 1)).toLocaleString("ko-KR");
+      Array.prototype.forEach.call(presets.children, function (b) { b.setAttribute("aria-pressed", String(Number(b.dataset.n) === n)); });
+      var root = document.getElementById("rounds"); root.textContent = "";
+      s.forEach(function (alive, i) {
+        var row = el("div", "rrow");
+        row.appendChild(el("span", "muted", i === 0 ? "시작" : i === s.length - 1 ? "우승" : "R" + i + " 후"));
+        var bar = el("span", "bar"), fill = el("i"); fill.style.width = (alive / n * 100) + "%"; bar.appendChild(fill); row.appendChild(bar);
+        row.appendChild(el("span", "v", alive + "명"));
+        root.appendChild(row);
+      });
+    }
+    range.addEventListener("input", update);
+    update();
+  })();
+
+  // ---------- copy buttons
+  Array.prototype.forEach.call(document.querySelectorAll(".copy"), function (b) {
+    b.addEventListener("click", function () {
+      var code = b.previousElementSibling, text = code.textContent;
+      function done(msg) { b.textContent = msg; setTimeout(function () { b.textContent = "복사"; }, 1500); }
+      function fallback() {
+        var r = document.createRange(); r.selectNodeContents(code);
+        var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
+        done("선택됨");
+      }
+      try { navigator.clipboard.writeText(text).then(function () { done("복사됨"); }, fallback); } catch (e) { fallback(); }
+    });
+  });
+})();
+</script>
+</body>
+</html>
