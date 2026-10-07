@@ -4,7 +4,7 @@ const has = (name: string) => getStaticFiles().some((f) => f.name === name);
 
 /**
  * Music: public/music.mp3 if you drop one in, otherwise the generated bed (public/audio/music.wav).
- * Sound effects: public/audio/sfx.wav. Both generated files come from `npm run sound`.
+ * Sound effects and narration: public/audio/sfx.wav and vo.wav. All generated files come from `npm run sound`.
  */
 export const Soundtrack: React.FC = () => {
   const { durationInFrames } = useVideoConfig();
@@ -27,6 +27,7 @@ export const Soundtrack: React.FC = () => {
         />
       ) : null}
       {has('audio/sfx.wav') ? <Audio src={staticFile('audio/sfx.wav')} /> : null}
+      {has('audio/vo.wav') ? <Audio src={staticFile('audio/vo.wav')} /> : null}
     </>
   );
 };

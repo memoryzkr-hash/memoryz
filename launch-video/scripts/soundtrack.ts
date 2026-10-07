@@ -2,9 +2,10 @@
  * Generates the film's soundtrack from code, frame-synced to src/cues.ts:
  *   public/audio/music.wav  – music bed (tense A-minor pulse → bright D-major groove), 120 BPM so every cut is on a beat
  *   public/audio/sfx.wav    – sound design (clock, whooshes, typing, rolling numbers, chimes…)
+ *   public/audio/vo.wav     – narration assembled from assets/vo (music ducks under it)
  * Deterministic: same code → same file. Run with `npm run sound`.
  */
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Easing, interpolate } from 'remotion';
@@ -12,7 +13,7 @@ import { buildParticles } from '../src/components/Particles';
 import { VIDEO } from '../src/config';
 import {
   CLOCK, COUNT, EVERYWHERE, FLASH, GATHER, HERE_THERE, KEPT, MORNING, OUTRO, SEARCH, SLOGAN, SUBS, TABS_CUES,
-  sceneStart, typingSchedule,
+  VOICEOVER, sceneStart, typingSchedule,
 } from '../src/cues';
 import { TOTAL_FRAMES } from '../src/timeline';
 
@@ -427,25 +428,140 @@ for (let i = 0; i < 5; i++) {
 for (let i = 0; i < 5; i++) place(sfx, at('S13_Outro', OUTRO.logoDelay + i * OUTRO.stagger), whoosh(0.18, 1500, 5000, 'fall'), 0.22, -0.3 + i * 0.15);
 [74, 81, 86, 90].forEach((m, i) => place(sfx, at('S13_Outro', OUTRO.logoDelay + 5 * OUTRO.stagger) + i * 0.08, bell(midi(m), 1.6), 0.18, -0.3 + i * 0.2, 0.9));
 
+// ---------------------------------------------------------------- voiceover
+
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+const vo = makeBus();
+
+/** 16-bit PCM WAV → mono float (channels averaged). Only 48 kHz input is supported. */
+const readWav = (path: string): Float32Array => {
+  const buf = readFileSync(path);
+  let pos = 12;
+  let channels = 1;
+  while (pos < buf.length - 8) {
+    const id = buf.toString('ascii', pos, pos + 4);
+    const size = buf.readUInt32LE(pos + 4);
+    if (id === 'fmt ') {
+      channels = buf.readUInt16LE(pos + 10);
+      const rate = buf.readUInt32LE(pos + 12);
+      if (rate !== SR || buf.readUInt16LE(pos + 22) !== 16) throw new Error(`${path}: need 16-bit ${SR} Hz`);
+    } else if (id === 'data') {
+      const frames = Math.floor(size / (2 * channels));
+      const out = new Float32Array(frames);
+      for (let i = 0; i < frames; i++) {
+        let s = 0;
+        for (let c = 0; c < channels; c++) s += buf.readInt16LE(pos + 8 + (i * channels + c) * 2);
+        out[i] = s / channels / 32768;
+      }
+      return out;
+    }
+    pos += 8 + size + (size % 2);
+  }
+  throw new Error(`${path}: no data chunk`);
+};
+
+/**
+ * Trims a TTS clip to its speech: drops stray clicks (islands shorter than 120 ms), keeps a little
+ * breath either side, and shortens long internal pauses to `maxGap` so lines fit their scenes.
+ * Returns the edited clip and the offset of its first syllable.
+ */
+const tighten = (x: Float32Array, maxGap = 0.16) => {
+  const hop = SR / 100;
+  const env: number[] = [];
+  for (let i = 0; i + hop <= x.length; i += hop) {
+    let m = 0;
+    for (let k = i; k < i + hop; k++) m = Math.max(m, Math.abs(x[k]));
+    env.push(m);
+  }
+  const thr = Math.max(...env) * 0.06;
+  let islands: [number, number][] = [];
+  env.forEach((e, i) => {
+    if (e <= thr) return;
+    const last = islands[islands.length - 1];
+    if (last && i - last[1] <= 25) last[1] = i;
+    else islands.push([i, i]);
+  });
+  islands = islands.filter(([a, b]) => b - a >= 12);
+  const pre = Math.round(0.06 * SR);
+  const post = Math.round(0.14 * SR);
+  const segs = islands.map(([a, b]) => [Math.max(0, a * hop - pre), Math.min(x.length, (b + 1) * hop + post)]);
+  const parts: Float32Array[] = [];
+  segs.forEach(([a, b], i) => {
+    if (i > 0) parts.push(new Float32Array(Math.round(Math.min(Math.max(0, a - segs[i - 1][1]) / SR, maxGap) * SR)));
+    const seg = x.slice(a, b);
+    const fade = Math.round(0.01 * SR);
+    for (let k = 0; k < fade && k < seg.length; k++) {
+      seg[k] *= k / fade;
+      seg[seg.length - 1 - k] *= k / fade;
+    }
+    parts.push(seg);
+  });
+  const out = new Float32Array(parts.reduce((n, p) => n + p.length, 0));
+  let o = 0;
+  for (const p of parts) { out.set(p, o); o += p.length; }
+  return { clip: out, lead: pre / SR };
+};
+
+const rmsOf = (x: Float32Array) => {
+  let acc = 0, n = 0;
+  for (const v of x) if (Math.abs(v) > 0.01) { acc += v * v; n++; }
+  return Math.sqrt(acc / Math.max(1, n));
+};
+
+if (existsSync(join(ROOT, VOICEOVER.dir))) {
+  // Narration sits ~4 dB over the un-ducked music bed.
+  let musicRms = 0;
+  for (let j = 0; j < LEN; j++) musicRms += music.L[j] ** 2;
+  musicRms = Math.sqrt(musicRms / LEN);
+  const target = musicRms * 10 ** (4 / 20) * 2.2;
+  const hp = new Biquad('hp', 85, 0.7);
+  let prevEnd = -1;
+  for (const line of VOICEOVER.lines) {
+    const { clip, lead } = tighten(readWav(join(ROOT, VOICEOVER.dir, `${line.file}.wav`)));
+    const gain = target / rmsOf(clip);
+    for (let k = 0; k < clip.length; k++) clip[k] = hp.run(clip[k]);
+    const start = at(line.scene as Parameters<typeof sceneStart>[0], line.at);
+    const end = start - lead + clip.length / SR;
+    // Breath padding may touch; actual speech must not.
+    const flag = start < prevEnd - 0.14 + 0.05 ? '  ⚠ overlaps previous line' : '';
+    console.log(`vo ${line.file} ${start.toFixed(2)}s → ${end.toFixed(2)}s  ${line.text}${flag}`);
+    prevEnd = end;
+    place(vo, start - lead, clip, gain, 0, 0.18);
+  }
+  // Duck music (−7.5 dB) and effects (−3 dB) while she speaks.
+  const attack = Math.exp(-1 / (0.03 * SR));
+  const release = Math.exp(-1 / (0.35 * SR));
+  let e = 0;
+  for (let j = 0; j < LEN; j++) {
+    const x = Math.abs(vo.L[j]) > target * 0.08 ? 1 : 0;
+    e = x > e ? x + (e - x) * attack : x + (e - x) * release;
+    const gm = 1 - 0.58 * e;
+    const gs = 1 - 0.3 * e;
+    music.L[j] *= gm; music.R[j] *= gm; music.send[j] *= gm;
+    sfx.L[j] *= gs; sfx.R[j] *= gs; sfx.send[j] *= gs;
+  }
+}
+
 // ---------------------------------------------------------------- mix & write
 
 // Effects sit ~3.5 dB forward of the music.
 for (const a of [sfx.L, sfx.R, sfx.send]) for (let j = 0; j < LEN; j++) a[j] *= 1.5;
 reverb(music, 1.1);
 reverb(sfx, 0.8);
+reverb(vo, 0.45, 0.7, 0.4);
 
-// Shared bus limiter: gain is derived from the summed mix and applied to both stems, so their balance holds
+// Shared bus limiter: gain is derived from the summed mix and applied to every stem, so their balance holds
 // whether the generated music is used or replaced by public/music.mp3.
 {
   let rms = 0;
-  for (let j = 0; j < LEN; j++) rms += (music.L[j] + sfx.L[j]) ** 2 + (music.R[j] + sfx.R[j]) ** 2;
+  for (let j = 0; j < LEN; j++) rms += (music.L[j] + sfx.L[j] + vo.L[j]) ** 2 + (music.R[j] + sfx.R[j] + vo.R[j]) ** 2;
   rms = Math.sqrt(rms / (2 * LEN));
   const makeup = 10 ** (-15 / 20) / rms; // aim for ≈ -15 dBFS RMS before limiting
   const ceiling = 0.89;
   const release = Math.exp(-1 / (0.12 * SR));
   const look = Math.round(0.004 * SR);
   const peak = new Float32Array(LEN);
-  for (let j = 0; j < LEN; j++) peak[j] = Math.max(Math.abs(music.L[j] + sfx.L[j]), Math.abs(music.R[j] + sfx.R[j])) * makeup;
+  for (let j = 0; j < LEN; j++) peak[j] = Math.max(Math.abs(music.L[j] + sfx.L[j] + vo.L[j]), Math.abs(music.R[j] + sfx.R[j] + vo.R[j])) * makeup;
   let g = 1;
   for (let j = 0; j < LEN; j++) {
     let p = 0;
@@ -453,7 +569,7 @@ reverb(sfx, 0.8);
     const target = p > ceiling ? ceiling / p : 1;
     g = target < g ? target : g * release + target * (1 - release);
     const gain = g * makeup;
-    music.L[j] *= gain; music.R[j] *= gain; sfx.L[j] *= gain; sfx.R[j] *= gain;
+    music.L[j] *= gain; music.R[j] *= gain; sfx.L[j] *= gain; sfx.R[j] *= gain; vo.L[j] *= gain; vo.R[j] *= gain;
   }
 }
 
@@ -473,6 +589,7 @@ const writeWav = (path: string, bus: Bus) => {
   console.log(`wrote ${path}`);
 };
 
-const root = join(dirname(fileURLToPath(import.meta.url)), '..', 'public', 'audio');
-writeWav(join(root, 'music.wav'), music);
-writeWav(join(root, 'sfx.wav'), sfx);
+const out = join(ROOT, 'public', 'audio');
+writeWav(join(out, 'music.wav'), music);
+writeWav(join(out, 'sfx.wav'), sfx);
+writeWav(join(out, 'vo.wav'), vo);

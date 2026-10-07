@@ -9,11 +9,15 @@ npm run dev                                   # Remotion Studio preview (generat
 npx remotion still Video out/f.png --frame=45 # a single frame
 npm run render                                # out/video.mp4    1080p, h264 CRF 12, AAC 320k
 npm run render:4k                             # out/video-4k.mp4 3840×2160
-npm run sound                                 # regenerate public/audio/{music,sfx}.wav only
+npm run sound                                 # regenerate public/audio/{music,sfx,vo}.wav only
 ```
 
 - **Sound:** `scripts/soundtrack.ts` synthesises a music bed and sound effects, placed on the event
   frames in `src/cues.ts` (the same constants the scenes animate from). Drop a `public/music.mp3` in to
   replace the generated music; the effects stay.
+- **Narration:** Korean voice-over generated with Higgsfield (Seed Audio, preset voice "Sloane"), one clip
+  per line in `assets/vo/sloane-ko/`. Lines, text and timing live in `VOICEOVER` in `src/cues.ts`; the
+  generator trims each clip, places it on its cue and ducks the music under it. To change a line,
+  regenerate that clip, replace the file, and adjust its `at` frame.
 - **Browser:** if Remotion can't download its own Chrome Headless Shell (offline/sandboxed machines), point
   it at a local one: `REMOTION_BROWSER_EXECUTABLE=/path/to/chrome-headless-shell npm run render`.

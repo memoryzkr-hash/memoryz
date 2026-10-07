@@ -69,3 +69,29 @@ export const MORNING = { phone: 0, left: 16, notification: 34, right: 52 };
 export const SLOGAN = { fewerStart: 2, fewerStagger: 2.5, tabsStart: 18, tabsStagger: 4 };
 
 export const OUTRO = { logoDelay: 4, stagger: 5, drawFrames: 12, fade: [64, 86] as [number, number] };
+
+/**
+ * Korean narration (Higgsfield · Seed Audio, preset voice "Sloane"), one clip per line in
+ * assets/vo/sloane-ko/NN.wav. `at` is where the first syllable lands, relative to `scene`;
+ * a negative frame starts the line just before the cut (a J-cut).
+ */
+export const VOICEOVER = {
+  dir: 'assets/vo/sloane-ko',
+  lines: [
+    { file: '01', text: '자정이 다 됐어요.', scene: 'S01_Clock', at: 15 },
+    { file: '02', text: '열네 개의 탭.', scene: 'S02_Tabs', at: 24 },
+    { file: '03', text: '오늘, 돈을 벌긴 한 걸까?', scene: 'S03_Search', at: 7 },
+    { file: '04', text: '여기에도 있고,', scene: 'S04_HereThere', at: -2 },
+    { file: '05', text: '저기에도 있고,', scene: 'S04_HereThere', at: 56 },
+    { file: '06', text: '어디에나 흩어져 있죠.', scene: 'S05_Everywhere', at: 14 },
+    { file: '07', text: '탤리를 소개합니다.', scene: 'S06_Flash', at: 9 },
+    { file: '08', text: '모든 수입을, 한 곳에.', scene: 'S07_Particles', at: 8 },
+    { file: '09', text: '오늘 번 돈.', scene: 'S08_CountUp', at: 8 },
+    { file: '10', text: '그리고 실제로 남은 돈.', scene: 'S09_Kept', at: 48 },
+    { file: '11', text: '잊고 있던 구독료까지.', scene: 'S10_Subs', at: 2 },
+    { file: '12', text: '매일 아침,', scene: 'S11_Morning', at: 22 },
+    { file: '13', text: '커피보다 먼저.', scene: 'S11_Morning', at: 54 },
+    { file: '14', text: '탭은, 더 적게.', scene: 'S12_Slogan', at: 18 },
+    { file: '15', text: '탤리.', scene: 'S13_Outro', at: 30 },
+  ] satisfies { file: string; text: string; scene: SceneId; at: number }[],
+};
