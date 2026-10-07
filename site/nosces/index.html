@@ -1,0 +1,1384 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#FBFBFD">
+<meta name="description" content="블라인더와 줄줄, 시험 공부를 돕는 두 앱">
+<title>노스케스</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&family=Gowun+Batang:wght@400;700&display=swap">
+<style>
+/* 레이아웃: 제품 소개 사이트 문법. 맨 위 얇은 전체 메뉴(제품 이름들) + 제품 페이지마다 붙는 작은 메뉴.
+   가운데 정렬 큰 제목, 밝은 회색·검정 타일을 번갈아. 밝은 바탕 한 가지로 고정하고 색은 모두 직접 지정.
+   포인트는 두 앱이 함께 쓰는 남색 하나. */
+:root{
+  --white:#FFFFFF; --gray:#F5F5F7; --ink:#1D1D1F; --sub:#6E6E73; --hair:#D2D2D7;
+  --black:#000000; --ink-d:#F5F5F7; --sub-d:#A1A1A6; --tile-d:#1C1C1E;
+  --accent:#3D33D8; --accent-hover:#2E26B8; --accent-d:#A9A4FF; --accent-soft:#EFEEFD;
+  --app-bg:#F7F7F8; --app-line:#ECECEE; --app-fill:#F1F1F3; --app-fill2:#E4E4E8; --app-t4:#8A8C93;
+  --red:#E5484D; --red-soft:#FDEDED;
+  --sans:-apple-system,BlinkMacSystemFont,"SF Pro KR","Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",system-ui,sans-serif;
+  --text:"Gowun Batang","Nanum Myeongjo","AppleMyungjo",serif;
+  --gh:44px; --lh:52px;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{scroll-padding-top:calc(var(--gh) + var(--lh) + 8px);-webkit-text-size-adjust:100%;text-size-adjust:100%}
+*{-webkit-tap-highlight-color:transparent}
+body.lock{overflow:hidden}
+body{margin:0;background:var(--white);color:var(--ink);font-family:var(--sans);font-size:17px;line-height:1.47;letter-spacing:-.022em;-webkit-font-smoothing:antialiased;word-break:keep-all;overflow-wrap:anywhere}
+button,input{font:inherit;color:inherit;letter-spacing:inherit}
+button{cursor:pointer}
+a{color:inherit;text-decoration:none}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:6px}
+.wrap{max-width:1024px;margin:0 auto;padding-inline:22px}
+sup{font-size:.6em}
+
+/* ---------- 전체 메뉴 ---------- */
+.gnav{position:sticky;top:env(safe-area-inset-top,0px);z-index:40;background:rgba(251,251,253,.86);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px)}
+.gnav > .wrap{height:var(--gh);display:flex;align-items:center;justify-content:center;gap:clamp(18px,4vw,44px)}
+.brand{font-size:17px;font-weight:800;letter-spacing:-.04em;display:flex;align-items:center;gap:6px;margin-right:auto}
+.brand i{display:inline-block;width:14px;height:6px;border-radius:2px;background:var(--ink)}
+.gnav ul{list-style:none;margin:0 auto 0 0;padding:0;display:flex;align-items:center;gap:clamp(16px,4vw,40px);height:100%}
+.gnav li{height:100%;display:flex;align-items:center}
+.gnav .gl{font-size:12px;color:rgba(29,29,31,.8);height:100%;display:flex;align-items:center;padding-inline:2px}
+.gnav .gl:hover,.gnav .gl[aria-current="page"]{color:var(--ink)}
+.gnav .gl[aria-current="page"]{font-weight:600}
+.gnav .go{font-size:12px;color:var(--accent);white-space:nowrap}
+@media (max-width:520px){.gnav .go{display:none}.brand{margin-right:0}.gnav ul{margin:0 0 0 auto}}
+.fly{position:absolute;left:0;right:0;top:var(--gh);background:#FBFBFD;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid rgba(0,0,0,.08);padding-block:36px 52px;display:none;box-shadow:0 30px 40px -30px rgba(0,0,0,.18)}
+.fly .wrap{display:flex;gap:64px;flex-wrap:wrap}
+.fly h4{margin:0 0 12px;font-size:12px;font-weight:400;color:var(--sub)}
+.fly ul{display:grid!important;gap:8px;height:auto!important;margin:0!important}
+.fly li{height:auto!important}
+.fly .big a{font-size:24px;font-weight:600;letter-spacing:-.02em}
+.fly .small a{font-size:14px;font-weight:600}
+.fly a:hover{color:var(--accent)}
+@media (hover:hover) and (min-width:761px){
+  .gnav li.has-fly:hover .fly,.gnav li.has-fly:focus-within .fly{display:block}
+  .gnav.shut li.has-fly .fly{display:none!important}
+}
+
+/* ---------- 제품 메뉴 ---------- */
+.lnav{position:sticky;top:calc(env(safe-area-inset-top,0px) + var(--gh));z-index:30;background:rgba(255,255,255,.86);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border-bottom:1px solid rgba(0,0,0,.12)}
+.lnav .wrap{height:var(--lh);display:flex;align-items:center;gap:22px}
+.lnav .pn{font-size:21px;font-weight:600;letter-spacing:.005em;margin-right:auto;display:flex;align-items:center;gap:8px}
+.lnav .lls{display:flex;align-items:center;gap:4px}
+.lnav .ll{font-size:12px;color:rgba(29,29,31,.8);padding:6px 12px;border-radius:980px;white-space:nowrap;transition:background-color .2s,color .2s}
+.lnav .ll:hover{background:var(--gray);color:var(--ink)}
+.lnav .ll[aria-current="true"]{background:var(--ink);color:#fff}
+@media (max-width:760px){.lnav .lls{display:none}}
+
+/* ---------- 버튼과 링크 ---------- */
+.pill{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 22px;border-radius:980px;background:var(--accent);color:#fff;font-size:17px;white-space:nowrap;border:1px solid var(--accent);transition:background-color .2s,color .2s}
+.pill:hover{background:var(--accent-hover);border-color:var(--accent-hover)}
+.pill.ghost{background:transparent;color:var(--accent)}
+.pill.ghost:hover{background:var(--accent);color:#fff}
+.pill.sm{min-height:28px;padding:0 12px;font-size:12px}
+.more{color:var(--accent);font-size:17px;display:inline-flex;align-items:center}
+.more:hover{text-decoration:underline}
+.more::after{content:"›";font-size:1.15em;line-height:1;margin-left:4px}
+.acts{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:14px 18px;margin-top:22px}
+.dark .more,.dark .pill.ghost{color:var(--accent-d);border-color:var(--accent-d)}
+.dark .pill.ghost:hover{background:var(--accent-d);color:var(--black)}
+
+/* ---------- 공통 구역 ---------- */
+.hero{text-align:center;padding-block:56px 0;overflow:hidden}
+.hero .eye{font-size:21px;font-weight:600}
+.hero h1{font-size:clamp(44px,8.4vw,88px);line-height:1.05;font-weight:700;letter-spacing:-.035em;margin:10px 0 0;text-wrap:balance}
+.hero .sub{font-size:clamp(20px,2.6vw,28px);line-height:1.3;margin:16px auto 0;max-width:24em;text-wrap:balance}
+.hero .fine{font-size:14px;color:var(--sub);margin:14px 0 0}
+.stage{margin-top:48px;display:flex;justify-content:center}
+.under{font-size:14px;color:var(--sub);margin:20px 0 80px}
+
+.tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:12px}
+@media (max-width:760px){.tiles{grid-template-columns:minmax(0,1fr)}}
+.tile{background:var(--gray);text-align:center;padding:52px 28px 0;overflow:hidden;display:flex;flex-direction:column;align-items:center;min-height:580px;min-width:0}
+.tile.full{grid-column:1/-1}
+.tile.white{background:var(--white)}
+.tile.dark,.dark{background:var(--black);color:var(--ink-d)}
+.tile h2{font-size:clamp(32px,4.2vw,48px);line-height:1.08;font-weight:700;letter-spacing:-.03em;margin:0;text-wrap:balance}
+.tile .k{font-size:17px;font-weight:600;color:var(--sub);margin-bottom:8px}
+.tile.dark .k{color:var(--sub-d)}
+.tile p.d{font-size:19px;line-height:1.42;margin:12px auto 0;max-width:26em}
+.tile .vis{margin-top:auto;padding-block:36px 44px;width:100%;display:flex;justify-content:center;align-items:center;flex-direction:column}
+
+.band{padding-block:110px;text-align:center}
+.band h2{font-size:clamp(36px,6vw,64px);line-height:1.06;font-weight:700;letter-spacing:-.035em;margin:0 auto;max-width:14em;text-wrap:balance}
+.band p.d{font-size:clamp(19px,2.2vw,24px);color:var(--sub);margin:18px auto 0;max-width:30em;line-height:1.4;text-wrap:balance}
+.dark.band p.d{color:var(--sub-d)}
+.gray{background:var(--gray)}
+
+.stats{display:flex;flex-wrap:wrap;justify-content:center;gap:28px 64px;margin-top:56px}
+.stat{display:flex;flex-direction:column;align-items:center;min-width:0}
+.stat b{font-size:clamp(56px,9vw,104px);font-weight:700;letter-spacing:-.04em;line-height:1;font-variant-numeric:tabular-nums}
+.stat span{font-size:17px;color:var(--sub);margin-top:10px;font-weight:600}
+
+.steps3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin:56px 0 0;padding:0;list-style:none;counter-reset:h;text-align:left}
+@media (max-width:760px){.steps3{grid-template-columns:minmax(0,1fr);gap:28px}}
+.steps3 li{counter-increment:h;padding-inline:22px;border-left:1px solid var(--hair);display:flex;flex-direction:column;gap:8px}
+.steps3 li::before{content:counter(h);font-size:48px;font-weight:700;letter-spacing:-.03em;line-height:1;color:var(--accent)}
+.steps3 b{font-size:21px;font-weight:700;letter-spacing:-.02em}
+.steps3 span{font-size:16px;color:var(--sub)}
+
+.flow{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:10px;margin-top:44px;font-size:15px;font-weight:600}
+.flow span{display:inline-flex;align-items:center;min-height:40px;padding:6px 18px;border-radius:999px;background:var(--tile-d);color:var(--ink-d)}
+.flow em{font-style:normal;color:var(--sub-d)}
+.flow s{color:#86868B}
+
+.cmp{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin-top:56px;text-align:center}
+@media (max-width:760px){.cmp{grid-template-columns:minmax(0,1fr);gap:48px}}
+.cmp > div{padding-inline:22px;display:flex;flex-direction:column;align-items:center;min-width:0}
+.cmp > div + div{border-left:1px solid var(--hair)}
+@media (max-width:760px){.cmp > div + div{border-left:0;border-top:1px solid var(--hair);padding-top:48px}}
+.cmp .tag{font-size:12px;font-weight:600;color:var(--accent);min-height:18px}
+.cmp h3{font-size:28px;font-weight:700;letter-spacing:-.02em;margin:6px 0 0;display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center}
+.cmp .price{font-size:40px;font-weight:700;letter-spacing:-.03em;margin-top:18px;font-variant-numeric:tabular-nums;line-height:1.1}
+.cmp .price small{font-size:19px;font-weight:600}
+.cmp .per{font-size:14px;color:var(--sub);margin-top:6px;font-variant-numeric:tabular-nums}
+.cmp ul{list-style:none;padding:0;margin:28px 0;display:grid;gap:14px;width:100%}
+.cmp li{padding-top:14px;border-top:1px solid var(--hair)}
+.cmp .pill,.cmp .off{margin-top:auto}
+.cmp .off{color:var(--sub);font-size:14px;min-height:44px;display:flex;align-items:center}
+.soon{display:inline-flex;align-items:center;height:20px;padding:0 7px;border-radius:6px;background:#E8E8ED;color:var(--sub);font-size:11px;font-weight:700;letter-spacing:0}
+
+/* ---------- 기기 틀 ---------- */
+.phone{width:min(330px,88vw);border-radius:54px;background:var(--black);padding:12px;box-shadow:0 0 0 2px #3A3A3C,0 30px 60px -20px rgba(0,0,0,.35);position:relative;flex:0 0 auto}
+.phone .scr{background:var(--app-bg);border-radius:43px;overflow:hidden;min-height:640px;display:flex;flex-direction:column;text-align:left;letter-spacing:-.01em}
+.phone .isl{position:absolute;top:24px;left:50%;transform:translateX(-50%);width:96px;height:28px;border-radius:20px;background:var(--black);z-index:2}
+.phone .sb{height:52px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 30px 4px;font-size:14px;font-weight:600;color:var(--ink)}
+.phone .ab{height:48px;display:flex;align-items:center;gap:8px;padding:0 18px;font-size:19px;font-weight:800;letter-spacing:-.04em;color:var(--ink)}
+.phone .ab .a-badge{margin-left:auto}
+.tablet{width:min(720px,100%);border-radius:34px;background:var(--black);padding:14px;box-shadow:0 0 0 2px #3A3A3C,0 30px 60px -20px rgba(0,0,0,.35);flex:0 0 auto}
+.tablet .scr{background:var(--app-bg);border-radius:22px;overflow:hidden;text-align:left;letter-spacing:-.01em}
+@media (max-width:520px){.tablet{border-radius:24px;padding:9px}.tablet .scr{border-radius:16px}}
+.crop{height:380px;overflow:hidden;width:100%;display:flex;justify-content:center;align-items:flex-start;margin-top:auto;padding-top:40px}
+.crop .tablet{width:min(640px,100%)}
+
+/* 앱 화면 안 */
+.a-card{background:#fff;border-radius:18px;box-shadow:0 0 0 1px var(--app-line),0 2px 8px rgba(10,10,46,.06)}
+.a-chip{display:inline-flex;align-items:center;height:32px;padding:0 12px;border-radius:999px;background:#fff;box-shadow:inset 0 0 0 1px var(--app-line);font-size:14px;font-weight:600;color:#2A2C31}
+.a-chip.good{background:var(--accent-soft);color:var(--accent);box-shadow:none}
+.a-chip.bad{background:var(--red-soft);color:var(--red);box-shadow:none}
+.a-chip.on{background:#0A0A0A;color:#fff;box-shadow:none}
+.a-badge{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:7px;background:var(--accent-soft);color:var(--accent);font-size:12px;font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums;letter-spacing:0}
+
+/* 줄줄 체험 */
+.demo{flex:1;display:flex;flex-direction:column;padding:4px 16px 18px}
+.steps{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:3px;background:var(--app-fill);border-radius:14px;padding:3px}
+.steps button{border:0;background:none;border-radius:11px;padding:6px 0;display:flex;flex-direction:column;align-items:center;color:var(--app-t4);min-width:0}
+.steps button b{font-size:11px;font-weight:700}
+.steps button span{font-size:12px;font-weight:600;white-space:nowrap}
+.steps button[aria-pressed="true"]{background:#0A0A0A;color:#fff}
+.stage-t{margin:16px 2px 2px;font-size:18px;font-weight:700;letter-spacing:-.02em}
+.stage-d{margin:0 2px;font-size:13px;color:var(--app-t4);min-height:38px;line-height:1.45}
+.passage{margin-top:10px;background:#fff;box-shadow:0 0 0 1px var(--app-line);border-radius:16px;padding:16px;font-family:var(--text);font-size:16px;line-height:2;color:var(--ink);min-height:300px;user-select:none;-webkit-user-select:none}
+.passage p{margin:0}
+.kw{color:var(--accent);font-weight:700}
+.blank{display:inline-block;border:0;border-radius:6px;padding:0 4px;margin:0 1px;background:var(--accent-soft);color:transparent;font:inherit;font-weight:700;line-height:1.5}
+.blank.show{color:var(--accent)}
+.fl .rest{color:transparent;background:var(--app-fill2);border-radius:4px}
+.passage.peek .fl .rest{color:var(--app-t4);background:transparent}
+.order-list{display:flex;flex-direction:column;gap:8px}
+.ocard{display:flex;gap:10px;align-items:flex-start;width:100%;text-align:left;border:0;background:#fff;box-shadow:0 0 0 1px var(--app-line);border-radius:12px;padding:8px 10px;font-family:var(--text);font-size:14.5px;line-height:1.6;color:var(--ink)}
+.ocard .n{flex:0 0 auto;width:22px;height:22px;border-radius:7px;background:var(--app-fill);color:var(--app-t4);display:grid;place-items:center;font-family:var(--sans);font-size:12px;font-weight:700;margin-top:2px}
+.ocard.done{background:var(--accent-soft);box-shadow:none;cursor:default}
+.ocard.done .n{background:var(--accent);color:#fff}
+.ocard.shake{animation:shake .32s}
+@keyframes shake{25%{transform:translateX(-6px)}50%{transform:translateX(6px)}75%{transform:translateX(-3px)}}
+.inp{border:0;border-bottom:2px solid var(--accent);background:var(--accent-soft);border-radius:6px 6px 0 0;padding:0 3px;margin:0 2px;font-family:var(--text);font-weight:700;font-size:15px;color:var(--ink);outline:none;text-align:center;line-height:1.5;max-width:9em}
+.inp.ok{border-bottom-color:transparent;background:transparent;color:var(--accent)}
+.miss{background:var(--red-soft);color:var(--red);border-radius:5px;padding:0 4px;font-weight:700}
+.demo-foot{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:auto;padding-top:12px}
+.demo-foot .hint{font-size:12px;color:var(--app-t4)}
+.blk-btn{border:0;height:38px;padding:0 16px;border-radius:999px;background:#0A0A0A;color:#fff;font-size:14px;font-weight:600;white-space:nowrap}
+
+/* 블라인더 체험 */
+.t-bar{height:52px;display:flex;align-items:center;gap:8px;padding:0 18px;border-bottom:1px solid var(--app-line)}
+.t-bar .nm{font-size:17px;font-weight:800;letter-spacing:-.04em;white-space:nowrap}
+@media (max-width:520px){.t-bar .crumb{display:none}}
+.t-bar .crumb{font-size:13px;color:var(--app-t4);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.t-bar .a-badge{margin-left:auto}
+.t-body{padding:16px;display:grid;gap:12px}
+.fig{background:#fff;border-radius:12px;box-shadow:0 0 0 1px var(--app-line);padding:8px;user-select:none;-webkit-user-select:none}
+.fig svg{display:block;width:100%;height:auto}
+.fig text{font-family:var(--sans);font-size:14px;font-weight:700;fill:#1B1B22}
+.mk{fill:#0A0A0A;transition:fill .15s}
+.live .mk{cursor:pointer;pointer-events:all}
+@media (hover:hover){.live .mk:not(.open):hover{fill:#2A2A33}}
+.live .mk:focus{outline:none}
+.live .mk:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.mk.open{fill:transparent;stroke:#0A0A0A;stroke-width:1.2;stroke-dasharray:3 3}
+.t-ctrl{display:flex;justify-content:space-between;align-items:center;gap:10px;min-height:44px}
+.t-ctrl .hint{font-size:13px;color:var(--app-t4)}
+.rates{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.rates button{border:0;border-radius:14px;background:var(--app-fill);padding:8px 4px;display:flex;flex-direction:column;align-items:center;min-width:0}
+.rates button b{font-size:15px;font-weight:700}
+.rates button span{font-size:12px;color:var(--app-t4);font-weight:600}
+.rates button:hover{background:var(--app-fill2)}
+.rates button.easy{background:var(--accent-soft)}
+.rates button.easy b{color:var(--accent)}
+.toast{font-size:13px;font-weight:600;color:var(--accent);min-height:20px;margin:0}
+.bl{position:relative;display:inline-block;color:transparent;cursor:pointer;border:0;padding:0 .06em;background:none;font:inherit;letter-spacing:inherit;line-height:inherit}
+.bl::after{content:"";position:absolute;inset:.12em -.02em .08em;background:var(--ink);border-radius:.12em;transition:transform .45s cubic-bezier(.6,0,.2,1);transform-origin:right center}
+.bl.open{color:var(--accent)}
+.bl.open::after{transform:scaleX(0)}
+
+/* PDF 한 쪽 */
+.page{background:#fff;border-radius:14px;box-shadow:0 0 0 1px var(--hair),0 20px 40px -24px rgba(0,0,0,.25);padding:24px 24px 28px;display:grid;gap:9px;width:min(460px,100%);margin-inline:auto;text-align:left}
+.page .ph{display:flex;justify-content:space-between;gap:8px;font-size:11px;font-weight:700;color:#8A8C93;letter-spacing:.04em}
+.ln{height:8px;border-radius:4px;background:#E7E7EC}
+.pfig{margin-block:8px;border:2px solid var(--accent);border-radius:10px;padding:12px;position:relative}
+.pfig .found{position:absolute;top:-12px;right:10px;height:22px;padding:0 8px;border-radius:6px;background:var(--accent);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center}
+.pfig svg{display:block;width:100%;height:auto}
+.keep{display:flex;flex-wrap:wrap;justify-content:center;gap:18px;margin-top:20px;font-size:14px;color:var(--sub)}
+.keep span{display:inline-flex;align-items:center;gap:8px}
+.keep i{display:inline-block;width:22px;height:10px;border-radius:3px}
+
+/* 줄줄 대표 기능: 6단계 */
+.six{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));margin-top:56px;text-align:left;list-style:none;padding:0}
+@media (max-width:900px){.six{grid-template-columns:repeat(3,minmax(0,1fr));row-gap:36px}}
+@media (max-width:520px){.six{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.six li{padding-inline:14px;border-left:1px solid var(--hair);min-width:0}
+.six button{all:unset;cursor:pointer;display:flex;flex-direction:column;gap:6px}
+.six button:focus-visible{outline:2px solid var(--accent);outline-offset:4px;border-radius:6px}
+.six .n{font-size:14px;font-weight:600;color:var(--accent)}
+.six b{font-size:21px;font-weight:700;letter-spacing:-.02em}
+.six span{font-size:14px;color:var(--sub);line-height:1.45}
+
+/* 타일 속 그림 */
+.paras{display:grid;gap:10px;width:min(420px,100%);text-align:left}
+.para{padding:16px 18px;display:grid;gap:6px}
+.para .h{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--app-t4)}
+.para .h i{font-style:normal;width:22px;height:22px;border-radius:7px;background:var(--app-fill);display:grid;place-items:center;color:#55575E}
+.para .say{font-size:15px;color:#2A2C31}
+.para .main{font-family:var(--text);font-size:15.5px;line-height:1.65;background:var(--accent-soft);border-radius:10px;padding:8px 12px}
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;width:min(380px,100%)}
+.cal .wd{font-size:11px;font-weight:600;color:var(--sub-d);text-align:center}
+.day{aspect-ratio:1/1;max-width:100%;border-radius:10px;background:var(--tile-d);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:13px;color:#86868B;font-variant-numeric:tabular-nums}
+.day.empty{background:transparent}
+.day.learn{background:var(--ink-d);color:var(--black);font-weight:700}
+.day.rev{background:var(--accent);color:#fff;font-weight:700}
+.day small{font-size:9.5px;font-weight:700;line-height:1.1}
+.legend{display:flex;justify-content:center;gap:16px;margin-top:14px;font-size:12px;color:var(--sub-d)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px}
+.essay{width:min(420px,100%);padding:20px;text-align:left}
+.essay .q{font-size:15px;font-weight:700;line-height:1.5;margin:8px 0 12px}
+.essay .row{display:flex;flex-wrap:wrap;gap:6px}
+.essay .ans{font-family:var(--text);font-size:15px;line-height:1.8;background:var(--app-bg);border-radius:12px;padding:12px 14px;margin:12px 0 0}
+.essay .score{display:flex;align-items:baseline;gap:6px;margin-top:14px;padding-top:14px;border-top:1px solid var(--app-line)}
+.essay .score b{font-size:34px;font-weight:800;letter-spacing:-.03em;line-height:1}
+.essay .score span{font-size:13px;color:var(--app-t4);font-weight:600}
+.list{width:min(420px,100%);display:grid;gap:8px;text-align:left}
+.list .a-card{display:flex;align-items:center;gap:12px;padding:14px 16px}
+.list .x{flex:0 0 auto;width:36px;height:36px;border-radius:12px;background:var(--red-soft);color:var(--red);display:grid;place-items:center;font-weight:800;font-size:15px}
+.list .fd{flex:0 0 auto;width:42px;height:34px;position:relative}
+.list .fd::before{content:"";position:absolute;inset:0 0 6px 0;background:#A39CF0;border-radius:6px}
+.list .fd::after{content:"";position:absolute;inset:6px 0 0 0;background:#C8C3F6;border-radius:6px}
+.list .t{flex:1;min-width:0;display:grid}
+.list .t b{font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.list .t span{font-size:12.5px;color:var(--app-t4)}
+.list .n{font-size:14px;font-weight:700;color:var(--red);white-space:nowrap}
+.mark{width:min(420px,100%);display:grid;gap:10px;text-align:left}
+.mark .a-card{padding:16px 18px;font-size:15px;line-height:1.75;color:#2A2C31}
+.mark .hl{background:linear-gradient(transparent 45%,#FFE58A 45%)}
+.mark .star{color:#E5A100;font-weight:700;margin-right:4px}
+.mark .arrow{text-align:center;color:var(--sub);font-size:13px;font-weight:600}
+.mark .m{display:inline-block;background:#0A0A0A;color:transparent;border-radius:4px;padding:0 4px}
+.rate-big{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;width:min(380px,100%)}
+.rate-big div{background:var(--tile-d);border-radius:18px;padding:18px 12px;display:grid;gap:2px;justify-items:center}
+.rate-big b{font-size:21px;font-weight:700}
+.rate-big span{font-size:14px;color:var(--sub-d);font-weight:600}
+.rate-big div.easy{background:var(--accent)}
+.rate-big div.easy span{color:#fff}
+.rate-big .done{grid-column:1/-1;background:transparent!important;box-shadow:inset 0 0 0 1px #3A3A3C;padding:12px;font-size:15px;font-weight:600}
+.draw{width:min(420px,100%);padding:14px}
+.draw svg{display:block;width:100%;height:auto}
+.draw .tool{display:flex;justify-content:center;gap:6px;margin-top:12px}
+
+/* 홈 */
+.htile{min-height:auto;padding-top:56px}
+.htile h2{font-size:clamp(40px,6vw,56px)}
+.htile p.d{font-size:clamp(21px,2.6vw,28px);margin-top:6px}
+.ladder{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;width:min(440px,100%)}
+.ladder div{display:grid;gap:5px;justify-items:center}
+.ladder i{display:block;width:100%;height:9px;border-radius:3px;background:var(--ink-d)}
+.ladder i.o{background:transparent;box-shadow:inset 0 0 0 1px #48484A}
+.ladder span{font-size:12px;color:var(--sub-d);font-weight:600;margin-top:6px;white-space:nowrap}
+.days{display:flex;flex-wrap:wrap;justify-content:center;align-items:baseline;gap:6px 18px}
+.days b{font-size:clamp(44px,6vw,64px);font-weight:700;letter-spacing:-.04em;line-height:1;font-variant-numeric:tabular-nums}
+.days b:last-child{color:var(--accent)}
+.page.mini{width:min(340px,100%);padding:18px;gap:7px}
+
+.pick{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));margin-top:56px;text-align:center}
+.pick .hd{display:flex;flex-direction:column;align-items:center;gap:6px;padding:0 16px 28px}
+.pick .hd h3{margin:10px 0 0;font-size:28px;font-weight:700;letter-spacing:-.02em}
+.pick .hd p{margin:0;font-size:15px;color:var(--sub);text-wrap:balance}
+.pick .hd .acts{margin-top:14px}
+.pick .rl{grid-column:1/-1;font-size:12px;font-weight:600;color:var(--sub);padding-top:24px;border-top:1px solid var(--hair)}
+.pick .v{padding:8px 16px 24px;font-size:17px;font-weight:600;line-height:1.4}
+.pick .v small{display:block;font-size:14px;font-weight:400;color:var(--sub);margin-top:4px}
+.pick .v.no{color:#AEAEB2;font-weight:400}
+
+/* 고객지원 */
+.faq{max-width:760px;margin:56px auto 0;text-align:left}
+.faq h3{font-size:24px;font-weight:700;letter-spacing:-.02em;margin:48px 0 8px;display:flex;align-items:center;gap:10px}
+.faq details{border-bottom:1px solid var(--hair)}
+.faq summary{list-style:none;cursor:pointer;padding:20px 32px 20px 0;font-size:19px;font-weight:600;position:relative}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:"+";position:absolute;right:4px;top:50%;transform:translateY(-50%);font-size:26px;font-weight:300;color:var(--sub)}
+.faq details[open] summary::after{content:"−"}
+.faq details p{margin:0 0 22px;font-size:17px;color:var(--sub);max-width:40em}
+.contact{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:12px;margin-top:28px}
+.contact code{font-family:var(--sans);font-size:clamp(20px,3vw,28px);font-weight:600;user-select:all;-webkit-user-select:all}
+.copy{border:0;background:#E8E8ED;border-radius:999px;height:32px;padding:0 14px;font-size:14px;font-weight:600;color:var(--ink)}
+.legals{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;max-width:760px;margin:56px auto 0;text-align:left}
+.legals div{display:flex;flex-direction:column;align-items:flex-start;gap:10px;padding-top:16px;border-top:1px solid var(--hair)}
+.legals h4{margin:0 0 4px;font-size:14px;font-weight:600;color:var(--sub)}
+@media (max-width:520px){.legals{grid-template-columns:minmax(0,1fr)}}
+
+
+/* 약관 문서 */
+.doc{max-width:720px;margin:48px auto 0;text-align:left}
+.doc .lead{font-size:19px;line-height:1.55;margin:0 0 8px;padding:20px 22px;background:var(--gray);border-radius:18px}
+.doc h2{font-size:21px;font-weight:700;letter-spacing:-.02em;margin:40px 0 12px}
+.doc ol{margin:0;padding-left:1.4em;display:grid;gap:10px}
+.doc li,.doc p{font-size:17px;line-height:1.6;color:var(--ink)}
+.doc p{margin:0}
+.doc ul{margin:8px 0 0;padding-left:1.1em;display:grid;gap:6px;color:var(--sub)}
+.doc ul li{font-size:16px;color:var(--sub)}
+.doc .formula{margin-top:10px;padding:12px 16px;border-radius:12px;background:var(--accent-soft);color:var(--accent);font-weight:700;display:inline-block}
+.doc .ex{display:block;margin-top:8px;font-size:15px;color:var(--sub)}
+.doc .links{display:flex;flex-wrap:wrap;gap:10px 24px;margin-top:48px;padding-top:20px;border-top:1px solid var(--hair)}
+
+/* ---------- 바닥글 ---------- */
+footer{background:var(--gray);color:var(--sub);font-size:12px;line-height:1.5;padding-block:20px 36px}
+footer .notes{display:grid;gap:10px;padding:0 0 16px;border-bottom:1px solid var(--hair);margin:0;list-style:none;counter-reset:fn}
+footer .notes li{counter-increment:fn;display:flex;gap:6px}
+footer .notes li::before{content:counter(fn) ".";flex:0 0 auto}
+.dir{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:24px;padding-block:20px;border-bottom:1px solid var(--hair)}
+@media (max-width:760px){.dir{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.dir h5{margin:0 0 8px;font-size:12px;font-weight:600;color:var(--ink)}
+.dir ul{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.dir a{color:#424245}
+.dir a:hover{text-decoration:underline}
+.fbot{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px 24px;padding-top:16px}
+.fbot .crumbs{color:#424245}
+
+
+/* ---------- 휴대폰 ---------- */
+.mbtn,.lbtn,.lsheet{display:none}
+.dots{display:none}
+.pbar{display:none}
+@media (max-width:760px){
+  .gnav ul,.gnav .go{display:none!important}
+  .brand{margin-right:auto}
+  .mbtn{display:grid;place-items:center;width:44px;height:44px;margin-right:-12px;border:0;background:none;padding:0}
+  .mbtn i{display:block;width:17px;height:1.5px;background:var(--ink);border-radius:1px;transition:transform .25s}
+  .mbtn i + i{margin-top:5px}
+  .mbtn span{display:grid}
+  .mbtn[aria-expanded="true"] i:first-child{transform:translateY(3.25px) rotate(45deg)}
+  .mbtn[aria-expanded="true"] i:last-child{transform:translateY(-3.25px) rotate(-45deg)}
+  .msheet{position:fixed;left:0;right:0;bottom:0;top:calc(env(safe-area-inset-top,0px) + var(--gh));background:#FBFBFD;z-index:39;overflow-y:auto;overscroll-behavior:contain;padding:18px 0 calc(40px + env(safe-area-inset-bottom,0px))}
+  .msheet .big{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+  .msheet .big a{display:block;font-size:28px;font-weight:600;letter-spacing:-.02em;padding:6px 0}
+  .msheet h4{margin:30px 0 8px;font-size:12px;font-weight:400;color:var(--sub)}
+  .msheet .small{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+  .msheet .small a{display:block;font-size:17px;font-weight:600;padding:8px 0}
+
+  .lnav .pn{margin-right:0}
+  .lbtn{display:grid;place-items:center;width:36px;height:36px;margin-right:auto;border:0;background:none;padding:0;color:var(--sub)}
+  .lbtn svg{transition:transform .25s}
+  .lnav.open .lbtn svg{transform:rotate(180deg)}
+  .lsheet{position:absolute;left:0;right:0;top:100%;background:#fff;border-top:1px solid rgba(0,0,0,.08);padding:4px 0 10px;display:none;box-shadow:0 0 0 100vmax rgba(0,0,0,.32);clip-path:inset(0 -100vmax -100vmax -100vmax)}
+  .lnav.open .lsheet{display:block}
+  .lsheet a{display:flex;justify-content:space-between;align-items:center;padding:15px 0;font-size:17px;font-weight:600;border-bottom:1px solid #E8E8ED}
+  .lsheet a::after{content:"›";font-size:22px;font-weight:400;line-height:1;color:#AEAEB2}
+  .lsheet a:last-child{border-bottom:0}
+  .lsheet a[aria-current="true"]{color:var(--accent)}
+
+  .hero{padding-top:40px}
+  .stage{margin-top:36px}
+  .under{margin-bottom:56px}
+  .band{padding-block:72px}
+  .stats{margin-top:40px}
+  .tile{padding:40px 20px 0;min-height:0}
+  .tile .vis{padding-block:28px 32px}
+  .tile p.d{font-size:17px}
+  .crop{height:330px;padding-top:28px}
+
+  /* 기능 타일은 옆으로 넘겨 보기 */
+  .tiles.swipe{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:12px;padding:12px 22px 8px;scroll-padding-inline:22px;scrollbar-width:none;overscroll-behavior-x:contain}
+  .tiles.swipe::-webkit-scrollbar{display:none}
+  .tiles.swipe > .tile{flex:0 0 86%;scroll-snap-align:start;border-radius:22px;min-height:560px}
+  .dots{display:flex;justify-content:center;gap:4px;margin:6px 0 20px}
+  .dots button{width:28px;height:28px;border:0;background:none;padding:0;display:grid;place-items:center}
+  .dots button::before{content:"";width:8px;height:8px;border-radius:50%;background:#C7C7CC;transition:background-color .2s,width .2s}
+  .dots button[aria-current="true"]::before{background:var(--ink);width:20px;border-radius:4px}
+
+  .phone .scr{min-height:600px}
+  .tablet{padding:6px;border-radius:20px}
+  .tablet .scr{border-radius:15px}
+  .t-bar{height:46px;padding:0 12px}
+  .t-body{padding:10px;gap:10px}
+  .fig{padding:2px}
+  .t-ctrl .hint{font-size:12px}
+  .inp{font-size:16px}
+
+  .pick .hd h3{font-size:22px}
+  .pick .hd p{font-size:14px}
+  .pick .v{font-size:15px;padding-inline:8px}
+  .pick .v small{font-size:13px}
+  .pbar{display:grid;grid-column:1/-1;grid-template-columns:1fr 1fr;position:sticky;top:calc(env(safe-area-inset-top,0px) + var(--gh));z-index:5;background:rgba(255,255,255,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--hair);margin-inline:-22px;padding:10px 22px;font-size:15px;font-weight:700}
+  .faq summary{font-size:17px}
+  .contact code{font-size:19px}
+}
+/* 블라인더 가림막은 손가락으로 누르기 쉽게 누르는 범위를 넓힌다 */
+.live .mk{stroke:rgba(0,0,0,0);stroke-width:16}
+.live .mk.open{fill:transparent;stroke:#0A0A0A;stroke-width:1.2}
+.passage{-webkit-touch-callout:none}
+
+.about{display:grid;grid-template-columns:minmax(0,1fr);gap:18px;max-width:760px;text-align:left}
+.acard{min-width:0}
+.acard{border:1px solid var(--hair);border-radius:22px;padding:28px 30px;background:#fff}
+.acard h3{font-size:22px;margin:0 0 14px;letter-spacing:-.02em}
+.acard dl{display:grid;grid-template-columns:7.5em 1fr;gap:10px 14px;margin:0}
+.acard dt{font-weight:700}
+.acard dd{margin:0;color:var(--sub);line-height:1.5}
+.acard ul{margin:0;padding-left:1.1em;display:grid;gap:12px;line-height:1.5;color:var(--sub)}
+.acard ul b{color:var(--ink)}
+.acard p{color:var(--sub);line-height:1.5;margin:0 0 12px}
+.acard ul + p{margin:18px 0 0}
+@media (max-width:520px){.acard{padding:22px 20px}.acard dl{grid-template-columns:1fr;gap:4px}.acard dd{margin-bottom:10px}}
+.appst{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.aicon{width:88px;height:88px;border-radius:20px;border:1px solid var(--hair)}
+.ainfo{display:flex;flex-direction:column;gap:3px;flex:1;min-width:180px}
+.ainfo b{font-size:20px}
+.ainfo span{color:var(--sub)}
+.ainfo small{color:var(--sub);font-size:13px}
+.shots{display:flex;gap:12px;overflow-x:auto;margin:22px -30px 0;padding:0 30px 6px;scroll-snap-type:x mandatory}
+.shots img{width:180px;height:auto;flex:none;border-radius:18px;border:1px solid var(--hair);scroll-snap-align:start}
+.acard .cap{font-size:14px;margin:12px 0 0}
+.proof{margin:22px 0 0}
+.proof img{width:100%;height:auto;border-radius:14px;border:1px solid var(--hair)}
+.proof figcaption{font-size:14px;color:var(--sub);margin-top:8px}
+@media (max-width:520px){.shots{margin-inline:-20px;padding-inline:20px}.shots img{width:150px}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<header class="gnav" id="gnav">
+  <div class="wrap">
+    <a class="brand" href="#home"><i aria-hidden="true"></i>노스케스</a>
+    <ul>
+      <li class="has-fly">
+        <a class="gl" href="#blinder" data-v="blinder">블라인더</a>
+        <div class="fly"><div class="wrap">
+          <div><h4>블라인더 살펴보기</h4><ul class="big"><li><a href="#blinder">블라인더 개요</a></li><li><a href="#blinder-find">그림 자동 찾기</a></li><li><a href="#blinder-price">요금</a></li></ul></div>
+          <div><h4>기능</h4><ul class="small"><li><a href="#blinder-more">형광펜·별표 카드</a></li><li><a href="#blinder-more">알아서 복습 일정</a></li><li><a href="#blinder-more">취약 노트</a></li><li><a href="#blinder-more">직접 가리기</a></li></ul></div>
+          <div><h4>바로 가기</h4><ul class="small"><li><a href="https://blinder-api.blinder-app.workers.dev" target="_blank" rel="noopener">웹앱 열기</a></li><li><a href="#refund">환불 정책</a></li></ul></div>
+        </div></div>
+      </li>
+      <li class="has-fly">
+        <a class="gl" href="#juljul" data-v="juljul">줄줄</a>
+        <div class="fly"><div class="wrap">
+          <div><h4>줄줄 살펴보기</h4><ul class="big"><li><a href="#juljul">줄줄 개요</a></li><li><a href="#juljul-six">6단계 암기</a></li><li><a href="#juljul-price">요금</a></li></ul></div>
+          <div><h4>기능</h4><ul class="small"><li><a href="#juljul-more">문단 정리</a></li><li><a href="#juljul-more">오늘 복습</a></li><li><a href="#juljul-more">서술형 채점</a></li><li><a href="#juljul-more">오답 노트</a></li></ul></div>
+          <div><h4>바로 가기</h4><ul class="small"><li><a href="https://juljul.pages.dev" target="_blank" rel="noopener">웹앱 열기</a></li><li><a href="https://juljul.pages.dev/legal/refund" target="_blank" rel="noopener">환불 정책</a></li></ul></div>
+        </div></div>
+      </li>
+      <li><a class="gl" href="#about" data-v="about">회사 소개</a></li>
+      <li><a class="gl" href="#support" data-v="support">고객지원</a></li>
+    </ul>
+    <a class="go" href="#home-pick">나에게 맞는 앱</a>
+    <button type="button" class="mbtn" id="mbtn" aria-expanded="false" aria-controls="msheet" aria-label="메뉴 열기"><span><i></i><i></i></span></button>
+  </div>
+</header>
+  <div class="msheet" id="msheet" hidden>
+    <div class="wrap">
+      <ul class="big"><li><a href="#blinder">블라인더</a></li><li><a href="#juljul">줄줄</a></li><li><a href="#about">회사 소개</a></li><li><a href="#support">고객지원</a></li><li><a href="#home-pick">나에게 맞는 앱</a></li></ul>
+      <h4>블라인더 살펴보기</h4>
+      <ul class="small"><li><a href="#blinder-find">그림 자동 찾기</a></li><li><a href="#blinder-more">기능</a></li><li><a href="#blinder-price">요금</a></li><li><a href="https://blinder-api.blinder-app.workers.dev" target="_blank" rel="noopener">웹앱 열기</a></li></ul>
+      <h4>줄줄 살펴보기</h4>
+      <ul class="small"><li><a href="#juljul-six">6단계 암기</a></li><li><a href="#juljul-more">기능</a></li><li><a href="#juljul-price">요금</a></li><li><a href="https://juljul.pages.dev" target="_blank" rel="noopener">웹앱 열기</a></li></ul>
+    </div>
+  </div>
+
+
+<main>
+<!-- ===================== 홈 ===================== -->
+<div class="view" id="v-home">
+  <div class="tiles" style="padding-top:12px">
+    <a class="tile white full htile" href="#blinder" aria-label="블라인더 알아보기">
+      <h2>블라인더</h2>
+      <p class="d">이름표만, 가려 드려요.</p>
+      <div class="acts"><span class="pill">더 알아보기</span><span class="pill ghost" data-ext="https://blinder-api.blinder-app.workers.dev">써 보기</span></div>
+      <div class="crop">
+        <div class="tablet"><div class="scr">
+          <div class="t-bar"><span class="nm">블라인더</span><span class="crumb">생물학 · 세포의 구조</span><span class="a-badge">0 / 6 열림</span></div>
+          <div class="t-body"><div class="fig" id="homeCell"></div></div>
+        </div></div>
+      </div>
+    </a>
+
+    <a class="tile full htile" href="#juljul" aria-label="줄줄 알아보기">
+      <h2>줄줄</h2>
+      <p class="d">긴 글도, 줄줄 외워지게.</p>
+      <div class="acts"><span class="pill">더 알아보기</span><span class="pill ghost" data-ext="https://juljul.pages.dev">시작하기</span></div>
+      <div class="crop">
+        <div class="phone">
+          <span class="isl" aria-hidden="true"></span>
+          <div class="scr">
+            <div class="sb" aria-hidden="true"><span>9:41</span><span>●●●</span></div>
+            <div class="ab"><span class="logo-s"></span>줄줄 <span class="a-badge">2 / 6단계</span></div>
+            <div class="demo"><p class="stage-t" style="margin-top:4px">빈칸에 들어갈 말을 떠올려요</p><div class="passage" id="homePassage"></div></div>
+          </div>
+        </div>
+      </div>
+    </a>
+    </div>
+  <div class="tiles swipe" style="padding-top:0">
+    <a class="tile" href="#blinder-find">
+      <div class="k">블라인더</div>
+      <h2>PDF를 넣으면,<br>그림을 골라요.</h2>
+      <p class="d">자료 하나당 최대 20개. 문장은 두고 이름표만 가려요.</p>
+      <div class="vis"><div class="page mini pdf-slot"></div></div>
+    </a>
+    <a class="tile dark" href="#juljul-six">
+      <div class="k">줄줄</div>
+      <h2>읽고, 가리고,<br>보지 않고.</h2>
+      <p class="d">6단계로 나눠 외우면 마지막엔 글 전체를 쓸 수 있어요.</p>
+      <div class="vis"><div class="ladder" id="ladder"></div></div>
+    </a>
+    <a class="tile dark" href="#blinder-more">
+      <div class="k">블라인더 · 복습 일정</div>
+      <h2>고르기만 하면,<br>다음 날이 정해져요.</h2>
+      <p class="d">쉬움을 두 번 연속 고르면 암기완료.</p>
+      <div class="vis"><div class="rate-big">
+        <div><b>다시</b><span>바로</span></div><div><b>어려움</b><span>1일 뒤</span></div>
+        <div><b>보통</b><span>3일 뒤</span></div><div class="easy"><b>쉬움</b><span>7일 뒤</span></div>
+      </div></div>
+    </a>
+    <a class="tile" href="#juljul-more">
+      <div class="k">줄줄 · 오늘 복습</div>
+      <h2>잊을 때쯤,<br>다시 나와요.</h2>
+      <p class="d">다 외운 문단은 이만큼 지난 뒤 다시 나와요.</p>
+      <div class="vis"><div class="days"><b>1</b><b>3</b><b>7</b><b>14</b><b>30</b></div><p style="margin:14px 0 0;color:var(--sub);font-weight:600">일 뒤</p></div>
+    </a>
+  </div>
+
+  <section class="band" id="home-pick">
+    <div class="wrap">
+      <h2>나에게 맞는 앱은?</h2>
+      <p class="d">외워야 하는 게 그림 속 이름이면 블라인더, 긴 글이면 줄줄이에요.</p>
+      <div class="pick">
+        <div class="hd"><span class="logo-bm"></span><h3>블라인더</h3><p>그림의 이름표만 가려 주는 플래시카드</p><div class="acts"><a class="pill sm" href="https://blinder-api.blinder-app.workers.dev" target="_blank" rel="noopener">써 보기</a><a class="more" style="font-size:14px" href="#blinder">더 알아보기</a></div></div>
+        <div class="hd"><span class="logo-m"></span><h3>줄줄</h3><p>긴 글을 정리하고 6단계로 외우는 앱</p><div class="acts"><a class="pill sm" href="https://juljul.pages.dev" target="_blank" rel="noopener">시작하기</a><a class="more" style="font-size:14px" href="#juljul">더 알아보기</a></div></div>
+        <div class="pbar" aria-hidden="true"><span>블라인더</span><span>줄줄</span></div>
+        <div class="rl">이런 걸 외울 때</div>
+        <div class="v">그림 속 이름<small>구조식, 해부도, 세포 그림</small></div>
+        <div class="v">긴 글<small>지문, 발표문, 모범 답안</small></div>
+        <div class="rl">넣는 것</div>
+        <div class="v">강의 PDF, 사진</div>
+        <div class="v">글 붙여 넣기</div>
+        <div class="rl">외우는 방법</div>
+        <div class="v">가림막 열기<small>하나씩 또는 한 번에</small></div>
+        <div class="v">6단계<small>읽기부터 보지 않고 쓰기까지</small></div>
+        <div class="rl">복습</div>
+        <div class="v">쉬움·보통·어려움·다시<small>고른 대로 다음 날 결정</small></div>
+        <div class="v">1·3·7·14·30일 뒤<small>‘오늘 복습’으로 자동</small></div>
+        <div class="rl">서술형 채점</div>
+        <div class="v no">없음</div>
+        <div class="v">채점과 첨삭<small>틀린 문제는 오답 노트로</small></div>
+        <div class="rl">무료로</div>
+        <div class="v">자료 3개</div>
+        <div class="v">자료 3개<small>AI 정리 하루 3번</small></div>
+        <div class="rl">시험 기간 결제</div>
+        <div class="v">14일 2,900원<small>자동 결제 없음</small></div>
+        <div class="v">2주 3,900원<small>4주 6,900원 · 자동 결제 없음</small></div>
+        <div class="rl">쓸 수 있는 곳</div>
+        <div class="v">웹 · 아이폰<small>App Store ‘블라인더 AI’ · 안드로이드 준비 중</small></div>
+        <div class="v">웹</div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- ===================== 줄줄 ===================== -->
+<div class="view" id="v-juljul" hidden>
+  <nav class="lnav" aria-label="줄줄 메뉴"><div class="wrap">
+    <a class="pn" href="#juljul"><span class="logo-s"></span>줄줄</a>
+    <button type="button" class="lbtn" aria-expanded="false" aria-label="구역 메뉴 열기"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2.5 5l4.5 4.5L11.5 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    <div class="lls"><a class="ll" href="#juljul-six">6단계 암기</a><a class="ll" href="#juljul-more">기능</a><a class="ll" href="#juljul-how">쓰는 방법</a><a class="ll" href="#juljul-price">요금</a></div>
+    <a class="pill sm" href="https://juljul.pages.dev" target="_blank" rel="noopener">시작하기</a>
+  </div><div class="lsheet"><div class="wrap" style="height:auto;display:block"><a href="#juljul-six">6단계 암기</a><a href="#juljul-more">기능</a><a href="#juljul-how">쓰는 방법</a><a href="#juljul-price">요금</a></div></div></nav>
+
+  <section class="hero">
+    <div class="wrap">
+      <div class="eye">줄줄</div>
+      <h1>긴 글도, 줄줄.</h1>
+      <p class="sub">붙여 넣으면 문단별로 정리하고, 6단계로 외우고, 서술형 답까지 채점해 주는 공부 앱.</p>
+      <div class="acts"><a class="pill" href="https://juljul.pages.dev" target="_blank" rel="noopener">무료로 시작하기</a><a class="more" href="#juljul-price">요금 보기</a></div>
+      <p class="fine">가입 없이 바로 써요. 자료 3개, AI 정리 하루 3번까지 무료.<sup>1</sup></p>
+      <div class="stage">
+        <div class="phone">
+          <span class="isl" aria-hidden="true"></span>
+          <div class="scr">
+            <div class="sb" aria-hidden="true"><span>9:41</span><span>●●●</span></div>
+            <div class="ab"><span class="logo-s"></span>줄줄 <span class="a-badge" id="stepBadge">1 / 6단계</span></div>
+            <div class="demo">
+              <div class="steps" role="group" aria-label="외우기 단계">
+                <button type="button" data-s="0" aria-pressed="true"><b>1</b><span>읽기</span></button>
+                <button type="button" data-s="1" aria-pressed="false"><b>2</b><span>빈칸</span></button>
+                <button type="button" data-s="2" aria-pressed="false"><b>3</b><span>첫 글자</span></button>
+                <button type="button" data-s="3" aria-pressed="false"><b>4</b><span>순서</span></button>
+                <button type="button" data-s="4" aria-pressed="false"><b>5</b><span>쓰기</span></button>
+                <button type="button" data-s="5" aria-pressed="false"><b>6</b><span>통째로</span></button>
+              </div>
+              <p class="stage-t" id="stageT"></p>
+              <p class="stage-d" id="stageD"></p>
+              <div class="passage" id="passage"></div>
+              <div class="demo-foot"><span class="hint" id="hint"></span><button type="button" class="blk-btn" id="next">다음 단계</button></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="under">화면을 직접 눌러 보세요. 예시 지문은 과학 교과서의 광합성 문단이에요.</p>
+    </div>
+  </section>
+
+  <section class="band gray" id="juljul-six">
+    <div class="wrap">
+      <h2>읽고, 가리고, 떠올리고.<br>마지막엔 보지 않고.</h2>
+      <p class="d">외우기는 6단계예요. 단계마다 보이는 글이 조금씩 줄어들어서, 끝에는 글 전체를 쓰거나 소리 내어 말할 수 있게 돼요.</p>
+      <ol class="six" id="six">
+        <li><button type="button" data-go="0"><span class="n">1단계</span><b>읽기</b><span>소리 내어 세 번 읽어요. 파란 낱말이 핵심어예요.</span></button></li>
+        <li><button type="button" data-go="1"><span class="n">2단계</span><b>빈칸</b><span>빈칸에 들어갈 말을 머릿속으로 떠올려요.</span></button></li>
+        <li><button type="button" data-go="2"><span class="n">3단계</span><b>첫 글자</b><span>첫 글자만 보고 말해요. 막히면 꾹 눌러요.</span></button></li>
+        <li><button type="button" data-go="3"><span class="n">4단계</span><b>순서</b><span>섞인 문장을 순서대로 눌러요.</span></button></li>
+        <li><button type="button" data-go="4"><span class="n">5단계</span><b>쓰기</b><span>핵심어를 직접 써 넣고 채점해요.</span></button></li>
+        <li><button type="button" data-go="5"><span class="n">6단계</span><b>통째로</b><span>보지 않고 써 보거나 말하고, 빠진 곳을 확인해요.</span></button></li>
+      </ol>
+    </div>
+  </section>
+
+  <div class="tiles swipe" id="juljul-more">
+    <div class="tile">
+      <div class="k">AI 문단 정리</div>
+      <h2>문단마다,<br>한 줄로 정리.</h2>
+      <p class="d">지문, 발표문, 모범 답안을 붙여 넣으면 문단으로 나누고 하는 말과 중심 문장을 뽑아 줘요.</p>
+      <div class="vis"><div class="paras">
+        <div class="a-card para"><div class="h"><i>1</i>하는 말</div><div class="say">광합성이 무엇이고 어디서 일어나는지</div><div class="main">광합성은 식물이 빛 에너지를 이용해 이산화 탄소와 물로 포도당을 만드는 과정이다.</div></div>
+        <div class="a-card para"><div class="h"><i>2</i>하는 말</div><div class="say">광합성 속도를 바꾸는 조건</div><div class="main">광합성 속도는 빛의 세기, 이산화 탄소 농도, 온도에 따라 달라진다.</div></div>
+      </div></div>
+    </div>
+    <div class="tile dark">
+      <div class="k">오늘 복습</div>
+      <h2>잊을 때쯤,<br>다시 나와요.</h2>
+      <p class="d">다 외운 문단은 1일, 3일, 7일, 14일, 30일 뒤에 ‘오늘 복습’으로 돌아와요.</p>
+      <div class="vis"><div class="cal" id="cal" aria-label="외운 날부터 30일 동안의 복습 날짜"></div><div class="legend"><span><i style="background:var(--ink-d)"></i>외운 날</span><span><i style="background:var(--accent)"></i>복습하는 날</span></div></div>
+    </div>
+    <div class="tile">
+      <div class="k">서술형 연습</div>
+      <h2>답을 쓰면,<br>채점과 첨삭까지.</h2>
+      <p class="d">핵심어 고르기, 순서 정하기, 답 쓰기 순서로 연습하고 모범 답안과 나란히 비교해요.</p>
+      <div class="vis"><div class="a-card essay">
+        <span class="a-badge">서술형 · 예시</span>
+        <p class="q">광합성이 일어나는 장소와, 광합성으로 만들어지는 물질 두 가지를 쓰시오.</p>
+        <div class="row"><span class="a-chip good">엽록체</span><span class="a-chip good">포도당</span><span class="a-chip good">산소</span><span class="a-chip bad">빛 에너지</span></div>
+        <p class="ans">광합성은 <span class="kw">엽록체</span>에서 일어나며, 빛 에너지를 이용해 <span class="kw">포도당</span>을 만든다. 이때 <span class="kw">산소</span>도 함께 나온다.</p>
+        <div class="score"><b>9</b><span>/ 10점 · 묻지 않은 ‘빛 에너지’는 빼면 더 간결해요</span></div>
+      </div></div>
+    </div>
+    <div class="tile">
+      <div class="k">오답 노트</div>
+      <h2>틀린 문제는<br>한곳에.</h2>
+      <p class="d">틀린 서술형 문제는 오답 노트에 모여요. 시험 전에 다시 풀어 보세요.</p>
+      <div class="vis"><div class="list">
+        <div class="a-card"><span class="x">✕</span><span class="t"><b>광합성 속도에 영향을 주는 조건 세 가지</b><span>과학 · 3일 전</span></span><span class="a-badge">다시 풀기</span></div>
+        <div class="a-card"><span class="x">✕</span><span class="t"><b>엽록체의 구조와 각 부분이 하는 일</b><span>과학 · 5일 전</span></span><span class="a-badge">다시 풀기</span></div>
+        <div class="a-card"><span class="x">✕</span><span class="t"><b>호흡과 광합성의 차이를 비교하시오</b><span>과학 · 1주 전</span></span><span class="a-badge">다시 풀기</span></div>
+      </div></div>
+    </div>
+  </div>
+
+  <section class="band">
+    <div class="wrap">
+      <h2>숫자로 보는 줄줄.</h2>
+      <div class="stats">
+        <div class="stat"><b>6</b><span>단계로 나눠 외우기</span></div>
+        <div class="stat"><b>5</b><span>번, 날짜 맞춰 복습</span></div>
+        <div class="stat"><b>3</b><span>개 자료까지 무료</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="band gray" id="juljul-how">
+    <div class="wrap">
+      <h2>세 단계면 충분해요.</h2>
+      <ol class="steps3">
+        <li><b>외울 글을 붙여 넣어요</b><span>지문, 발표문, 모범 답안 무엇이든 괜찮아요.</span></li>
+        <li><b>문단별 정리를 확인해요</b><span>문단마다 하는 말과 중심 문장이 정리돼요.</span></li>
+        <li><b>6단계로 외우고, 다시 봐요</b><span>다 외운 문단은 ‘오늘 복습’에 날짜 맞춰 나와요.</span></li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="band dark" id="juljul-safe">
+    <div class="wrap">
+      <h2>가입 없이,<br>바로 시작해요.</h2>
+      <p class="d">로그인하지 않으면 자료와 이용권이 지금 쓰는 기기(브라우저)에 연결돼요. 나중에 소셜 로그인을 하면 그때까지의 자료와 이용권이 그 계정으로 옮겨져요.</p>
+      <div class="flow"><span>로그인 없이 시작</span><em>→</em><span>자료와 이용권은 이 기기에</span><em>→</em><span>로그인하면 계정으로</span></div>
+    </div>
+  </section>
+
+  <section class="band" id="juljul-price">
+    <div class="wrap">
+      <h2>시험 기간에만,<br>한 번만 결제.</h2>
+      <p class="d">구독이 아니에요. 필요한 기간만큼 이용권을 사고, 자동으로 다시 결제되지 않아요.<sup>2</sup></p>
+      <div class="cmp">
+        <div><span class="tag"></span><h3>무료</h3><div class="price">0<small>원</small></div><div class="per">가입 없이 바로</div>
+          <ul><li>자료 3개까지 저장</li><li>AI 정리 하루 3번</li><li>6단계 외우기와 오늘 복습</li></ul>
+          <a class="pill ghost" href="https://juljul.pages.dev" target="_blank" rel="noopener">시작하기</a></div>
+        <div><span class="tag"></span><h3>2주 이용권</h3><div class="price">3,900<small>원</small></div><div class="per">14일 · 하루 약 279원</div>
+          <ul><li>자료 개수와 AI 기능 넉넉하게</li><li>시험 한 번 준비에 알맞아요</li><li>자동 결제 없음</li></ul>
+          <a class="pill" href="https://juljul.pages.dev" target="_blank" rel="noopener">시작하기</a></div>
+        <div><span class="tag">더 알뜰</span><h3>4주 이용권</h3><div class="price">6,900<small>원</small></div><div class="per">28일 · 하루 약 246원</div>
+          <ul><li>자료 개수와 AI 기능 넉넉하게</li><li>시험 준비부터 끝까지</li><li>자동 결제 없음</li></ul>
+          <a class="pill" href="https://juljul.pages.dev" target="_blank" rel="noopener">시작하기</a></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="band dark">
+    <div class="wrap">
+      <h2>이번 시험은, 줄줄.</h2>
+      <p class="d">외울 글 하나만 붙여 넣으면 바로 시작해요.</p>
+      <div class="acts"><a class="pill" href="https://juljul.pages.dev" target="_blank" rel="noopener">줄줄 시작하기</a><a class="more" href="#blinder">그림 암기는 블라인더로</a></div>
+    </div>
+  </section>
+</div>
+
+<!-- ===================== 블라인더 ===================== -->
+<div class="view" id="v-blinder" hidden>
+  <nav class="lnav" aria-label="블라인더 메뉴"><div class="wrap">
+    <a class="pn" href="#blinder"><span class="logo-b"></span>블라인더</a>
+    <button type="button" class="lbtn" aria-expanded="false" aria-label="구역 메뉴 열기"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2.5 5l4.5 4.5L11.5 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    <div class="lls"><a class="ll" href="#blinder-find">그림 자동 찾기</a><a class="ll" href="#blinder-more">기능</a><a class="ll" href="#blinder-how">쓰는 방법</a><a class="ll" href="#blinder-price">요금</a></div>
+    <a class="pill sm" href="https://blinder-api.blinder-app.workers.dev" target="_blank" rel="noopener">써 보기</a>
+  </div><div class="lsheet"><div class="wrap" style="height:auto;display:block"><a href="#blinder-find">그림 자동 찾기</a><a href="#blinder-more">기능</a><a href="#blinder-how">쓰는 방법</a><a href="#blinder-price">요금</a></div></div></nav>
+
+  <section class="hero">
+    <div class="wrap">
+      <div class="eye">블라인더</div>
+      <h1>이름표만, <button type="button" class="bl" id="heroBl" aria-label="가려진 낱말, 눌러서 열기">가려</button> 드려요.</h1>
+      <p class="sub">강의 PDF를 넣으면 외워야 할 그림을 찾아, 이름표만 검은 띠로 가려 주는 플래시카드.</p>
+      <div class="acts"><a class="pill" href="https://blinder-api.blinder-app.workers.dev" target="_blank" rel="noopener">웹에서 바로 써 보기</a><a class="more" href="#blinder-price">요금 보기</a></div>
+      <p class="fine">처음 자료 3개까지 무료. 아이폰 앱은 App Store에 나와 있고, 안드로이드 앱은 준비 중이에요.</p>
+      <div class="stage">
+        <div class="tablet"><div class="scr">
+          <div class="t-bar"><span class="nm">블라인더</span><span class="crumb">생물학 · 세포의 구조</span><span class="a-badge" id="cnt">0 / 6 열림</span></div>
+          <div class="t-body">
+            <div class="fig live" id="liveCell"></div>
+            <div class="t-ctrl" id="ctrl"><span class="hint">가림막을 누르면 열리고, 다시 누르면 닫혀요</span><button type="button" class="blk-btn" id="reveal">정답 확인</button></div>
+            <div class="rates" id="rates" hidden>
+              <button type="button" data-n="바로 다시"><b>다시</b><span>바로</span></button>
+              <button type="button" data-n="1일 뒤"><b>어려움</b><span>1일 뒤</span></button>
+              <button type="button" data-n="3일 뒤"><b>보통</b><span>3일 뒤</span></button>
+              <button type="button" class="easy" data-n="7일 뒤"><b>쉬움</b><span>7일 뒤</span></button>
+            </div>
+            <p class="toast" id="toast" aria-live="polite"></p>
+          </div>
+        </div></div>
+      </div>
+      <p class="under">검은 띠를 직접 눌러 보세요. 예시는 생물 교재의 동물 세포 그림이에요.</p>
+    </div>
+  </section>
+
+  <section class="band gray" id="blinder-find">
+    <div class="wrap">
+      <h2>PDF를 넣으면,<br>외울 그림을 골라요.</h2>
+      <p class="d">자료 하나당 최대 20개까지 찾아요. 지문과 문장은 그대로 두고, 그림의 이름표만 가려요. 교재를 오려 붙이던 시간이 그대로 외우는 시간이 돼요.</p>
+      <div class="page pdf-slot" style="margin-top:56px" aria-label="강의 PDF 한 쪽 예시"></div>
+      <div class="keep"><span><i style="background:#D2D2D7"></i>문장은 그대로</span><span><i style="background:#0A0A0A"></i>그림 이름표만 가림</span></div>
+    </div>
+  </section>
+
+  <div class="tiles swipe" id="blinder-more">
+    <div class="tile">
+      <div class="k">형광펜·별표 표시 카드</div>
+      <h2>칠하고 별표 친 곳도,<br>카드로.</h2>
+      <p class="d">형광펜 칠한 곳이나 별표 친 곳도 따로 카드로 만들어요.</p>
+      <div class="vis"><div class="mark">
+        <div class="a-card"><span class="star">★</span>교감신경의 절후 신경 말단에서는 주로 <span class="hl">노르에피네프린</span>이 분비된다.</div>
+        <div class="arrow">↓ 카드로</div>
+        <div class="a-card">교감신경의 절후 신경 말단에서는 주로 <span class="m">노르에피네프린</span>이 분비된다.</div>
+      </div></div>
+    </div>
+    <div class="tile dark">
+      <div class="k">알아서 복습 일정</div>
+      <h2>고르기만 하면,<br>다음 날이 정해져요.</h2>
+      <p class="d">쉬움·보통·어려움·다시 중 하나를 고르면 다음 복습 날을 정해 줘요. 쉬움을 두 번 연속 고르면 암기완료.</p>
+      <div class="vis"><div class="rate-big">
+        <div><b>다시</b><span>바로</span></div><div><b>어려움</b><span>1일 뒤</span></div>
+        <div><b>보통</b><span>3일 뒤</span></div><div class="easy"><b>쉬움</b><span>7일 뒤</span></div>
+        <div class="done">쉬움 × 2번 연속 = 암기완료</div>
+      </div></div>
+    </div>
+    <div class="tile">
+      <div class="k">취약 노트</div>
+      <h2>헷갈린 카드만,<br>폴더별로.</h2>
+      <p class="d">헷갈린 카드만 폴더별로 모아서 다시 볼 수 있어요.</p>
+      <div class="vis"><div class="list">
+        <div class="a-card"><span class="fd"></span><span class="t"><b>약리학 · 자율신경계</b><span>카드 48장</span></span><span class="n">헷갈림 7</span></div>
+        <div class="a-card"><span class="fd"></span><span class="t"><b>해부학 · 상지 근육</b><span>카드 36장</span></span><span class="n">헷갈림 5</span></div>
+        <div class="a-card"><span class="fd"></span><span class="t"><b>생물학 · 세포의 구조</b><span>카드 20장</span></span><span class="n">헷갈림 3</span></div>
+      </div></div>
+    </div>
+    <div class="tile">
+      <div class="k">직접 가리기</div>
+      <h2>사진 한 장도,<br>원하는 곳만.</h2>
+      <p class="d">사진을 올려 원하는 곳을 직접 가릴 수 있어요. 자동으로 만든 카드도 가림막을 고칠 수 있어요.</p>
+      <div class="vis"><div class="a-card draw">
+        <svg viewBox="0 0 360 200" aria-hidden="true">
+          <rect width="360" height="200" rx="8" fill="#F4F2EE"/>
+          <path d="M120 40c-30 0-46 30-40 62 6 34 40 58 60 70 20-12 54-36 60-70 6-32-10-62-40-62-10 0-16 6-20 12-4-6-10-12-20-12z" fill="#F2B8B5" stroke="#B5524C" stroke-width="2.5"/>
+          <path d="M140 52v30M128 96h24" stroke="#B5524C" stroke-width="2" fill="none"/>
+          <g stroke="#8A8C93" stroke-width="1.2"><line x1="186" y1="70" x2="232" y2="50"/><line x1="178" y1="120" x2="232" y2="120"/></g>
+          <rect x="236" y="38" width="92" height="22" rx="4" fill="#0A0A0A"/>
+          <rect x="236" y="108" width="100" height="24" rx="4" fill="#3D33D8" fill-opacity=".15" stroke="#3D33D8" stroke-width="2" stroke-dasharray="5 4"/>
+          <g fill="#fff" stroke="#3D33D8" stroke-width="2"><circle cx="236" cy="108" r="5"/><circle cx="336" cy="108" r="5"/><circle cx="236" cy="132" r="5"/><circle cx="336" cy="132" r="5"/></g>
+        </svg>
+        <div class="tool"><span class="a-chip on">가림막 그리기</span><span class="a-chip">지우기</span></div>
+      </div></div>
+    </div>
+  </div>
+
+  <section class="band">
+    <div class="wrap">
+      <h2>숫자로 보는 블라인더.</h2>
+      <div class="stats">
+        <div class="stat"><b>20</b><span>개, 자료 하나당 찾는 그림(최대)</span></div>
+        <div class="stat"><b>3</b><span>개 자료까지 무료</span></div>
+        <div class="stat"><b>14</b><span>일 시험 기간권, 2,900원</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="band gray" id="blinder-how">
+    <div class="wrap">
+      <h2>세 단계면 충분해요.</h2>
+      <ol class="steps3">
+        <li><b>폴더를 만들고 PDF를 넣어요</b><span>강의 자료 PDF를 그대로 올리면 돼요.</span></li>
+        <li><b>외울 그림을 골라요</b><span>블라인더가 찾은 그림 중에서 외울 것만 남겨요.</span></li>
+        <li><b>‘오늘 복습’에서 외워요</b><span>가림막을 하나씩 열며 떠올리고, 얼마나 쉬웠는지 골라요.</span></li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="band dark" id="blinder-web">
+    <div class="wrap">
+      <h2>웹에서도,<br>아이폰에서도.</h2>
+      <p class="d">웹에서는 설치 없이 바로 쓸 수 있고, 아이폰은 App Store에서 ‘블라인더 AI’를 받으면 돼요. 안드로이드 앱은 준비 중이에요. 로그인하면 카드와 복습 기록이 다른 기기에서도 이어져요.</p>
+      <div class="flow"><span>웹</span><span>아이폰 앱</span><em>→</em><span>로그인</span><em>→</em><span>어디서든 이어 쓰기</span></div>
+      <div class="acts"><a class="pill" href="https://blinder-api.blinder-app.workers.dev" target="_blank" rel="noopener">웹에서 바로 써 보기</a><a class="more" href="https://apps.apple.com/kr/app/id6819151926" target="_blank" rel="noopener">App Store에서 보기</a></div>
+    </div>
+  </section>
+
+  <section class="band" id="blinder-price">
+    <div class="wrap">
+      <h2>처음 3개는 무료.<br>시험 기간엔 한 번만.</h2>
+      <p class="d">시험 기간권은 한 번만 결제하고, 자동으로 다시 결제되지 않아요.<sup>3</sup></p>
+      <div class="cmp">
+        <div><span class="tag"></span><h3>무료</h3><div class="price">0<small>원</small></div><div class="per">웹에서 바로</div>
+          <ul><li>처음 자료 3개까지</li></ul>
+          <a class="pill ghost" href="https://blinder-api.blinder-app.workers.dev" target="_blank" rel="noopener">써 보기</a></div>
+        <div><span class="tag">시험 기간 추천</span><h3>시험 기간권</h3><div class="price">2,900<small>원</small></div><div class="per">14일 · 하루 약 207원</div>
+          <ul><li>한 번만 결제</li><li>자동 결제 없음</li></ul>
+          <a class="pill" href="https://blinder-api.blinder-app.workers.dev" target="_blank" rel="noopener">써 보기</a></div>
+        <div><span class="tag"></span><h3>앱 구독 <span class="soon">출시 예정</span></h3><div class="price">4,900<small>원 / 월</small></div><div class="per">1년 39,000원 · 한 달 3,250원꼴</div>
+          <ul><li>아이폰·안드로이드 앱과 함께 시작해요</li></ul>
+          <span class="off">앱 출시 후 이용할 수 있어요</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="band dark">
+    <div class="wrap">
+      <h2>이번 시험 그림,<br>블라인더로.</h2>
+      <p class="d">강의 PDF 하나만 넣으면 바로 시작해요.</p>
+      <div class="acts"><a class="pill" href="https://blinder-api.blinder-app.workers.dev" target="_blank" rel="noopener">웹에서 바로 써 보기</a><a class="more" href="#juljul">긴 글 암기는 줄줄로</a></div>
+    </div>
+  </section>
+</div>
+
+
+<!-- ===================== 회사 소개 ===================== -->
+<div class="view" id="v-about" hidden>
+  <section class="hero" style="padding-bottom:40px">
+    <div class="wrap">
+      <div class="eye">노스케스 · Nosces</div>
+      <h1>회사 소개</h1>
+      <p class="sub">외워야 할 게 많은 학생을 위해, 공부 앱을 만들어요.</p>
+    </div>
+  </section>
+  <section class="band" style="padding-top:40px">
+    <div class="wrap about">
+      <div class="acard">
+        <h3>만드는 것</h3>
+        <div class="appst">
+          <img class="aicon" src="img/blinder_icon.jpg" alt="블라인더 AI 앱 아이콘" width="88" height="88">
+          <div class="ainfo">
+            <b>블라인더 AI</b>
+            <span>강의 PDF 속 그림의 이름표만 가려 주는 플래시카드</span>
+            <small>App Store · 교육 · 무료 · iPhone·iPad · 2026년 10월 출시</small>
+          </div>
+          <a class="pill sm" href="https://apps.apple.com/kr/app/id6819151926" target="_blank" rel="noopener">App Store에서 보기</a>
+        </div>
+        <div class="shots" aria-label="App Store에 올라간 블라인더 AI 화면">
+          <img src="img/shot1.jpg" alt="블라인더 AI 화면 1" loading="lazy" width="460" height="999">
+          <img src="img/shot2.jpg" alt="블라인더 AI 화면 2" loading="lazy" width="460" height="999">
+          <img src="img/shot3.jpg" alt="블라인더 AI 화면 3" loading="lazy" width="460" height="999">
+          <img src="img/shot4.jpg" alt="블라인더 AI 화면 4" loading="lazy" width="460" height="999">
+        </div>
+        <p class="cap">App Store에 실제로 올라가 있는 화면이에요. 웹에서도 <a class="more" href="https://blinder-api.blinder-app.workers.dev" target="_blank" rel="noopener">바로 써 볼 수 있어요</a>.</p>
+        <dl style="margin-top:22px">
+          <dt>줄줄</dt><dd>긴 글을 문단별로 정리하고 6단계로 외우고, 서술형 답을 채점하는 앱. <a class="more" href="https://juljul.pages.dev" target="_blank" rel="noopener">웹</a></dd>
+          <dt>필챗</dt><dd>약대생을 위한 전공 질문 챗봇 (준비 중 · 모두의 창업 참가 아이템)</dd>
+        </dl>
+      </div>
+      <div class="acard">
+        <h3>성과</h3>
+        <ul>
+          <li><b>중소벤처기업부 ‘모두의 창업 프로젝트’ 2라운드 진출</b><br>지원자 약 6.3만 명 중 일반·기술 트랙 500명 선정 (2026년 9월) · <a class="more" href="https://www.venturesquare.net/1111088/" target="_blank" rel="noopener">발표 기사</a></li>
+          <li><b>고려대학교 세종산학협력단(멘토기관) 700팀 중 전체 2위</b></li>
+          <li><b>정부 초기 사업화 자금 지원</b> (모두의 창업 프로젝트)</li>
+        </ul>
+        <figure class="proof">
+          <img src="img/modoo_profile.jpg" alt="모두의 창업 도전자 프로필 화면: 형석, 1차 2라운드 진출자, 참가 아이템 필챗" loading="lazy" width="1200" height="457">
+          <figcaption>모두의 창업 도전자 프로필 화면 · ‘1차 2라운드 진출자’ 표시 (참가 아이템: 필챗)</figcaption>
+        </figure>
+      </div>
+      <div class="acard">
+        <h3>팀</h3>
+        <dl>
+          <dt>대표</dt><dd>이형석 (HYUNGSEOK LEE) · 한양대학교 ERICA 약학과</dd>
+          <dt>단계</dt><dd>예비창업 · 사업자 등록 준비 중</dd>
+          <dt>문의</dt><dd><a class="more" href="mailto:hyeongseok@nosces.com">hyeongseok@nosces.com</a></dd>
+        </dl>
+      </div>
+      <div class="acard" id="about-en" lang="en">
+        <h3>About Nosces</h3>
+        <p>Nosces builds AI study apps for Korean students who have a lot to memorize.</p>
+        <ul>
+          <li><b>Blinder AI</b> — flashcards that hide only the labels in lecture-PDF diagrams. Live on the App Store (Education, free, released Oct 2026). <a class="more" href="https://apps.apple.com/kr/app/id6819151926" target="_blank" rel="noopener">App Store</a></li>
+          <li><b>Juljul</b> — paragraph summaries, 6-step memorization and essay grading. <a class="more" href="https://juljul.pages.dev" target="_blank" rel="noopener">Web app</a></li>
+          <li>Selected for Round 2 of Korea’s national startup program “Modu-ui Changeop” (Ministry of SMEs and Startups): top 500 of about 63,000 applicants in the general/tech track, Sept 2026, with a government commercialization grant (entry item: PillChat). Ranked 2nd of 700 teams at Korea University Sejong Industry-Academic Cooperation Foundation.</li>
+          <li>Both apps are built with Claude.</li>
+        </ul>
+        <p>Founder: Hyungseok Lee · <a class="more" href="mailto:hyeongseok@nosces.com">hyeongseok@nosces.com</a></p>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- ===================== 고객지원 ===================== -->
+<div class="view" id="v-support" hidden>
+  <section class="hero" style="padding-bottom:110px">
+    <div class="wrap">
+      <div class="eye">노스케스</div>
+      <h1>고객지원</h1>
+      <p class="sub">궁금한 점은 메일로 물어봐 주세요.</p>
+      <div class="contact"><code id="mail">hyeongseok@nosces.com</code><button type="button" class="copy" id="copyMail">주소 복사</button></div>
+      <div class="faq">
+        <h3><span class="logo-b"></span>블라인더</h3>
+        <details><summary>스캔한 PDF나 손글씨도 되나요?</summary><p>‘손글씨 더 잘 읽기’를 켜면 손글씨와 스캔한 글자도 읽어요. 잘 읽히지 않는 곳은 ‘직접 가리기’로 원하는 곳을 가려 주세요.</p></details>
+        <details><summary>다른 기기에서 이어 쓸 수 있나요?</summary><p>네. 로그인하면 카드와 복습 기록이 저장돼서 다른 기기에서도 이어 쓸 수 있어요. 로그인 없이 둘러보기로 쓰면 이용권이 그 기기(웹은 그 브라우저)에만 묶여요.</p></details>
+        <details><summary>환불은 어떻게 되나요?</summary><p>결제한 날부터 7일 안에 Pro 기능으로 카드를 한 번도 만들지 않았다면 전액 돌려 드려요. 이미 쓴 뒤에는 남은 날짜만큼 계산해서 돌려 드려요. 자세한 내용은 <a class="more" style="font-size:inherit" href="#refund">환불 정책</a>을 확인하세요.</p></details>
+        <details><summary>앱은 언제 나오나요?</summary><p>아이폰 앱은 App Store에서 ‘블라인더 AI’로 받을 수 있어요. 안드로이드 앱은 준비 중이에요. 앱 구독(1개월 4,900원 · 1년 39,000원)도 준비 중이에요.</p></details>
+
+        <h3><span class="logo-s"></span>줄줄</h3>
+        <details><summary>자동으로 다시 결제되나요?</summary><p>아니요. 이용권은 2주(3,900원) 또는 4주(6,900원) 동안 쓰는 1회 결제예요. 기간 중에 또 사면 남은 기간 뒤에 이어서 더해져요.</p></details>
+        <details><summary>환불은 어떻게 되나요?</summary><p>결제한 날부터 7일 안에 이용권으로만 되는 기능을 한 번도 쓰지 않았다면 전액 돌려 드려요. 이미 쓴 뒤에는 남은 날짜만큼 계산해서 돌려 드려요. 자세한 내용은 <a class="more" style="font-size:inherit" href="https://juljul.pages.dev/legal/refund" target="_blank" rel="noopener">환불 정책</a>을 확인하세요.</p></details>
+        <details><summary>이용권이 끝나면 만든 자료는 어떻게 되나요?</summary><p>무료 이용으로 돌아가고, 그동안 만든 자료는 지우지 않아요.</p></details>
+        <details><summary>로그인 없이 써도 되나요?</summary><p>네. 로그인하지 않으면 자료와 이용권이 그 기기(브라우저)에 연결돼요. 나중에 소셜 로그인을 하면 그때까지의 자료와 이용권이 그 계정으로 옮겨져요.</p></details>
+      </div>
+      <div class="legals">
+        <div><h4>블라인더</h4><a class="more" href="https://blinder-api.blinder-app.workers.dev/terms" target="_blank" rel="noopener">이용약관</a><a class="more" href="https://blinder-api.blinder-app.workers.dev/privacy" target="_blank" rel="noopener">개인정보처리방침</a><a class="more" href="#refund">환불 정책</a></div>
+        <div><h4>줄줄</h4><a class="more" href="https://juljul.pages.dev/legal/terms" target="_blank" rel="noopener">이용약관</a><a class="more" href="https://juljul.pages.dev/legal/privacy" target="_blank" rel="noopener">개인정보처리방침</a><a class="more" href="https://juljul.pages.dev/legal/refund" target="_blank" rel="noopener">환불 정책</a></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- ===================== 블라인더 환불 정책 ===================== -->
+<div class="view" id="v-refund" hidden>
+  <section class="hero" style="padding-bottom:110px">
+    <div class="wrap">
+      <div class="eye">블라인더</div>
+      <h1 style="font-size:clamp(40px,6vw,64px)">환불 정책</h1>
+      <article class="doc">
+        <p class="lead">블라인더 웹 기간권(블라인더 Pro)은 구독이 아니라 정해진 기간(시험 기간권 14일) 동안 쓰는 1회 결제 상품입니다. 기간이 끝나도 다시 결제되지 않습니다.</p>
+        <h2>제1조 (적용 범위)</h2>
+        <ol>
+          <li>이 정책은 웹에서 토스페이먼츠로 결제한 웹 기간권에 적용됩니다.</li>
+          <li>애플 앱스토어·구글 플레이에서 결제한 앱 구독은 제5조에 따라 각 스토어의 환불 절차를 따릅니다.</li>
+        </ol>
+        <h2>제2조 (전액 환불)</h2>
+        <ol>
+          <li>결제한 날부터 7일 안에, Pro 기능으로 카드를 한 번도 만들지 않았다면 전액 돌려 드립니다.
+            <ul><li>Pro 기능: 처음 넣은 자료 3개를 넘는 자료로 카드 만들기</li></ul></li>
+          <li>개발자의 잘못이나 서비스 장애로 기간권을 쓰지 못한 경우에도 전액 돌려 드리거나 기간을 늘려 드립니다.</li>
+        </ol>
+        <h2>제3조 (일부 환불)</h2>
+        <ol>
+          <li>Pro 기능을 이미 쓴 뒤에는 남은 날짜만큼 계산해서 돌려 드립니다.<br>
+            <span class="formula">환불 금액 = 결제 금액 × 남은 날 ÷ 전체 날</span>
+            <span class="ex">예: 시험 기간권(14일, 2,900원)의 남은 날이 7일이면 2,900 × 7 ÷ 14 = 1,450원을 돌려 드립니다.</span></li>
+          <li>이렇게 계산한 금액이 1,000원보다 적으면 환불되지 않습니다.</li>
+        </ol>
+        <h2>제4조 (신청 방법과 처리 기간)</h2>
+        <ol>
+          <li>아래 이메일로 결제한 계정(로그인 방법과 이름, 또는 ‘로그인 없이 둘러보기’), 결제 날짜, 주문 번호를 보내 주세요.
+            <ul><li>이메일: memoryz.kr@gmail.com</li></ul></li>
+          <li>영업일 기준 3일 안에 처리합니다. 카드 결제 취소는 카드사 사정에 따라 3~7일 뒤에 반영됩니다.</li>
+          <li>회원 탈퇴를 하면 남은 웹 기간권을 더 이상 쓸 수 없습니다. 환불이 필요하면 탈퇴하기 전에 문의해 주세요.</li>
+        </ol>
+        <h2>제5조 (앱 구독)</h2>
+        <ol>
+          <li>앱 구독(1개월 4,900원 · 1년 39,000원)은 준비 중이며, 시작하면 애플 앱스토어 또는 구글 플레이에서 결제하고 환불도 각 스토어에서 신청합니다.
+            <ul><li>애플 앱스토어: reportaproblem.apple.com</li><li>구글 플레이: 구글 플레이 → 결제 및 정기 결제 → 환불 요청</li></ul></li>
+          <li>앱 구독은 기간이 끝나기 24시간 전까지 해지하지 않으면 같은 기간과 금액으로 자동 갱신됩니다. 해지는 아이폰의 설정 → 내 이름 → 구독, 또는 구글 플레이 → 결제 및 정기 결제에서 할 수 있습니다.</li>
+          <li>회원 탈퇴를 해도 스토어 구독은 자동으로 해지되지 않습니다.</li>
+        </ol>
+        <h2>제6조 (법적 근거)</h2>
+        <p>이 정책은 「전자상거래 등에서의 소비자보호에 관한 법률」 제17조와 「콘텐츠산업 진흥법」에 따른 이용자 보호 기준을 따르며, 디지털 콘텐츠의 제공이 시작된 경우에도 위 기준으로 청약 철회와 환불을 보장합니다.</p>
+        <h2>부칙</h2>
+        <p>이 정책은 2026년 10월 7일부터 적용됩니다.</p>
+        <div class="links"><a class="more" href="https://blinder-api.blinder-app.workers.dev/terms" target="_blank" rel="noopener">블라인더 이용약관</a><a class="more" href="https://blinder-api.blinder-app.workers.dev/privacy" target="_blank" rel="noopener">블라인더 개인정보처리방침</a><a class="more" href="#blinder">블라인더 살펴보기</a></div>
+      </article>
+    </div>
+  </section>
+</div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <ol class="notes" id="notes"></ol>
+    <div class="dir">
+      <div><h5>블라인더</h5><ul><li><a href="#blinder">개요</a></li><li><a href="#blinder-find">그림 자동 찾기</a></li><li><a href="#blinder-price">요금</a></li><li><a href="https://blinder-api.blinder-app.workers.dev" target="_blank" rel="noopener">웹앱 열기</a></li></ul></div>
+      <div><h5>줄줄</h5><ul><li><a href="#juljul">개요</a></li><li><a href="#juljul-six">6단계 암기</a></li><li><a href="#juljul-price">요금</a></li><li><a href="https://juljul.pages.dev" target="_blank" rel="noopener">웹앱 열기</a></li></ul></div>
+      <div><h5>블라인더 약관</h5><ul><li><a href="https://blinder-api.blinder-app.workers.dev/terms" target="_blank" rel="noopener">이용약관</a></li><li><a href="https://blinder-api.blinder-app.workers.dev/privacy" target="_blank" rel="noopener">개인정보처리방침</a></li><li><a href="#refund">환불 정책</a></li></ul></div>
+      <div><h5>줄줄 약관</h5><ul><li><a href="https://juljul.pages.dev/legal/terms" target="_blank" rel="noopener">이용약관</a></li><li><a href="https://juljul.pages.dev/legal/privacy" target="_blank" rel="noopener">개인정보처리방침</a></li><li><a href="https://juljul.pages.dev/legal/refund" target="_blank" rel="noopener">환불 정책</a></li></ul></div>
+      <div><h5>회사</h5><ul><li><a href="#about">회사 소개</a></li><li><a href="#about-en">About (English)</a></li></ul></div>
+      <div><h5>고객지원</h5><ul><li><a href="#support">자주 묻는 질문</a></li><li><a href="#support">문의 메일</a></li><li><a href="#home-pick">나에게 맞는 앱</a></li></ul></div>
+    </div>
+    <div class="fbot"><span class="crumbs" id="crumbs">노스케스</span><span>노스케스 · 대표 이형석 · 문의 hyeongseok@nosces.com</span></div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var $ = function(id){ return document.getElementById(id); };
+  function esc(s){ return s.replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+
+  /* ---------- 로고 ---------- */
+  var LOGO_S = '<svg viewBox="0 0 48 48" width="22" height="22" aria-hidden="true"><rect width="48" height="48" rx="13" fill="#3D33D8"/><rect x="11" y="12.5" width="26" height="5" rx="2.5" fill="#fff"/><rect x="11" y="21.5" width="8" height="5" rx="2.5" fill="#fff"/><rect x="22" y="20" width="15" height="8" rx="3" fill="#fff" fill-opacity=".22" stroke="#fff" stroke-width="2"/><rect x="11" y="30.5" width="17" height="5" rx="2.5" fill="#fff"/></svg>';
+  var LOGO_B = '<svg viewBox="0 0 1024 1024" width="22" height="22" aria-hidden="true" style="border-radius:5px;box-shadow:0 0 0 1px #D2D2D7"><rect width="1024" height="1024" rx="200" fill="#fff"/><rect x="297" y="212" width="430" height="560" rx="78" fill="#111"/><rect x="339" y="254" width="346" height="476" rx="40" fill="#fff"/><rect x="380" y="320" width="232" height="34" rx="17" fill="#111"/><rect x="380" y="590" width="252" height="34" rx="17" fill="#111"/><rect x="380" y="650" width="172" height="34" rx="17" fill="#111"/><rect x="237" y="400" width="550" height="156" rx="34" fill="#fff"/><rect x="255" y="418" width="514" height="120" rx="22" fill="#111"/></svg>';
+  document.querySelectorAll('.logo-s').forEach(function(e){ e.outerHTML = LOGO_S; });
+  document.querySelectorAll('.logo-b').forEach(function(e){ e.outerHTML = LOGO_B; });
+  document.querySelectorAll('.logo-m').forEach(function(e){ e.outerHTML = LOGO_S.replace(/22/g,'56'); });
+  document.querySelectorAll('.logo-bm').forEach(function(e){ e.outerHTML = LOGO_B.replace('width="22" height="22"','width="56" height="56"').replace('border-radius:5px','border-radius:13px'); });
+
+  /* ---------- 줄줄: 6단계 체험 ---------- */
+  var SENT = [
+    '광합성은 식물이 [[빛 에너지]]를 이용해 [[이산화 탄소]]와 [[물]]로 [[포도당]]을 만드는 과정이다.',
+    '이 과정은 [[엽록체]]에서 일어나며, 부산물로 [[산소]]가 나온다.',
+    '따라서 광합성은 [[생태계]]에 에너지와 산소를 공급하는 출발점이 된다.'
+  ];
+  var STAGES = [
+    {t:'소리 내어 세 번 읽어요', d:'파란 낱말이 핵심어예요.', h:'단계를 눌러 보세요'},
+    {t:'빈칸에 들어갈 말을 떠올려요', d:'먼저 떠올린 뒤, 칸을 눌러 정답을 확인해요.', h:'빈칸을 눌러 보세요'},
+    {t:'첫 글자만 보고 말해요', d:'막히면 글을 꾹 누르세요. 누르는 동안만 원문이 보여요.', h:'꾹 누르면 원문이 보여요'},
+    {t:'문장을 순서대로 눌러요', d:'다음에 올 문장을 골라요. 틀리면 카드가 흔들려요.', h:'첫 문장부터 눌러 보세요'},
+    {t:'빈칸을 직접 써요', d:'핵심어를 써 넣으면 바로 채점해요. 엔터는 다음 칸.', h:'직접 써 보세요'},
+    {t:'보지 않고 써 보거나 말해요', d:'다 쓰면 원문과 비교해서 빠진 부분을 표시해 줘요.', h:'예시: 빠진 낱말 표시'}
+  ];
+  function kw(s, f){ return s.replace(/\[\[(.+?)\]\]/g, function(_, k){ return f(k); }); }
+  function plain(s){ return s.replace(/\[\[|\]\]/g, ''); }
+  function passageHTML(st){
+    if (st === 0) return '<p>' + SENT.map(function(s){ return kw(esc(s), function(k){ return '<span class="kw">'+k+'</span>'; }); }).join(' ') + '</p>';
+    if (st === 1) return '<p>' + SENT.map(function(s){ return kw(esc(s), function(k){ return '<button type="button" class="blank" aria-label="빈칸, 눌러서 정답 보기">'+k+'</button>'; }); }).join(' ') + '</p>';
+    if (st === 2) return '<p>' + SENT.map(function(s){
+      return plain(s).split(' ').map(function(w){
+        var m = w.match(/^(.)(.*?)([.,]?)$/);
+        return '<span class="fl">' + esc(m[1]) + (m[2] ? '<span class="rest">'+esc(m[2])+'</span>' : '') + esc(m[3]) + '</span>';
+      }).join(' ');
+    }).join(' ') + '</p>';
+    if (st === 3) return '<div class="order-list">' + [2,0,1].map(function(i){
+      return '<button type="button" class="ocard" data-i="'+i+'"><span class="n">?</span><span>'+esc(plain(SENT[i]))+'</span></button>';
+    }).join('') + '</div>';
+    if (st === 4) return '<p>' + SENT.map(function(s){ return kw(esc(s), function(k){
+      return '<input class="inp" data-a="'+k+'" size="'+Math.max(3, k.length*2)+'" placeholder="'+k.charAt(0)+'" aria-label="빈칸, 첫 글자 '+k.charAt(0)+'" autocomplete="off">';
+    }); }).join(' ') + '</p>';
+    return '<p>광합성은 식물이 빛 에너지를 이용해 이산화 탄소와 <span class="miss">물</span>로 포도당을 만드는 과정이다. 이 과정은 엽록체에서 일어나며, <span class="miss">부산물로</span> 산소가 나온다. 따라서 광합성은 생태계에 에너지와 산소를 공급하는 <span class="miss">출발점이</span> 된다.</p>';
+  }
+  var box = $('passage'), cur = 0, orderNext = 0;
+  function render(){
+    box.className = 'passage';
+    box.innerHTML = passageHTML(cur);
+    $('stageT').textContent = STAGES[cur].t;
+    $('stageD').textContent = STAGES[cur].d;
+    $('hint').textContent = STAGES[cur].h;
+    $('stepBadge').textContent = (cur+1) + ' / 6단계';
+    $('next').textContent = cur === 5 ? '처음부터' : '다음 단계';
+    document.querySelectorAll('.steps button').forEach(function(b){ b.setAttribute('aria-pressed', String(+b.dataset.s === cur)); });
+    orderNext = 0;
+  }
+  box.addEventListener('click', function(e){
+    var b = e.target.closest('.blank');
+    if (b){ b.classList.toggle('show'); return; }
+    var c = e.target.closest('.ocard');
+    if (c && !c.classList.contains('done')){
+      if (+c.dataset.i === orderNext){
+        c.classList.add('done'); c.querySelector('.n').textContent = ++orderNext;
+        c.parentNode.insertBefore(c, c.parentNode.querySelectorAll('.ocard:not(.done)')[0] || null);
+        if (orderNext === SENT.length) $('hint').textContent = '모두 맞았어요!';
+      } else { c.classList.remove('shake'); void c.offsetWidth; c.classList.add('shake'); }
+    }
+  });
+  box.addEventListener('input', function(e){
+    var i = e.target; if (!i.classList.contains('inp')) return;
+    var ok = i.value.replace(/\s/g,'') === i.dataset.a.replace(/\s/g,'');
+    i.classList.toggle('ok', ok);
+    var all = box.querySelectorAll('.inp').length, n = box.querySelectorAll('.inp.ok').length;
+    if (ok) $('hint').textContent = n === all ? '모두 맞았어요!' : '맞았어요 · ' + n + ' / ' + all;
+  });
+  box.addEventListener('keydown', function(e){
+    if (e.key !== 'Enter' || !e.target.classList.contains('inp')) return;
+    e.preventDefault();
+    var all = Array.prototype.slice.call(box.querySelectorAll('.inp')), k = all.indexOf(e.target);
+    if (all[k+1]) all[k+1].focus();
+  });
+  function peek(on){ if (cur === 2) box.classList.toggle('peek', on); }
+  box.addEventListener('pointerdown', function(){ peek(true); });
+  ['pointerup','pointerleave','pointercancel'].forEach(function(ev){ box.addEventListener(ev, function(){ peek(false); }); });
+  document.querySelector('.steps').addEventListener('click', function(e){
+    var b = e.target.closest('button'); if (!b) return; cur = +b.dataset.s; render();
+  });
+  $('next').addEventListener('click', function(){ cur = (cur + 1) % 6; render(); });
+  $('six').addEventListener('click', function(e){
+    var b = e.target.closest('button'); if (!b) return;
+    cur = +b.dataset.go; render();
+    document.querySelector('#v-juljul .phone').scrollIntoView({behavior:'smooth', block:'center'});
+  });
+  render();
+  $('homePassage').innerHTML = passageHTML(1);
+
+  var REV = {1:'+1일',3:'+3일',7:'+7일',14:'+14일',30:'+30일'}, cells = '';
+  ['월','화','수','목','금','토','일'].forEach(function(w){ cells += '<div class="wd">'+w+'</div>'; });
+  cells += '<div class="day empty"></div><div class="day empty"></div>';
+  for (var d = 0; d <= 30; d++){
+    if (d === 0) cells += '<div class="day learn">1<small>외움</small></div>';
+    else if (REV[d]) cells += '<div class="day rev">'+(d+1)+'<small>'+REV[d]+'</small></div>';
+    else cells += '<div class="day">'+(d+1)+'</div>';
+  }
+  $('cal').innerHTML = cells;
+
+  var lad = '', names = ['읽기','빈칸','첫 글자','순서','쓰기','통째로'];
+  for (var s = 0; s < 6; s++){
+    var bars = '';
+    for (var r = 0; r < 4; r++) bars += '<i class="' + (r < 4 - Math.ceil(s * 4 / 5) ? '' : 'o') + '"></i>';
+    lad += '<div>' + bars + '<span>' + names[s] + '</span></div>';
+  }
+  $('ladder').innerHTML = lad;
+
+  /* ---------- 블라인더: 세포 그림과 가림막 ---------- */
+  var LABELS = [['세포막',80,43,'end'],['소포체',80,123,'end'],['리보솜',80,205,'end'],['골지체',332,57,'start'],['핵',332,127,'start'],['미토콘드리아',332,205,'start']];
+  function cellSVG(live){
+    var masks = LABELS.map(function(l, i){
+      var w = l[0].length * 15 + 12, x = l[3] === 'end' ? l[1] - w + 6 : l[1] - 6;
+      return '<rect class="mk" x="'+x+'" y="'+(l[2]-16)+'" width="'+w+'" height="21" rx="4"' +
+        (live ? ' tabindex="0" role="button" aria-label="가림막 '+(i+1)+', 눌러서 열기"' : '') + '/>';
+    }).join('');
+    return '<svg viewBox="0 0 420 250" role="img" aria-label="동물 세포 그림, 이름표 6개가 검은 띠로 가려져 있어요">' +
+      '<ellipse cx="205" cy="125" rx="112" ry="98" fill="#F3F1FF" stroke="#6B66C9" stroke-width="3"/>' +
+      '<path d="M120 92q8-8 16 0t16 0M116 108q8-8 16 0t16 0t14 0M118 124q8-8 16 0t16 0M122 140q8-8 16 0t14 0" fill="none" stroke="#7FA6D9" stroke-width="3" stroke-linecap="round"/>' +
+      '<g fill="#3F5FA8"><circle cx="128" cy="99" r="2.6"/><circle cx="146" cy="115" r="2.6"/><circle cx="134" cy="131" r="2.6"/><circle cx="152" cy="147" r="2.6"/><circle cx="160" cy="166" r="2.6"/><circle cx="148" cy="176" r="2.6"/></g>' +
+      '<circle cx="198" cy="118" r="36" fill="#D9D5FF" stroke="#4B44B8" stroke-width="2.5"/><circle cx="204" cy="112" r="11" fill="#4B44B8" fill-opacity=".55"/>' +
+      '<g fill="none" stroke="#C7922E" stroke-width="3" stroke-linecap="round"><path d="M240 70q22-10 44 0"/><path d="M238 80q24-10 48 0"/><path d="M240 90q22-10 44 0"/></g>' +
+      '<ellipse cx="255" cy="172" rx="28" ry="13" fill="#FFE3D1" stroke="#D9783F" stroke-width="2.5"/><path d="M234 172l6-7 6 12 6-12 6 12 6-12 6 12 5-5" fill="none" stroke="#D9783F" stroke-width="1.8" stroke-linejoin="round"/>' +
+      '<g stroke="#8A8C93" stroke-width="1.2"><line x1="128" y1="54" x2="84" y2="38"/><line x1="122" y1="118" x2="84" y2="118"/><line x1="148" y1="176" x2="84" y2="200"/><line x1="282" y1="72" x2="328" y2="52"/><line x1="232" y1="122" x2="328" y2="122"/><line x1="280" y1="176" x2="328" y2="200"/></g>' +
+      LABELS.map(function(l){ return '<text x="'+l[1]+'" y="'+l[2]+'" text-anchor="'+l[3]+'">'+l[0]+'</text>'; }).join('') +
+      '<g class="masks">' + masks + '</g></svg>';
+  }
+  $('homeCell').innerHTML = cellSVG(false);
+  var live = $('liveCell'); live.innerHTML = cellSVG(true);
+  var rates = $('rates'), toast = $('toast');
+  function count(){
+    var all = live.querySelectorAll('.mk').length, n = live.querySelectorAll('.mk.open').length;
+    $('cnt').textContent = n + ' / ' + all + ' 열림';
+    rates.hidden = n !== all; $('ctrl').hidden = n === all;
+  }
+  function toggle(r){ r.classList.toggle('open'); toast.textContent = ''; count(); }
+  live.addEventListener('click', function(e){ if (e.target.classList.contains('mk')) toggle(e.target); });
+  live.addEventListener('keydown', function(e){
+    if ((e.key === 'Enter' || e.key === ' ') && e.target.classList.contains('mk')){ e.preventDefault(); toggle(e.target); }
+  });
+  $('reveal').addEventListener('click', function(){ live.querySelectorAll('.mk').forEach(function(r){ r.classList.add('open'); }); count(); });
+  rates.addEventListener('click', function(e){
+    var b = e.target.closest('button'); if (!b) return;
+    toast.textContent = '다음 복습: ' + b.dataset.n + ' · 가림막을 다시 닫았어요';
+    live.querySelectorAll('.mk').forEach(function(r){ r.classList.remove('open'); }); count();
+  });
+  count();
+  $('heroBl').addEventListener('click', function(){ this.classList.toggle('open'); });
+
+  /* PDF 한 쪽 */
+  var PDF = '<div class="ph"><span>약리학 3주차 · 자율신경계</span><span>12 / 48</span></div>' +
+    '<div class="ln" style="width:92%"></div><div class="ln" style="width:100%"></div><div class="ln" style="width:74%"></div>' +
+    '<div class="pfig"><span class="found">찾은 그림 3 / 20</span><svg viewBox="0 0 320 120" aria-hidden="true">' +
+    '<g fill="none" stroke="#1B1B22" stroke-width="2.2" stroke-linejoin="round"><polygon points="60,30 86,45 86,75 60,90 34,75 34,45"/><line x1="86" y1="45" x2="116" y2="30"/><line x1="116" y1="30" x2="140" y2="45"/><line x1="60" y1="30" x2="60" y2="8"/><line x1="34" y1="75" x2="14" y2="88"/><line x1="64" y1="36" x2="82" y2="47"/><line x1="82" y1="72" x2="64" y2="83"/><line x1="38" y1="72" x2="38" y2="48"/></g>' +
+    '<rect x="148" y="14" width="74" height="18" rx="4" fill="#0A0A0A"/><rect x="148" y="54" width="96" height="18" rx="4" fill="#0A0A0A"/><rect x="148" y="94" width="62" height="18" rx="4" fill="#0A0A0A"/>' +
+    '<g stroke="#8A8C93" stroke-width="1.2"><line x1="140" y1="45" x2="148" y2="23"/><line x1="86" y1="60" x2="148" y2="63"/><line x1="86" y1="75" x2="148" y2="103"/></g></svg></div>' +
+    '<div class="ln" style="width:100%"></div><div class="ln" style="width:88%"></div><div class="ln" style="width:60%"></div>';
+  document.querySelectorAll('.pdf-slot').forEach(function(e){ e.innerHTML = PDF; });
+
+  /* 홈 타일 안의 바깥 링크 버튼 */
+  document.querySelectorAll('[data-ext]').forEach(function(el){
+    var a = document.createElement('a');
+    a.className = el.className; a.textContent = el.textContent;
+    a.href = el.dataset.ext; a.target = '_blank'; a.rel = 'noopener';
+    a.addEventListener('click', function(e){ e.stopPropagation(); });
+    el.replaceWith(a);
+  });
+  /* 링크 안의 링크는 HTML에서 허용되지 않아서, 홈 큰 타일은 div로 바꾸고 클릭으로 이동 */
+  document.querySelectorAll('a.htile').forEach(function(t){
+    var d = document.createElement('div');
+    d.className = t.className; d.innerHTML = t.innerHTML; d.style.cursor = 'pointer';
+    d.setAttribute('role', 'link'); d.tabIndex = 0; d.setAttribute('aria-label', t.getAttribute('aria-label'));
+    var href = t.getAttribute('href');
+    d.addEventListener('click', function(e){ if (!e.target.closest('a')) location.hash = href; });
+    d.addEventListener('keydown', function(e){ if (e.key === 'Enter' && e.target === d) location.hash = href; });
+    t.replaceWith(d);
+  });
+
+
+  /* ---------- 휴대폰 메뉴 ---------- */
+  var mbtn = $('mbtn'), msheet = $('msheet');
+  function menu(open){
+    msheet.hidden = !open; mbtn.setAttribute('aria-expanded', String(open));
+    mbtn.setAttribute('aria-label', open ? '메뉴 닫기' : '메뉴 열기');
+    document.body.classList.toggle('lock', open);
+  }
+  mbtn.addEventListener('click', function(){ menu(msheet.hidden); });
+  msheet.addEventListener('click', function(e){ if (e.target.closest('a')) menu(false); });
+  document.querySelectorAll('.lnav').forEach(function(nav){
+    var b = nav.querySelector('.lbtn');
+    b.addEventListener('click', function(){ var o = !nav.classList.contains('open'); nav.classList.toggle('open', o); b.setAttribute('aria-expanded', String(o)); });
+    nav.querySelector('.lsheet').addEventListener('click', function(e){ if (e.target.closest('a')){ nav.classList.remove('open'); b.setAttribute('aria-expanded','false'); } });
+  });
+  window.addEventListener('keydown', function(e){ if (e.key === 'Escape'){ menu(false); document.querySelectorAll('.lnav.open').forEach(function(n){ n.classList.remove('open'); }); } });
+
+  /* ---------- 넘겨 보는 타일의 점 ---------- */
+  var marks = [];
+  document.querySelectorAll('.tiles.swipe').forEach(function(row){
+    var tiles = row.querySelectorAll(':scope > .tile'), dots = document.createElement('div');
+    dots.className = 'dots'; dots.setAttribute('aria-label', '카드 넘기기');
+    tiles.forEach(function(t, i){
+      var b = document.createElement('button'); b.type = 'button'; b.setAttribute('aria-label', (i+1) + '번째 카드');
+      b.addEventListener('click', function(){ row.scrollTo({left: t.offsetLeft - row.offsetLeft - 22, behavior:'smooth'}); });
+      dots.appendChild(b);
+    });
+    row.after(dots);
+    function mark(){
+      var w = tiles[0].getBoundingClientRect().width + 12, k = Math.round(row.scrollLeft / (w || 1));
+      if (!row.clientWidth) return;
+      if (row.scrollLeft > 0 && row.scrollLeft + row.clientWidth >= row.scrollWidth - 4) k = tiles.length - 1;
+      dots.querySelectorAll('button').forEach(function(b, i){ b.setAttribute('aria-current', String(i === k)); });
+    }
+    row.addEventListener('scroll', function(){ requestAnimationFrame(mark); }, {passive:true});
+    marks.push(mark); mark();
+  });
+
+
+  /* ---------- 지금 보는 구역을 제품 메뉴에 표시 ---------- */
+  if ('IntersectionObserver' in window){
+    var spyIO = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){
+        if (!en.isIntersecting) return;
+        var id = en.target.id;
+        document.querySelectorAll('.lnav a[href^="#"]').forEach(function(a){
+          var on = a.getAttribute('href') === '#' + id;
+          if (a.closest('.lls') || a.closest('.lsheet')) a.setAttribute('aria-current', String(on));
+        });
+      });
+    }, {rootMargin: '-45% 0px -50% 0px'});
+    document.querySelectorAll('.lnav').forEach(function(nav){
+      nav.querySelectorAll('.lls a, .lsheet a').forEach(function(a){ var t = document.getElementById(a.getAttribute('href').slice(1)); if (t) spyIO.observe(t); });
+    });
+  }
+
+  /* ---------- 페이지 이동 ---------- */
+  var NOTES = {
+    home: ['블라인더는 처음 자료 3개까지 무료예요. 줄줄 무료 이용은 자료 3개, AI 정리 하루 3번까지예요.',
+           '두 앱의 이용권은 모두 1회 결제이며 자동으로 다시 결제되지 않아요.',
+           '화면 속 지문, 그림, 폴더는 이해를 돕기 위한 예시예요.'],
+    juljul: ['무료 이용은 자료 3개, AI 정리 하루 3번까지예요. 이용권 기간이 끝나면 무료로 돌아가고, 만든 자료는 그대로 남아요.',
+             '이용권은 2주(3,900원) 또는 4주(6,900원) 1회 결제예요. 결제 후 7일 안에 이용권 기능을 쓰지 않았다면 전액 환불돼요. 자세한 내용은 환불 정책을 확인하세요.',
+             '줄줄은 만 14세 미만은 가입할 수 없어요.',
+             '화면 속 지문, 채점 결과, 오답 목록은 이해를 돕기 위한 예시예요.'],
+    blinder: ['블라인더는 만 18세 이상만 이용할 수 있어요.',
+              '자동으로 만든 카드는 틀리거나 빠진 곳이 있을 수 있어요. 가림막은 직접 고칠 수 있어요.',
+              '시험 기간권은 14일 2,900원 1회 결제이며 자동으로 다시 결제되지 않아요. 결제 후 7일 안에 Pro 기능을 쓰지 않았다면 전액 환불돼요. 자세한 내용은 환불 정책을 확인하세요. 앱 구독(1개월 4,900원 · 1년 39,000원)은 준비 중이에요.',
+              '화면 속 그림, 폴더, 카드 수는 이해를 돕기 위한 예시예요.'],
+    support: [],
+    about: ['모두의 창업 프로젝트 선정 규모는 중소벤처기업부 발표(2026년 9월) 기준이에요.'],
+    refund: []
+  };
+  var CRUMB = {home:'노스케스', juljul:'노스케스 › 줄줄', blinder:'노스케스 › 블라인더', support:'노스케스 › 고객지원', about:'노스케스 › 회사 소개', refund:'노스케스 › 블라인더 › 환불 정책'};
+  var shown = null;
+  function route(){
+    var h = (location.hash || '#home').slice(1);
+    var v = h.split('-')[0];
+    if (!$('v-' + v)) { v = 'home'; h = 'home'; }
+    if (typeof menu === 'function') menu(false);
+    document.querySelectorAll('.lnav.open').forEach(function(n){ n.classList.remove('open'); });
+    if (v !== shown){
+      document.querySelectorAll('.view').forEach(function(el){ el.hidden = el.id !== 'v-' + v; });
+      var nv = v === 'refund' ? 'blinder' : v;
+      document.querySelectorAll('.gl').forEach(function(a){ if (a.dataset.v === nv) a.setAttribute('aria-current','page'); else a.removeAttribute('aria-current'); });
+      $('notes').innerHTML = NOTES[v].map(function(n){ return '<li>' + esc(n) + '</li>'; }).join('');
+      $('notes').hidden = !NOTES[v].length;
+      $('crumbs').textContent = CRUMB[v];
+      if (v === 'blinder'){ var hb = $('heroBl'); hb.classList.remove('open'); setTimeout(function(){ hb.classList.add('open'); }, 900); }
+      shown = v;
+      requestAnimationFrame(function(){ marks.forEach(function(f){ f(); }); });
+    }
+    var target = h !== v ? $(h) : null;
+    if (target) requestAnimationFrame(function(){ target.scrollIntoView({behavior:'smooth', block:'start'}); });
+    else window.scrollTo(0, 0);
+  }
+  window.addEventListener('hashchange', route);
+  window.addEventListener('resize', function(){ marks.forEach(function(f){ f(); }); });
+  route();
+
+  /* 펼침 메뉴: 항목을 누르면 접기 */
+  var gnav = $('gnav');
+  gnav.querySelectorAll('.fly a').forEach(function(a){ a.addEventListener('click', function(){ gnav.classList.add('shut'); a.blur(); }); });
+  gnav.addEventListener('mouseleave', function(){ gnav.classList.remove('shut'); });
+
+  $('copyMail').addEventListener('click', function(){
+    var btn = this, text = $('mail').textContent;
+    function done(){ btn.textContent = '복사했어요'; setTimeout(function(){ btn.textContent = '주소 복사'; }, 1600); }
+    function fallback(){ var r = document.createRange(); r.selectNodeContents($('mail')); var s = getSelection(); s.removeAllRanges(); s.addRange(r); btn.textContent = '선택했어요'; }
+    try { navigator.clipboard.writeText(text).then(done, fallback); } catch(e){ fallback(); }
+  });
+})();
+</script>
+
+</body>
+</html>
