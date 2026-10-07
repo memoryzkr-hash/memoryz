@@ -66,9 +66,11 @@ sup{font-size:.6em}
 .lnav{position:sticky;top:calc(env(safe-area-inset-top,0px) + var(--gh));z-index:30;background:rgba(255,255,255,.86);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border-bottom:1px solid rgba(0,0,0,.12)}
 .lnav .wrap{height:var(--lh);display:flex;align-items:center;gap:22px}
 .lnav .pn{font-size:21px;font-weight:600;letter-spacing:.005em;margin-right:auto;display:flex;align-items:center;gap:8px}
-.lnav .ll{font-size:12px;color:rgba(29,29,31,.8)}
-.lnav .ll:hover{color:var(--accent)}
-@media (max-width:760px){.lnav .ll{display:none}}
+.lnav .lls{display:flex;align-items:center;gap:4px}
+.lnav .ll{font-size:12px;color:rgba(29,29,31,.8);padding:6px 12px;border-radius:980px;white-space:nowrap;transition:background-color .2s,color .2s}
+.lnav .ll:hover{background:var(--gray);color:var(--ink)}
+.lnav .ll[aria-current="true"]{background:var(--ink);color:#fff}
+@media (max-width:760px){.lnav .lls{display:none}}
 
 /* ---------- 버튼과 링크 ---------- */
 .pill{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 22px;border-radius:980px;background:var(--accent);color:#fff;font-size:17px;white-space:nowrap;border:1px solid var(--accent);transition:background-color .2s,color .2s}
@@ -333,14 +335,31 @@ sup{font-size:.6em}
 .contact{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:12px;margin-top:28px}
 .contact code{font-family:var(--sans);font-size:clamp(20px,3vw,28px);font-weight:600;user-select:all;-webkit-user-select:all}
 .copy{border:0;background:#E8E8ED;border-radius:999px;height:32px;padding:0 14px;font-size:14px;font-weight:600;color:var(--ink)}
-.legal{display:flex;flex-wrap:wrap;justify-content:center;gap:10px 28px;margin-top:20px}
+.legals{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;max-width:760px;margin:56px auto 0;text-align:left}
+.legals div{display:flex;flex-direction:column;align-items:flex-start;gap:10px;padding-top:16px;border-top:1px solid var(--hair)}
+.legals h4{margin:0 0 4px;font-size:14px;font-weight:600;color:var(--sub)}
+@media (max-width:520px){.legals{grid-template-columns:minmax(0,1fr)}}
+
+
+/* 약관 문서 */
+.doc{max-width:720px;margin:48px auto 0;text-align:left}
+.doc .lead{font-size:19px;line-height:1.55;margin:0 0 8px;padding:20px 22px;background:var(--gray);border-radius:18px}
+.doc h2{font-size:21px;font-weight:700;letter-spacing:-.02em;margin:40px 0 12px}
+.doc ol{margin:0;padding-left:1.4em;display:grid;gap:10px}
+.doc li,.doc p{font-size:17px;line-height:1.6;color:var(--ink)}
+.doc p{margin:0}
+.doc ul{margin:8px 0 0;padding-left:1.1em;display:grid;gap:6px;color:var(--sub)}
+.doc ul li{font-size:16px;color:var(--sub)}
+.doc .formula{margin-top:10px;padding:12px 16px;border-radius:12px;background:var(--accent-soft);color:var(--accent);font-weight:700;display:inline-block}
+.doc .ex{display:block;margin-top:8px;font-size:15px;color:var(--sub)}
+.doc .links{display:flex;flex-wrap:wrap;gap:10px 24px;margin-top:48px;padding-top:20px;border-top:1px solid var(--hair)}
 
 /* ---------- 바닥글 ---------- */
 footer{background:var(--gray);color:var(--sub);font-size:12px;line-height:1.5;padding-block:20px 36px}
 footer .notes{display:grid;gap:10px;padding:0 0 16px;border-bottom:1px solid var(--hair);margin:0;list-style:none;counter-reset:fn}
 footer .notes li{counter-increment:fn;display:flex;gap:6px}
 footer .notes li::before{content:counter(fn) ".";flex:0 0 auto}
-.dir{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:24px;padding-block:20px;border-bottom:1px solid var(--hair)}
+.dir{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:24px;padding-block:20px;border-bottom:1px solid var(--hair)}
 @media (max-width:760px){.dir{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .dir h5{margin:0 0 8px;font-size:12px;font-weight:600;color:var(--ink)}
 .dir ul{list-style:none;margin:0;padding:0;display:grid;gap:6px}
@@ -351,7 +370,7 @@ footer .notes li::before{content:counter(fn) ".";flex:0 0 auto}
 
 
 /* ---------- 휴대폰 ---------- */
-.mbtn,.lbtn{display:none}
+.mbtn,.lbtn,.lsheet{display:none}
 .dots{display:none}
 .pbar{display:none}
 @media (max-width:760px){
@@ -374,10 +393,12 @@ footer .notes li::before{content:counter(fn) ".";flex:0 0 auto}
   .lbtn{display:grid;place-items:center;width:36px;height:36px;margin-right:auto;border:0;background:none;padding:0;color:var(--sub)}
   .lbtn svg{transition:transform .25s}
   .lnav.open .lbtn svg{transform:rotate(180deg)}
-  .lsheet{position:absolute;left:0;right:0;top:100%;background:rgba(255,255,255,.97);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid rgba(0,0,0,.12);padding:6px 0 16px;display:none}
+  .lsheet{position:absolute;left:0;right:0;top:100%;background:#fff;border-top:1px solid rgba(0,0,0,.08);padding:4px 0 10px;display:none;box-shadow:0 0 0 100vmax rgba(0,0,0,.32);clip-path:inset(0 -100vmax -100vmax -100vmax)}
   .lnav.open .lsheet{display:block}
-  .lsheet a{display:block;padding:12px 0;font-size:17px;border-bottom:1px solid #E8E8ED}
+  .lsheet a{display:flex;justify-content:space-between;align-items:center;padding:15px 0;font-size:17px;font-weight:600;border-bottom:1px solid #E8E8ED}
+  .lsheet a::after{content:"›";font-size:22px;font-weight:400;line-height:1;color:#AEAEB2}
   .lsheet a:last-child{border-bottom:0}
+  .lsheet a[aria-current="true"]{color:var(--accent)}
 
   .hero{padding-top:40px}
   .stage{margin-top:36px}
@@ -433,7 +454,7 @@ footer .notes li::before{content:counter(fn) ".";flex:0 0 auto}
         <div class="fly"><div class="wrap">
           <div><h4>블라인더 살펴보기</h4><ul class="big"><li><a href="#blinder">블라인더 개요</a></li><li><a href="#blinder-find">그림 자동 찾기</a></li><li><a href="#blinder-price">요금</a></li></ul></div>
           <div><h4>기능</h4><ul class="small"><li><a href="#blinder-more">형광펜·별표 카드</a></li><li><a href="#blinder-more">알아서 복습 일정</a></li><li><a href="#blinder-more">취약 노트</a></li><li><a href="#blinder-more">직접 가리기</a></li></ul></div>
-          <div><h4>바로 가기</h4><ul class="small"><li><a href="https://blinder-api.blinder-app.workers.dev" target="_blank" rel="noopener">웹앱 열기</a></li><li><a href="#blinder-safe">내 자료 보호</a></li></ul></div>
+          <div><h4>바로 가기</h4><ul class="small"><li><a href="https://blinder-api.blinder-app.workers.dev" target="_blank" rel="noopener">웹앱 열기</a></li><li><a href="#refund">환불 정책</a></li></ul></div>
         </div></div>
       </li>
       <li class="has-fly">
@@ -506,11 +527,14 @@ footer .notes li::before{content:counter(fn) ".";flex:0 0 auto}
       <p class="d">6단계로 나눠 외우면 마지막엔 글 전체를 쓸 수 있어요.</p>
       <div class="vis"><div class="ladder" id="ladder"></div></div>
     </a>
-    <a class="tile dark" href="#blinder-safe">
-      <div class="k">블라인더 · 내 자료</div>
-      <h2>PDF는 내 기기<br>밖으로 안 나가요.</h2>
-      <p class="d">넣은 PDF와 사진은 내 기기 안에서만 처리해요.</p>
-      <div class="vis"><div class="flow" style="margin-top:0"><span>내 PDF</span><em>→</em><span>내 브라우저</span><em>→</em><span>카드</span></div></div>
+    <a class="tile dark" href="#blinder-more">
+      <div class="k">블라인더 · 복습 일정</div>
+      <h2>고르기만 하면,<br>다음 날이 정해져요.</h2>
+      <p class="d">쉬움을 두 번 연속 고르면 암기완료.</p>
+      <div class="vis"><div class="rate-big">
+        <div><b>다시</b><span>바로</span></div><div><b>어려움</b><span>1일 뒤</span></div>
+        <div><b>보통</b><span>3일 뒤</span></div><div class="easy"><b>쉬움</b><span>7일 뒤</span></div>
+      </div></div>
     </a>
     <a class="tile" href="#juljul-more">
       <div class="k">줄줄 · 오늘 복습</div>
@@ -562,7 +586,7 @@ footer .notes li::before{content:counter(fn) ".";flex:0 0 auto}
   <nav class="lnav" aria-label="줄줄 메뉴"><div class="wrap">
     <a class="pn" href="#juljul"><span class="logo-s"></span>줄줄</a>
     <button type="button" class="lbtn" aria-expanded="false" aria-label="구역 메뉴 열기"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2.5 5l4.5 4.5L11.5 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-    <a class="ll" href="#juljul-six">6단계 암기</a><a class="ll" href="#juljul-more">기능</a><a class="ll" href="#juljul-price">요금</a>
+    <div class="lls"><a class="ll" href="#juljul-six">6단계 암기</a><a class="ll" href="#juljul-more">기능</a><a class="ll" href="#juljul-how">쓰는 방법</a><a class="ll" href="#juljul-price">요금</a></div>
     <a class="pill sm" href="https://sulsul-app.pages.dev" target="_blank" rel="noopener">시작하기</a>
   </div><div class="lsheet"><div class="wrap" style="height:auto;display:block"><a href="#juljul-six">6단계 암기</a><a href="#juljul-more">기능</a><a href="#juljul-how">쓰는 방법</a><a href="#juljul-price">요금</a></div></div></nav>
 
@@ -717,9 +741,9 @@ footer .notes li::before{content:counter(fn) ".";flex:0 0 auto}
   <nav class="lnav" aria-label="블라인더 메뉴"><div class="wrap">
     <a class="pn" href="#blinder"><span class="logo-b"></span>블라인더</a>
     <button type="button" class="lbtn" aria-expanded="false" aria-label="구역 메뉴 열기"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2.5 5l4.5 4.5L11.5 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-    <a class="ll" href="#blinder-find">그림 자동 찾기</a><a class="ll" href="#blinder-more">기능</a><a class="ll" href="#blinder-price">요금</a>
+    <div class="lls"><a class="ll" href="#blinder-find">그림 자동 찾기</a><a class="ll" href="#blinder-more">기능</a><a class="ll" href="#blinder-how">쓰는 방법</a><a class="ll" href="#blinder-price">요금</a></div>
     <a class="pill sm" href="https://blinder-api.blinder-app.workers.dev" target="_blank" rel="noopener">써 보기</a>
-  </div><div class="lsheet"><div class="wrap" style="height:auto;display:block"><a href="#blinder-find">그림 자동 찾기</a><a href="#blinder-more">기능</a><a href="#blinder-safe">내 자료 보호</a><a href="#blinder-price">요금</a></div></div></nav>
+  </div><div class="lsheet"><div class="wrap" style="height:auto;display:block"><a href="#blinder-find">그림 자동 찾기</a><a href="#blinder-more">기능</a><a href="#blinder-how">쓰는 방법</a><a href="#blinder-price">요금</a></div></div></nav>
 
   <section class="hero">
     <div class="wrap">
@@ -813,7 +837,7 @@ footer .notes li::before{content:counter(fn) ".";flex:0 0 auto}
       <div class="stats">
         <div class="stat"><b>20</b><span>개, 자료 하나당 찾는 그림(최대)</span></div>
         <div class="stat"><b>3</b><span>개 자료까지 무료</span></div>
-        <div class="stat"><b>0</b><span>번, 서버로 보내는 내 PDF</span></div>
+        <div class="stat"><b>14</b><span>일 시험 기간권, 2,900원</span></div>
       </div>
     </div>
   </section>
@@ -829,11 +853,11 @@ footer .notes li::before{content:counter(fn) ".";flex:0 0 auto}
     </div>
   </section>
 
-  <section class="band dark" id="blinder-safe">
+  <section class="band dark" id="blinder-web">
     <div class="wrap">
-      <h2>PDF는 내 기기 밖으로<br>나가지 않아요.</h2>
-      <p class="d">넣은 PDF와 사진은 내 기기(웹은 내 브라우저) 안에서만 처리하고, 서버로 보내지 않아요.</p>
-      <div class="flow"><span>내 PDF</span><em>→</em><span>내 브라우저에서 그림 찾기</span><em>→</em><span>카드</span><s>서버 전송 없음</s></div>
+      <h2>설치 없이,<br>웹에서 바로.</h2>
+      <p class="d">아이폰·안드로이드 앱은 출시 준비 중이에요. 지금은 웹에서 바로 쓸 수 있고, 로그인하면 카드와 복습 기록이 다른 기기에서도 이어져요.</p>
+      <div class="flow"><span>웹에서 바로 시작</span><em>→</em><span>로그인</span><em>→</em><span>다른 기기에서도 이어 쓰기</span></div>
     </div>
   </section>
 
@@ -874,9 +898,9 @@ footer .notes li::before{content:counter(fn) ".";flex:0 0 auto}
       <div class="contact"><code id="mail">memoryz.kr@gmail.com</code><button type="button" class="copy" id="copyMail">주소 복사</button></div>
       <div class="faq">
         <h3><span class="logo-b"></span>블라인더</h3>
-        <details><summary>스캔한 PDF도 되나요?</summary><p>웹에서는 글자가 들어 있는 PDF만 그림을 찾을 수 있어요. 사진처럼 찍힌 스캔 PDF는 ‘직접 가리기’를 써 주세요.</p></details>
-        <details><summary>다른 기기에서 이어 쓸 수 있나요?</summary><p>지금은 기기 사이에 카드가 옮겨지지 않아요. 웹에서는 카드가 그 브라우저에 저장돼요. 같은 계정으로 로그인하면 이용권은 이어져요.</p></details>
-        <details><summary>내 PDF가 서버로 가나요?</summary><p>아니요. 넣은 PDF와 사진은 내 기기(웹은 내 브라우저) 안에서만 처리하고, 서버로 보내지 않아요.</p></details>
+        <details><summary>스캔한 PDF나 손글씨도 되나요?</summary><p>‘손글씨 더 잘 읽기’를 켜면 손글씨와 스캔한 글자도 읽어요. 잘 읽히지 않는 곳은 ‘직접 가리기’로 원하는 곳을 가려 주세요.</p></details>
+        <details><summary>다른 기기에서 이어 쓸 수 있나요?</summary><p>네. 로그인하면 카드와 복습 기록이 저장돼서 다른 기기에서도 이어 쓸 수 있어요. 로그인 없이 둘러보기로 쓰면 이용권이 그 기기(웹은 그 브라우저)에만 묶여요.</p></details>
+        <details><summary>환불은 어떻게 되나요?</summary><p>결제한 날부터 7일 안에 Pro 기능으로 카드를 한 번도 만들지 않았다면 전액 돌려 드려요. 이미 쓴 뒤에는 남은 날짜만큼 계산해서 돌려 드려요. 자세한 내용은 <a class="more" style="font-size:inherit" href="#refund">환불 정책</a>을 확인하세요.</p></details>
         <details><summary>앱은 언제 나오나요?</summary><p>아이폰·안드로이드 앱은 출시 준비 중이에요. 앱 구독(1개월 4,900원 · 1년 39,000원)은 앱과 함께 시작해요.</p></details>
 
         <h3><span class="logo-s"></span>줄줄</h3>
@@ -885,12 +909,60 @@ footer .notes li::before{content:counter(fn) ".";flex:0 0 auto}
         <details><summary>이용권이 끝나면 만든 자료는 어떻게 되나요?</summary><p>무료 이용으로 돌아가고, 그동안 만든 자료는 지우지 않아요.</p></details>
         <details><summary>로그인 없이 써도 되나요?</summary><p>네. 로그인하지 않으면 자료와 이용권이 그 기기(브라우저)에 연결돼요. 나중에 소셜 로그인을 하면 그때까지의 자료와 이용권이 그 계정으로 옮겨져요.</p></details>
       </div>
-      <div class="legal">
-        <a class="more" href="https://blinder-api.blinder-app.workers.dev/terms" target="_blank" rel="noopener">블라인더 이용약관</a>
-        <a class="more" href="https://blinder-api.blinder-app.workers.dev/privacy" target="_blank" rel="noopener">블라인더 개인정보처리방침</a>
-        <a class="more" href="https://sulsul-app.pages.dev/legal/terms" target="_blank" rel="noopener">줄줄 이용약관</a>
-        <a class="more" href="https://sulsul-app.pages.dev/legal/privacy" target="_blank" rel="noopener">줄줄 개인정보처리방침</a>
+      <div class="legals">
+        <div><h4>블라인더</h4><a class="more" href="https://blinder-api.blinder-app.workers.dev/terms" target="_blank" rel="noopener">이용약관</a><a class="more" href="https://blinder-api.blinder-app.workers.dev/privacy" target="_blank" rel="noopener">개인정보처리방침</a><a class="more" href="#refund">환불 정책</a></div>
+        <div><h4>줄줄</h4><a class="more" href="https://sulsul-app.pages.dev/legal/terms" target="_blank" rel="noopener">이용약관</a><a class="more" href="https://sulsul-app.pages.dev/legal/privacy" target="_blank" rel="noopener">개인정보처리방침</a><a class="more" href="https://sulsul-app.pages.dev/legal/refund" target="_blank" rel="noopener">환불 정책</a></div>
       </div>
+    </div>
+  </section>
+</div>
+
+<!-- ===================== 블라인더 환불 정책 ===================== -->
+<div class="view" id="v-refund" hidden>
+  <section class="hero" style="padding-bottom:110px">
+    <div class="wrap">
+      <div class="eye">블라인더</div>
+      <h1 style="font-size:clamp(40px,6vw,64px)">환불 정책</h1>
+      <article class="doc">
+        <p class="lead">블라인더 웹 기간권(블라인더 Pro)은 구독이 아니라 정해진 기간(시험 기간권 14일) 동안 쓰는 1회 결제 상품입니다. 기간이 끝나도 다시 결제되지 않습니다.</p>
+        <h2>제1조 (적용 범위)</h2>
+        <ol>
+          <li>이 정책은 웹에서 토스페이먼츠로 결제한 웹 기간권에 적용됩니다.</li>
+          <li>애플 앱스토어·구글 플레이에서 결제한 앱 구독은 제5조에 따라 각 스토어의 환불 절차를 따릅니다.</li>
+        </ol>
+        <h2>제2조 (전액 환불)</h2>
+        <ol>
+          <li>결제한 날부터 7일 안에, Pro 기능으로 카드를 한 번도 만들지 않았다면 전액 돌려 드립니다.
+            <ul><li>Pro 기능: 처음 넣은 자료 3개를 넘는 자료로 카드 만들기</li></ul></li>
+          <li>개발자의 잘못이나 서비스 장애로 기간권을 쓰지 못한 경우에도 전액 돌려 드리거나 기간을 늘려 드립니다.</li>
+        </ol>
+        <h2>제3조 (일부 환불)</h2>
+        <ol>
+          <li>Pro 기능을 이미 쓴 뒤에는 남은 날짜만큼 계산해서 돌려 드립니다.<br>
+            <span class="formula">환불 금액 = 결제 금액 × 남은 날 ÷ 전체 날</span>
+            <span class="ex">예: 시험 기간권(14일, 2,900원)의 남은 날이 7일이면 2,900 × 7 ÷ 14 = 1,450원을 돌려 드립니다.</span></li>
+          <li>이렇게 계산한 금액이 1,000원보다 적으면 환불되지 않습니다.</li>
+        </ol>
+        <h2>제4조 (신청 방법과 처리 기간)</h2>
+        <ol>
+          <li>아래 이메일로 결제한 계정(로그인 방법과 이름, 또는 ‘로그인 없이 둘러보기’), 결제 날짜, 주문 번호를 보내 주세요.
+            <ul><li>이메일: memoryz.kr@gmail.com</li></ul></li>
+          <li>영업일 기준 3일 안에 처리합니다. 카드 결제 취소는 카드사 사정에 따라 3~7일 뒤에 반영됩니다.</li>
+          <li>회원 탈퇴를 하면 남은 웹 기간권을 더 이상 쓸 수 없습니다. 환불이 필요하면 탈퇴하기 전에 문의해 주세요.</li>
+        </ol>
+        <h2>제5조 (앱 구독)</h2>
+        <ol>
+          <li>앱 구독(1개월 4,900원 · 1년 39,000원)은 애플 앱스토어 또는 구글 플레이에서 결제하며, 환불도 각 스토어에서 신청합니다.
+            <ul><li>애플 앱스토어: reportaproblem.apple.com</li><li>구글 플레이: 구글 플레이 → 결제 및 정기 결제 → 환불 요청</li></ul></li>
+          <li>앱 구독은 기간이 끝나기 24시간 전까지 해지하지 않으면 같은 기간과 금액으로 자동 갱신됩니다. 해지는 아이폰의 설정 → 내 이름 → 구독, 또는 구글 플레이 → 결제 및 정기 결제에서 할 수 있습니다.</li>
+          <li>회원 탈퇴를 해도 스토어 구독은 자동으로 해지되지 않습니다.</li>
+        </ol>
+        <h2>제6조 (법적 근거)</h2>
+        <p>이 정책은 「전자상거래 등에서의 소비자보호에 관한 법률」 제17조와 「콘텐츠산업 진흥법」에 따른 이용자 보호 기준을 따르며, 디지털 콘텐츠의 제공이 시작된 경우에도 위 기준으로 청약 철회와 환불을 보장합니다.</p>
+        <h2>부칙</h2>
+        <p>이 정책은 2026년 10월 7일부터 적용됩니다.</p>
+        <div class="links"><a class="more" href="https://blinder-api.blinder-app.workers.dev/terms" target="_blank" rel="noopener">블라인더 이용약관</a><a class="more" href="https://blinder-api.blinder-app.workers.dev/privacy" target="_blank" rel="noopener">블라인더 개인정보처리방침</a><a class="more" href="#blinder">블라인더 살펴보기</a></div>
+      </article>
     </div>
   </section>
 </div>
@@ -902,8 +974,9 @@ footer .notes li::before{content:counter(fn) ".";flex:0 0 auto}
     <div class="dir">
       <div><h5>블라인더</h5><ul><li><a href="#blinder">개요</a></li><li><a href="#blinder-find">그림 자동 찾기</a></li><li><a href="#blinder-price">요금</a></li><li><a href="https://blinder-api.blinder-app.workers.dev" target="_blank" rel="noopener">웹앱 열기</a></li></ul></div>
       <div><h5>줄줄</h5><ul><li><a href="#juljul">개요</a></li><li><a href="#juljul-six">6단계 암기</a></li><li><a href="#juljul-price">요금</a></li><li><a href="https://sulsul-app.pages.dev" target="_blank" rel="noopener">웹앱 열기</a></li></ul></div>
+      <div><h5>블라인더 약관</h5><ul><li><a href="https://blinder-api.blinder-app.workers.dev/terms" target="_blank" rel="noopener">이용약관</a></li><li><a href="https://blinder-api.blinder-app.workers.dev/privacy" target="_blank" rel="noopener">개인정보처리방침</a></li><li><a href="#refund">환불 정책</a></li></ul></div>
+      <div><h5>줄줄 약관</h5><ul><li><a href="https://sulsul-app.pages.dev/legal/terms" target="_blank" rel="noopener">이용약관</a></li><li><a href="https://sulsul-app.pages.dev/legal/privacy" target="_blank" rel="noopener">개인정보처리방침</a></li><li><a href="https://sulsul-app.pages.dev/legal/refund" target="_blank" rel="noopener">환불 정책</a></li></ul></div>
       <div><h5>고객지원</h5><ul><li><a href="#support">자주 묻는 질문</a></li><li><a href="#support">문의 메일</a></li><li><a href="#home-pick">나에게 맞는 앱</a></li></ul></div>
-      <div><h5>약관</h5><ul><li><a href="https://blinder-api.blinder-app.workers.dev/terms" target="_blank" rel="noopener">블라인더 이용약관</a></li><li><a href="https://blinder-api.blinder-app.workers.dev/privacy" target="_blank" rel="noopener">블라인더 개인정보처리방침</a></li><li><a href="https://sulsul-app.pages.dev/legal/terms" target="_blank" rel="noopener">줄줄 이용약관</a></li><li><a href="https://sulsul-app.pages.dev/legal/refund" target="_blank" rel="noopener">줄줄 환불 정책</a></li></ul></div>
     </div>
     <div class="fbot"><span class="crumbs" id="crumbs">memoryz</span><span>문의 memoryz.kr@gmail.com</span></div>
   </div>
@@ -1133,6 +1206,24 @@ footer .notes li::before{content:counter(fn) ".";flex:0 0 auto}
     marks.push(mark); mark();
   });
 
+
+  /* ---------- 지금 보는 구역을 제품 메뉴에 표시 ---------- */
+  if ('IntersectionObserver' in window){
+    var spyIO = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){
+        if (!en.isIntersecting) return;
+        var id = en.target.id;
+        document.querySelectorAll('.lnav a[href^="#"]').forEach(function(a){
+          var on = a.getAttribute('href') === '#' + id;
+          if (a.closest('.lls') || a.closest('.lsheet')) a.setAttribute('aria-current', String(on));
+        });
+      });
+    }, {rootMargin: '-45% 0px -50% 0px'});
+    document.querySelectorAll('.lnav').forEach(function(nav){
+      nav.querySelectorAll('.lls a, .lsheet a').forEach(function(a){ var t = document.getElementById(a.getAttribute('href').slice(1)); if (t) spyIO.observe(t); });
+    });
+  }
+
   /* ---------- 페이지 이동 ---------- */
   var NOTES = {
     home: ['블라인더는 처음 자료 3개까지 무료예요. 줄줄 무료 이용은 자료 3개, AI 정리 하루 3번까지예요.',
@@ -1140,14 +1231,16 @@ footer .notes li::before{content:counter(fn) ".";flex:0 0 auto}
            '화면 속 지문, 그림, 폴더는 이해를 돕기 위한 예시예요.'],
     juljul: ['무료 이용은 자료 3개, AI 정리 하루 3번까지예요. 이용권 기간이 끝나면 무료로 돌아가고, 만든 자료는 그대로 남아요.',
              '이용권은 2주(3,900원) 또는 4주(6,900원) 1회 결제예요. 결제 후 7일 안에 이용권 기능을 쓰지 않았다면 전액 환불돼요. 자세한 내용은 환불 정책을 확인하세요.',
+             '줄줄은 만 14세 미만은 가입할 수 없어요.',
              '화면 속 지문, 채점 결과, 오답 목록은 이해를 돕기 위한 예시예요.'],
-    blinder: ['웹에서는 글자가 들어 있는 PDF만 그림을 찾을 수 있어요. 사진처럼 찍힌 스캔 PDF는 ‘직접 가리기’를 써 주세요.',
-              '웹에서는 카드가 그 브라우저에 저장돼요. 지금은 기기 사이에 카드가 옮겨지지 않아요.',
-              '시험 기간권은 14일 2,900원 1회 결제이며 자동으로 다시 결제되지 않아요. 앱 구독(1개월 4,900원 · 1년 39,000원)은 아이폰·안드로이드 앱 출시와 함께 시작해요.',
+    blinder: ['블라인더는 만 18세 이상만 이용할 수 있어요.',
+              '자동으로 만든 카드는 틀리거나 빠진 곳이 있을 수 있어요. 가림막은 직접 고칠 수 있어요.',
+              '시험 기간권은 14일 2,900원 1회 결제이며 자동으로 다시 결제되지 않아요. 결제 후 7일 안에 Pro 기능을 쓰지 않았다면 전액 환불돼요. 자세한 내용은 환불 정책을 확인하세요. 앱 구독(1개월 4,900원 · 1년 39,000원)은 아이폰·안드로이드 앱 출시와 함께 시작해요.',
               '화면 속 그림, 폴더, 카드 수는 이해를 돕기 위한 예시예요.'],
-    support: []
+    support: [],
+    refund: []
   };
-  var CRUMB = {home:'memoryz', juljul:'memoryz › 줄줄', blinder:'memoryz › 블라인더', support:'memoryz › 고객지원'};
+  var CRUMB = {home:'memoryz', juljul:'memoryz › 줄줄', blinder:'memoryz › 블라인더', support:'memoryz › 고객지원', refund:'memoryz › 블라인더 › 환불 정책'};
   var shown = null;
   function route(){
     var h = (location.hash || '#home').slice(1);
@@ -1157,7 +1250,8 @@ footer .notes li::before{content:counter(fn) ".";flex:0 0 auto}
     document.querySelectorAll('.lnav.open').forEach(function(n){ n.classList.remove('open'); });
     if (v !== shown){
       document.querySelectorAll('.view').forEach(function(el){ el.hidden = el.id !== 'v-' + v; });
-      document.querySelectorAll('.gl').forEach(function(a){ if (a.dataset.v === v) a.setAttribute('aria-current','page'); else a.removeAttribute('aria-current'); });
+      var nv = v === 'refund' ? 'blinder' : v;
+      document.querySelectorAll('.gl').forEach(function(a){ if (a.dataset.v === nv) a.setAttribute('aria-current','page'); else a.removeAttribute('aria-current'); });
       $('notes').innerHTML = NOTES[v].map(function(n){ return '<li>' + esc(n) + '</li>'; }).join('');
       $('notes').hidden = !NOTES[v].length;
       $('crumbs').textContent = CRUMB[v];
