@@ -3,8 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#05070f" />
-    <meta name="description" content="숫자로 보는 대한민국의 지금 — 수출, 출산율, 고령화를 담은 3D 모션 영상" />
+    <meta name="theme-color" content="#000000" />
+    <meta name="description" content="두 개의 속도로 움직이는 나라 — 수출과 인구로 본 대한민국의 지금, 3D 모션 영상" />
     <title>대한민국, 지금</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -12,53 +12,88 @@
   </head>
   <body>
     <div id="stage"></div>
-
+    <div id="scrim"></div>
     <div id="labels"></div>
 
     <div id="overlay">
-      <!-- Intro -->
-      <section class="card center" data-in="1.6" data-out="6.3">
-        <div class="kicker">REPUBLIC OF KOREA · 2026</div>
-        <h1 class="title">대한민국, 지금</h1>
-        <p class="sub">숫자로 보는 우리의 현재</p>
+      <!-- Cold open -->
+      <section class="card center" data-in="0.8" data-out="4.35">
+        <p class="line" data-at="0.8" data-fx="type">2026년, 대한민국은</p>
+        <h1 class="slam xl" data-at="2.3" data-fx="slam">두 개의 속도로 움직인다</h1>
       </section>
 
-      <!-- Exports -->
-      <section class="card left" data-in="7.6" data-out="15.4">
-        <div class="kicker"><span class="num">01</span> 수출</div>
-        <h2 class="head">사상 첫 7,000억 달러</h2>
-        <div class="stat"><span data-count="exports">0</span><small>억 달러</small></div>
-        <p class="sub">2025년 연간 수출 · 역대 최대</p>
-        <p class="sub accent-gold" data-in="10.8">AI 메모리 수요로 반도체 <b>1,734억 달러</b> (+22.2%)</p>
+      <!-- Speed 1: technology -->
+      <section class="card left" data-in="5.2" data-out="9.15">
+        <div class="kicker" data-at="5.2" data-fx="rise"><span class="num">속도 ①</span>기술</div>
+        <div class="stat" data-at="6.0" data-fx="slam"><span data-count="exports">0</span><small>억 달러</small></div>
+        <p class="sub" data-at="6.7" data-fx="rise">2025년 수출 · <b>사상 첫 7,000억 달러</b></p>
+      </section>
+      <section class="card left" data-in="9.4" data-out="12.0">
+        <div class="kicker" data-at="9.4" data-fx="rise"><span class="num">반도체</span>2025</div>
+        <div class="stat gold" data-at="9.4" data-fx="slam">1,734<small>억 달러</small></div>
+        <p class="sub" data-at="10.0" data-fx="rise"><b>+22.2%</b> · AI 메모리 수요 폭증</p>
+      </section>
+      <section class="card left" data-in="12.2" data-out="14.85">
+        <h2 class="slam" data-at="12.2" data-fx="slam">수출의 <span class="gold">4분의 1</span></h2>
+        <p class="sub" data-at="12.8" data-fx="rise">반도체 한 품목이 끌어올린 기록</p>
       </section>
 
-      <!-- Fertility -->
-      <section class="card left" data-in="16.6" data-out="25.4">
-        <div class="kicker"><span class="num">02</span> 출산</div>
-        <h2 class="head">바닥을 찍고, 다시 오르다</h2>
-        <div class="stat"><span data-count="tfr">1.24</span><small>명</small></div>
-        <p class="sub">합계출산율 <span data-count="year">2015</span>년</p>
-        <p class="sub accent-gold" data-in="22.4">2025년 출생아 25만 4천 명 (+6.7%) · 2년 연속 반등</p>
+      <!-- Turn -->
+      <section class="card center" data-in="15.5" data-out="17.4">
+        <h1 class="slam xl" data-at="15.5" data-fx="glitch">그런데,</h1>
+        <p class="line" data-at="16.2" data-fx="type">다른 한쪽의 시계는 거꾸로 간다</p>
       </section>
 
-      <!-- Ageing -->
-      <section class="card left" data-in="26.6" data-out="34.4">
-        <div class="kicker"><span class="num">03</span> 고령화</div>
-        <h2 class="head">초고령사회에 들어서다</h2>
-        <div class="stat"><span data-count="elder">0</span><small>%</small></div>
-        <p class="sub">65세 이상 인구 비중 · 100명 중 21명</p>
-        <p class="sub accent-dim" data-in="31.0">2050년 전망 <b>40%</b> — 열 명 중 네 명</p>
+      <!-- Speed 2: people -->
+      <section class="card left" data-in="18.3" data-out="24.35">
+        <div class="kicker" data-at="18.3" data-fx="rise"><span class="num red">속도 ②</span>인구</div>
+        <div class="stat" data-at="18.6" data-fx="slam"><span data-count="pop">5,167</span><small>만 명</small></div>
+        <p class="sub" data-at="18.9" data-fx="rise"><span data-count="popYear">2022</span>년 · 장래인구추계(중위)</p>
+        <p class="sub red" data-at="22.6" data-fx="rise">50년 뒤, <b>1,545만 명</b>이 사라진다</p>
+      </section>
+      <section class="card left" data-in="24.6" data-out="26.95">
+        <div class="kicker" data-at="24.6" data-fx="rise"><span class="num red">합계출산율</span>2023</div>
+        <div class="stat red" data-at="24.6" data-fx="slam">0.72<small>명</small></div>
+        <p class="sub" data-at="25.2" data-fx="rise">역대 최저 · OECD 유일 <b>‘1명 미만’</b></p>
+      </section>
+      <section class="card left" data-in="27.2" data-out="29.85">
+        <div class="kicker" data-at="27.2" data-fx="rise"><span class="num amber">2072년 전망</span>고령인구</div>
+        <div class="stat amber" data-at="27.2" data-fx="slam">47.7<small>%</small></div>
+        <p class="sub" data-at="27.8" data-fx="rise">국민 <b>두 명 중 한 명</b>이 65세 이상</p>
       </section>
 
-      <!-- Outro -->
-      <section class="card center" data-in="36.4" data-out="42.5">
-        <h1 class="title small">위기와 반등 사이</h1>
-        <p class="sub">기술은 앞서가고, 사람은 줄어드는 나라 — 대한민국의 지금</p>
-        <p class="source" data-in="38.2">자료: 국가데이터처 「2025년 출생·사망통계(잠정)」, 2025년 연간 수출입동향, 행정안전부 주민등록 인구통계, 장래인구추계</p>
+      <!-- Climax -->
+      <section class="card band-top" data-in="33.4" data-out="36.1">
+        <h2 class="slam l gold" data-at="33.4" data-fx="slam">기술은 앞서가고</h2>
+      </section>
+      <section class="card band-bottom" data-in="34.6" data-out="36.1">
+        <h2 class="slam l red" data-at="34.6" data-fx="slam">사람은 줄어든다</h2>
+      </section>
+      <section class="card center" data-in="36.35" data-out="36.95">
+        <h2 class="slam xl gold" data-at="36.35" data-fx="glitch">수출 사상 최대</h2>
+      </section>
+      <section class="card center" data-in="36.95" data-out="37.6">
+        <h2 class="slam xl red" data-at="36.95" data-fx="glitch">출산율 OECD 최저</h2>
+      </section>
+      <section class="card center" data-in="37.6" data-out="38.4">
+        <h2 class="slam xl amber" data-at="37.6" data-fx="glitch">고령화 속도 OECD 1위</h2>
+      </section>
+
+      <!-- Finale -->
+      <section class="card bottom" data-in="39.3" data-out="41.55">
+        <p class="line" data-at="39.3" data-fx="type">2025년, 출생아 2년 연속 증가</p>
+        <p class="sub" data-at="40.3" data-fx="rise">합계출산율 0.72 → <b>0.80</b></p>
+      </section>
+      <section class="card bottom" data-in="42.6" data-out="46.5">
+        <h1 class="slam xl title" data-at="42.6" data-fx="slam">대한민국, 지금</h1>
+        <p class="line" data-at="43.7" data-fx="type">반등은 이어질 수 있을까</p>
+        <p class="source" data-at="44.5" data-fx="rise">자료: 국가데이터처 「2025년 출생·사망통계(잠정)」 「장래인구추계(2022~2072)」, 연간 수출입동향, OECD</p>
       </section>
     </div>
 
     <div id="fade"></div>
+    <div class="bar top"></div>
+    <div class="bar bottom"></div>
     <div id="hint">클릭: 처음부터 다시 재생</div>
 
     <script type="module" src="/src/korea/main.ts"></script>
