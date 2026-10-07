@@ -162,6 +162,7 @@ def piano(t0, freq, amp=1.0):
 
 # ---------------- arrangement ----------------
 S = TL["scenes"]
+C = TL["cues"]
 
 # Cold open: sub drone + tinnitus whine + heartbeats.
 cold = S["cold"]
@@ -180,7 +181,7 @@ riser(3.2, cold[1], 0.7)
 # City: 128 bpm drive with kick, pumping bass and hats; power-down at the cut.
 bpm = 128
 beat = 60 / bpm
-c0, c1 = S["city"][0], 14.98
+c0, c1 = S["city"][0], C["powerCut"][1] - 0.02
 roots = [55.0, 55.0, 43.65, 49.0]
 for i in range(int((c1 - c0) / (beat / 2)) + 1):
     t0 = c0 + i * beat / 2
@@ -200,11 +201,11 @@ for i in range(int((c1 - c0) / (beat / 2)) + 1):
     hd = 0.06
     hat = highpass(rng.standard_normal(int(hd * SR)), 7000) * np.exp(-tt(hd) * 70)
     place(hat * (0.08 + 0.1 * k) * (1.4 if i % 2 else 0.8), t0 + beat / 4, 1.0, pan=0.4)
-riser(12.3, 14.75, 0.8)
+riser(C["cityRise"][0] - 0.3, C["powerCut"][0], 0.8)
 pd = 0.45
 f = 110 * (20 / 110) ** (tt(pd) / pd)
 power_down = np.sin(2 * np.pi * np.cumsum(f) / SR) + 0.5 * np.sin(4 * np.pi * np.cumsum(f) / SR)
-place(np.tanh(power_down * 2) * np.linspace(1, 0, len(f)) * 0.5, 14.62, 1.0)
+place(np.tanh(power_down * 2) * np.linspace(1, 0, len(f)) * 0.5, C["powerCut"][0] - 0.13, 1.0)
 
 # People: low cluster drone, an endless rising Shepard tone and the clock.
 p0, p1 = S["pop"]
@@ -224,19 +225,19 @@ for o in range(6):
 place(shep * 0.06 * np.minimum(1, t / 2.5) * (0.4 + 0.9 * k), p0, pan=0.1)
 for tk in TL["ticks"]:
     tick(tk)
-riser(27.6, p1 - 0.05, 0.6)
+riser(C["popOld"][1], p1 - 0.05, 0.6)
 
 # Climax: drums on 8ths that tighten to 16ths, a long riser, then a hard cut.
 x0, x1 = S["climax"]
-tcur = 30.3
+tcur = C["drumsFrom"]
 while tcur < x1 - 0.02:
     k = (tcur - x0) / (x1 - x0)
     dd = 0.5
     tom = sweep_sine(110, 62, dd, 0.5) * np.exp(-tt(dd) * 9) + lowpass(rng.standard_normal(int(dd * SR)), 900) * np.exp(-tt(dd) * 30) * 0.4
     place(np.tanh(tom * 1.8) * 0.33 * (0.6 + 0.6 * k), tcur, pan=(0.3 if int(tcur * 10) % 2 else -0.3))
-    step = 60 / 140 / 2 if tcur < 36.0 else 60 / 140 / 4
+    step = 60 / 140 / 2 if tcur < C["drums16th"] else 60 / 140 / 4
     tcur += step
-riser(35.0, x1, 1.0)
+riser(C["climaxRiser"][0], C["climaxRiser"][1], 1.0)
 d = x1 - x0
 t = tt(d)
 place(np.tanh(saw(36.7, d, 200) * 0.8) * 0.3 * np.minimum(1, t / 0.5), x0)
@@ -247,14 +248,13 @@ for hit in TL["impacts"]:
         braam(hit["t"], hit["amp"], hit.get("major", False))
 
 # Finale: a lone piano, a shimmer burst, then the resolving chord.
-piano(39.0, 440.0, 0.9)
-piano(40.3, 659.25, 0.6)
-piano(41.0, 554.37, 0.5)
-riser(40.6, 41.6, 0.5)
+for (pt, pf), pa in zip(C["piano"], (0.9, 0.6, 0.5)):
+    piano(pt, pf, pa)
+riser(C["finaleRiser"][0], C["finaleRiser"][1], 0.5)
 sd = 2.5
 shimmer = sum(np.sin(2 * np.pi * f * tt(sd) + i) for i, f in enumerate((1760, 2217, 2637, 3520))) * np.exp(-tt(sd) * 1.6) * 0.05
-place(shimmer, 41.6)
-f0 = 42.6
+place(shimmer, C["burst"])
+f0 = C["pad"]
 d = DUR - f0
 t = tt(d)
 pad = sum(saw(f, d, 900, det) for f in (110.0, 164.81, 220.0, 277.18, 329.63) for det in (-0.004, 0.004))

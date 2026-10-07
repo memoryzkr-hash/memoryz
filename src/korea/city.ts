@@ -215,7 +215,7 @@ export function createCity() {
         float core = pow(1.0 - abs(vUv.x - 0.5) * 2.0, 6.0);
         float fade = pow(1.0 - vUv.y, 0.6);
         float ripple = 0.85 + 0.15 * sin(vUv.y * 60.0 - uTime * 12.0);
-        vec3 c = vec3(1.0, 0.75, 0.32) * core * fade * ripple * uBeam * 3.0;
+        vec3 c = vec3(1.0, 0.75, 0.32) * core * fade * ripple * uBeam * 1.9;
         gl_FragColor = vec4(c, 1.0);
       }
     `,
@@ -223,9 +223,6 @@ export function createCity() {
   const beam = new THREE.Mesh(new THREE.PlaneGeometry(9, 220), beamMat);
   beam.position.set(0, 110, -205);
   group.add(beam);
-  const beam2 = beam.clone();
-  beam2.rotation.y = Math.PI / 2;
-  group.add(beam2);
 
-  return { group, uniforms: shared, beamMat };
+  return { group, uniforms: shared, beamMat, beam };
 }

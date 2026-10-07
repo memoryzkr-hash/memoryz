@@ -36,8 +36,8 @@ export function createDust(count = 1800, box = 46) {
         vec4 mv = modelViewMatrix * vec4(p, 1.0);
         gl_Position = projectionMatrix * mv;
         float dist = length(p - uCam);
-        vA = (1.0 - smoothstep(uBox * 0.3, uBox * 0.5, dist)) * smoothstep(0.5, 2.5, dist) * (0.4 + aSeed * 0.6);
-        gl_PointSize = uScale * (1.0 + aSeed * 1.6) * 110.0 / -mv.z;
+        vA = (1.0 - smoothstep(uBox * 0.3, uBox * 0.5, dist)) * smoothstep(1.5, 4.0, dist) * (0.4 + aSeed * 0.6);
+        gl_PointSize = min(14.0 * uScale, uScale * (1.0 + aSeed * 1.6) * 110.0 / -mv.z);
       }
     `,
     fragmentShader: /* glsl */ `

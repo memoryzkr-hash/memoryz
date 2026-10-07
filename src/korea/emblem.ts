@@ -46,7 +46,7 @@ export function createEmblem() {
   const ring = new THREE.Mesh(new THREE.TorusGeometry(R + 0.4, 0.03, 8, 200), ringMat);
   solid.add(ring);
 
-  const trigramMat = new THREE.MeshStandardMaterial({ color: '#e6eaf5', emissive: '#c9d3f0', emissiveIntensity: 0.1, metalness: 0.5, roughness: 0.35, transparent: true, envMapIntensity: 0.55 });
+  const trigramMat = new THREE.MeshStandardMaterial({ color: '#8c95aa', emissive: '#c9d3f0', emissiveIntensity: 0.1, metalness: 0.5, roughness: 0.35, transparent: true, envMapIntensity: 0.55 });
   const trigrams: { g: THREE.Group; a: number }[] = [];
   const defs: [number, number[]][] = [
     [(3 * Math.PI) / 4, [1, 1, 1]], // 건

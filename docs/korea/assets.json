@@ -1,0 +1,58 @@
+{
+ "generator": "Higgsfield",
+ "clips": {
+  "model": "kling3_0 (mode pro, 5 s, 16:9, sound on)",
+  "items": {
+   "seoul": {
+    "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3JiBPTMWGhmh6Y5ypWgYZYXqrnt/hf_20261007_211735_b107c220-56b8-44a8-bfa4-2263523794a5.mp4",
+    "prompt": "Cinematic aerial drone shot at night over Seoul, South Korea: the Han River with illuminated bridges, dense high-rise apartment blocks and glowing skyscrapers stretching to the horizon, slow steady push forward, light haze, anamorphic lens, deep blue and amber color grade, subtle film grain. Sound: low ambient city hum, distant traffic."
+   },
+   "fab": {
+    "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3JiBPTMWGhmh6Y5ypWgYZYXqrnt/hf_20261007_211735_3790d1b3-4309-4931-b095-69e58fef103e.mp4",
+    "prompt": "Inside a semiconductor fabrication cleanroom, an automated robotic arm lifts a silicon wafer that reflects rainbow interference patterns, amber safety lighting and cool blue LEDs, slow dolly-in macro shot, shallow depth of field, cinematic, high-tech, no people. Sound: humming machinery, soft mechanical whirr."
+   },
+   "blackout": {
+    "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3JiBPTMWGhmh6Y5ypWgYZYXqrnt/hf_20261007_211735_fd70b751-db2a-4262-bd3f-089368d44b12.mp4",
+    "prompt": "Static wide night shot of a dense Korean city of high-rise apartment towers with many lit windows; the windows switch off building by building in a wave sweeping across the skyline until the whole city is dark, ominous, cinematic, film grain. Sound: electrical hum that dies out into silence."
+   },
+   "playground": {
+    "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3JiBPTMWGhmh6Y5ypWgYZYXqrnt/hf_20261007_211758_6dcd0301-979f-4e8c-8a3a-d19193444ebf.mp4",
+    "prompt": "An empty children's playground at dusk in a Korean apartment complex, a single swing still moving slowly back and forth in the wind, no people at all, long shadows, cold blue and faded orange light, slow push-in, melancholic, cinematic, film grain. Sound: wind and a softly creaking swing chain."
+   },
+   "classroom": {
+    "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3JiBPTMWGhmh6Y5ypWgYZYXqrnt/hf_20261007_211735_7b31d989-af0b-44b7-97e6-fad80e18b03b.mp4",
+    "prompt": "An empty elementary school classroom in Korea, small chairs stacked upside down on the desks, dust floating in shafts of late afternoon sunlight through the windows, a blank green chalkboard, slow lateral dolly, still, no people, cinematic, muted colors. Sound: a faint clock ticking, distant wind."
+   },
+   "elderly": {
+    "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3JiBPTMWGhmh6Y5ypWgYZYXqrnt/hf_20261007_211735_4877716e-3e15-4998-b2a5-8552641e4bd6.mp4",
+    "prompt": "Back view of an elderly man with grey hair sitting alone on a bench on a nearly empty subway platform at night, his face not visible, cold fluorescent light, a train rushes past in motion blur, wide static shot, lonely, cinematic, muted teal color grade. Sound: train rumble and quiet station ambience."
+   },
+   "newborn": {
+    "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3JiBPTMWGhmh6Y5ypWgYZYXqrnt/hf_20261007_211735_11411e65-8afc-4aea-b5d4-890f17c69ed9.mp4",
+    "prompt": "Extreme close-up of a newborn baby's tiny hand gripping an adult's index finger, soft warm golden window light, gentle slow motion, shallow depth of field, tender and hopeful, cinematic. Sound: soft baby coo, quiet room tone."
+   }
+  }
+ },
+ "voice": {
+  "model": "qwen_audio_tts",
+  "voice": "Gideon (preset 1ad38ba4-9cc4-4f2f-9fde-b0fefdf67ae5)",
+  "language": "ko",
+  "instruction": "영화 예고편 내레이터. 낮고 굵은 남성 목소리 (줄마다 감정 지시만 조금씩 다름)",
+  "items": {
+   "vo01": "https://d8j0ntlcm91z4.cloudfront.net/user_3JiBPTMWGhmh6Y5ypWgYZYXqrnt/hf_20261007_211947_95361826-0357-480d-b4fb-1d6d517f51ec.wav",
+   "vo02": "https://d8j0ntlcm91z4.cloudfront.net/user_3JiBPTMWGhmh6Y5ypWgYZYXqrnt/hf_20261007_211947_6a2564cc-49c9-4a1f-844e-beef6353379a.wav",
+   "vo03": "https://d8j0ntlcm91z4.cloudfront.net/user_3JiBPTMWGhmh6Y5ypWgYZYXqrnt/hf_20261007_211947_87cd24ef-a241-40e4-84ae-2e562396b590.wav",
+   "vo04": "https://d8j0ntlcm91z4.cloudfront.net/user_3JiBPTMWGhmh6Y5ypWgYZYXqrnt/hf_20261007_211947_d0d216cc-8544-41b7-a127-ccc0bc71501a.wav",
+   "vo05": "https://d8j0ntlcm91z4.cloudfront.net/user_3JiBPTMWGhmh6Y5ypWgYZYXqrnt/hf_20261007_211947_d1cccd82-b2f1-4059-83fc-a268533f418b.wav",
+   "vo06": "https://d8j0ntlcm91z4.cloudfront.net/user_3JiBPTMWGhmh6Y5ypWgYZYXqrnt/hf_20261007_211947_9bb87d35-c03f-4397-8fa4-a1afdcc2ced1.wav",
+   "vo07": "https://d8j0ntlcm91z4.cloudfront.net/user_3JiBPTMWGhmh6Y5ypWgYZYXqrnt/hf_20261007_211947_c84a084b-8556-4d6e-a437-813ddd5c4e1b.wav",
+   "vo08": "https://d8j0ntlcm91z4.cloudfront.net/user_3JiBPTMWGhmh6Y5ypWgYZYXqrnt/hf_20261007_211947_ed2ed8a5-7650-4c2b-bf1b-e6bd45d207d5.wav",
+   "vo09": "https://d8j0ntlcm91z4.cloudfront.net/user_3JiBPTMWGhmh6Y5ypWgYZYXqrnt/hf_20261007_211947_d20882d1-2f2b-47ee-b684-8e954f28cf64.wav",
+   "vo10": "https://d8j0ntlcm91z4.cloudfront.net/user_3JiBPTMWGhmh6Y5ypWgYZYXqrnt/hf_20261007_211947_623884c6-e59b-46ad-b0f6-6d179ea7763e.wav",
+   "vo11": "https://d8j0ntlcm91z4.cloudfront.net/user_3JiBPTMWGhmh6Y5ypWgYZYXqrnt/hf_20261007_211947_abb89f55-5cae-4b39-bbda-2a80b25bb25d.wav",
+   "vo12": "https://d8j0ntlcm91z4.cloudfront.net/user_3JiBPTMWGhmh6Y5ypWgYZYXqrnt/hf_20261007_211946_7d7f0df3-937a-4f46-88ba-837c8c0c35c9.wav",
+   "vo13": "https://d8j0ntlcm91z4.cloudfront.net/user_3JiBPTMWGhmh6Y5ypWgYZYXqrnt/hf_20261007_212016_317d896a-76cd-4c55-b708-a6b573b4eaa8.wav",
+   "vo14": "https://d8j0ntlcm91z4.cloudfront.net/user_3JiBPTMWGhmh6Y5ypWgYZYXqrnt/hf_20261007_212016_e51e76f6-a6b1-41ad-ac62-6218ac0b84c9.wav"
+  }
+ }
+}

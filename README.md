@@ -110,26 +110,30 @@ tests/assistant/      150개: 경계 값, 저장소 오류, .ics, 지어낸 출�
 
 ## 🇰🇷 대한민국, 지금 (`korea.html`)
 
-"두 개의 속도로 움직이는 나라" — 수출과 인구로 본 대한민국의 지금을 담은 46초짜리 예고편형 3D 모션 영상 (Three.js).
+"두 개의 속도로 움직이는 나라" — 수출과 인구로 본 대한민국의 지금을 담은 59초짜리 예고편형 영상.
+Three.js 3D 장면 + Higgsfield로 만든 실사 AI 컷과 한국어 내레이션 + 합성 사운드트랙.
 완성 영상: [docs/korea/korea-2026.mp4](docs/korea/korea-2026.mp4)
 
-| 시간 | 장면 |
-| --- | --- |
-| 0–4.5초 | 콜드 오픈: 어둠 속 심장 박동, "대한민국은 두 개의 속도로 움직인다" |
-| 4.5–15초 | **속도 ① 기술**: 반도체 회로 도시를 저공 질주. 수출 7,097억 달러(사상 최대), 반도체 1,734억 달러(+22.2%), 수출의 4분의 1 |
-| 15–17.5초 | 도시 전체 정전 → 정적 → "그런데," |
-| 17.5–30초 | **속도 ② 인구**: 4만 개의 빛이 붉게 꺼진다. 총인구 5,167만 → 3,622만(2072 전망), 출산율 0.72, 고령인구 47.7% |
-| 30–38.4초 | 클라이맥스: 수출 +35% vs 출생아 −42%(2015→2025), 돌리 줌·글리치, 암전 |
-| 38.4–46초 | 작은 빛 하나 — 출생아 2년 연속 증가, 출산율 0.80 → 태극 → "반등은 이어질 수 있을까" |
+| 시간 | 장면 | 내레이션 |
+| --- | --- | --- |
+| 0–5초 | 서울 야경 항공샷(실사), 심장 박동 | "대한민국은 지금, 두 개의 속도로 움직이고 있다." |
+| 5–17.6초 | **속도 ① 기술**: 반도체 회로 도시 질주 ↔ 반도체 팹 로봇팔(실사). 수출 7,097억 달러, 반도체 1,734억 달러, 수출의 4분의 1 | "하나는, 기술의 속도." "수출은 사상 처음…" |
+| 17.6–21.6초 | 도시 정전 → 정적 → "그런데," → 빈 놀이터(실사) | "다른 하나는, 사람의 속도다." |
+| 21.6–37.6초 | **속도 ② 인구**: 아파트 불빛(실사) → 4만 개의 빛이 꺼짐 → 빈 교실(실사) → 지하철 승강장의 노인(실사). 5,167만 → 3,622만, 0.72, 47.7% | "오십 년 뒤…" "합계출산율 영 점 칠 이…" |
+| 37.6–46.9초 | 수출 +35% vs 출생아 −42%, 돌리 줌, 실사 플래시 컷, 암전 | "기술은 앞서가고, 사람은 줄어든다." |
+| 46.9–59초 | 신생아 손(실사) → 작은 빛 → 태극 → "반등은 이어질 수 있을까" | "그런데 2025년, 아기 울음소리가…" |
 
-- 브라우저에서 보기: `npm run dev` 후 http://localhost:5173/korea.html (클릭하면 처음부터 재생)
-- 모든 장면·숫자·효과음 타이밍은 `src/korea/timeline.json` 하나에서 나옵니다 (영상과 소리가 같은 큐를 씀).
+- 브라우저에서 3D만 보기: `npm run dev` 후 http://localhost:5173/korea.html (실사 구간은 검게 비어 있음)
+- 장면·숫자·자막·효과음·내레이션 위치·실사 컷 구간은 모두 `src/korea/timeline.json` 하나에서 나옵니다.
+- 실사 컷과 내레이션 원본 주소·프롬프트: [docs/korea/assets.json](docs/korea/assets.json) (Kling 3.0 Pro, Qwen TTS "Gideon")
 - 영상 다시 만들기 (Playwright + ffmpeg + numpy):
   ```
+  scripts/fetch-korea-assets.sh assets                 # 실사 컷·내레이션 내려받기
   npx vite --port 5179 &
-  node scripts/render-korea.mjs silent.mp4          # 1920×1080, 30fps 프레임 단위 렌더 (--from/--to로 구간 렌더)
-  python3 scripts/korea-audio.py audio.wav          # 합성 사운드트랙 (심장 박동, 붐, 브람, 라이저)
-  ffmpeg -i silent.mp4 -i audio.wav -c:v copy -c:a aac -b:a 192k -shortest docs/korea/korea-2026.mp4
+  node scripts/render-korea.mjs render.mp4             # 3D + 자막, 1920×1080 30fps (--from/--to로 구간 렌더)
+  python3 scripts/korea-audio.py score.wav             # 합성 사운드트랙
+  python3 scripts/compose-korea.py --render render.mp4 --clips assets/clips --voice assets/voice \
+      --score score.wav --out docs/korea/korea-2026.mp4  # 실사 합성(screen blend) + 내레이션 + 덕킹
   ```
 - 자료: 국가데이터처 「2025년 출생·사망통계(잠정)」 「장래인구추계(2022~2072, 중위)」, 연간 수출입동향(2015~2025), OECD
 
