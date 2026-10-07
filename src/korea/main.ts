@@ -62,7 +62,8 @@ const backOut = (x: number) => {
   return 1 + (c + 1) * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2);
 };
 const lerp = (a: number, b: number, k: number) => a + (b - a) * k;
-const inWindow = (t: number, [a, b]: readonly [number, number], pad = 0.6) => t >= a - pad && t <= b + pad;
+// Cuts happen under a full fade to black, so each scene shows only inside its own window.
+const inWindow = (t: number, [a, b]: readonly [number, number]) => t >= a && (t < b || b === DURATION);
 
 function rng(seed: number) {
   let s = seed >>> 0;
@@ -622,7 +623,7 @@ function renderAt(t: number) {
   taegeuk.group.visible = tgVisible;
   swarm.points.visible = tgVisible;
   if (tgVisible) {
-    const intro = t < S.intro[1] + 1;
+    const intro = t < S.intro[1];
     let form: number;
     let solid: number;
     let tri: number;
@@ -720,7 +721,7 @@ function renderAt(t: number) {
   if (elVisible) {
     const { body, head, rank, spots, jitter, n } = elderScene;
     const nowCount = easeOut(seg(t, 27.6, 30.2)) * ELDER_NOW;
-    const futureCount = ELDER_NOW + easeOut(seg(t, 31.0, 33.2)) * (ELDER_2050 - ELDER_NOW);
+    const futureCount = t < 31.0 ? nowCount : ELDER_NOW + easeOut(seg(t, 31.0, 33.2)) * (ELDER_2050 - ELDER_NOW);
     for (let i = 0; i < n; i++) {
       const appear = backOut(seg(t, 26.2 + jitter[i] * 1.2, 26.9 + jitter[i] * 1.2));
       const rk = rank[i];
