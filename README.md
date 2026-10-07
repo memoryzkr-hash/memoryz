@@ -108,6 +108,29 @@ tests/assistant/      150개: 경계 값, 저장소 오류, .ics, 지어낸 출�
 4. 브리핑 비용 표시 (응답의 사용량으로 1회 비용 보여 주기)
 5. 작은 서버(예: Vercel 함수) 추가 → 키를 서버에 숨기고, 다른 사람과 실시간 일정 공유·정해진 시간 자동 브리핑
 
+## 🇰🇷 대한민국, 지금 (`korea.html`)
+
+숫자로 보는 대한민국의 현재를 담은 42초짜리 3D 모션 영상 (Three.js).
+완성 영상: [docs/korea/korea-2026.mp4](docs/korea/korea-2026.mp4)
+
+| 장면 | 내용 |
+| --- | --- |
+| 인트로 | 빛 입자가 모여 태극 문양과 건곤감리가 됩니다 |
+| 01 수출 | 반도체 웨이퍼 위로 2021~2025 수출 기둥이 솟고, 2025년 7,097억 달러(사상 최대) 중 반도체 1,734억 달러(24%)가 분홍으로 차오릅니다 |
+| 02 출산 | 합계출산율 2015년 1.24 → 2023년 0.72(최저) → 2025년 0.80 반등을 빛나는 3D 선으로 그립니다 |
+| 03 고령화 | 사람 100명 중 21명이 금빛으로 바뀌고(65세 이상 21%), 2050년 전망 40%까지 이어집니다 |
+| 아웃트로 | "위기와 반등 사이" — 다시 태극으로 |
+
+- 브라우저에서 보기: `npm run dev` 후 http://localhost:5173/korea.html (클릭하면 처음부터 재생)
+- 영상 다시 만들기 (Playwright + ffmpeg 필요):
+  ```
+  npx vite --port 5179 &
+  node scripts/render-korea.mjs silent.mp4          # 1920×1080, 30fps 프레임 단위 렌더
+  python3 scripts/korea-audio.py audio.wav          # 합성 배경음
+  ffmpeg -i silent.mp4 -i audio.wav -c:v copy -c:a aac -b:a 192k -shortest docs/korea/korea-2026.mp4
+  ```
+- 자료: 국가데이터처 「2025년 출생·사망통계(잠정)」, 2025년 연간 수출입동향, 행정안전부 주민등록 인구통계(2025), 장래인구추계
+
 ## 배포 (GitHub Pages)
 
 `.github/workflows/ci.yml`이 모든 push에서 테스트와 빌드를 돌리고, 저장소 **기본 브랜치**에 push되면

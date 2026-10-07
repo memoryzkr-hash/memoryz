@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#05070f" />
+    <meta name="description" content="숫자로 보는 대한민국의 지금 — 수출, 출산율, 고령화를 담은 3D 모션 영상" />
+    <title>대한민국, 지금</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <div id="stage"></div>
+
+    <div id="labels"></div>
+
+    <div id="overlay">
+      <!-- Intro -->
+      <section class="card center" data-in="1.6" data-out="6.3">
+        <div class="kicker">REPUBLIC OF KOREA · 2026</div>
+        <h1 class="title">대한민국, 지금</h1>
+        <p class="sub">숫자로 보는 우리의 현재</p>
+      </section>
+
+      <!-- Exports -->
+      <section class="card left" data-in="7.6" data-out="15.4">
+        <div class="kicker"><span class="num">01</span> 수출</div>
+        <h2 class="head">사상 첫 7,000억 달러</h2>
+        <div class="stat"><span data-count="exports">0</span><small>억 달러</small></div>
+        <p class="sub">2025년 연간 수출 · 역대 최대</p>
+        <p class="sub accent-gold" data-in="10.8">AI 메모리 수요로 반도체 <b>1,734억 달러</b> (+22.2%)</p>
+      </section>
+
+      <!-- Fertility -->
+      <section class="card left" data-in="16.6" data-out="25.4">
+        <div class="kicker"><span class="num">02</span> 출산</div>
+        <h2 class="head">바닥을 찍고, 다시 오르다</h2>
+        <div class="stat"><span data-count="tfr">1.24</span><small>명</small></div>
+        <p class="sub">합계출산율 <span data-count="year">2015</span>년</p>
+        <p class="sub accent-gold" data-in="22.4">2025년 출생아 25만 4천 명 (+6.7%) · 2년 연속 반등</p>
+      </section>
+
+      <!-- Ageing -->
+      <section class="card left" data-in="26.6" data-out="34.4">
+        <div class="kicker"><span class="num">03</span> 고령화</div>
+        <h2 class="head">초고령사회에 들어서다</h2>
+        <div class="stat"><span data-count="elder">0</span><small>%</small></div>
+        <p class="sub">65세 이상 인구 비중 · 100명 중 21명</p>
+        <p class="sub accent-dim" data-in="31.0">2050년 전망 <b>40%</b> — 열 명 중 네 명</p>
+      </section>
+
+      <!-- Outro -->
+      <section class="card center" data-in="36.4" data-out="42.5">
+        <h1 class="title small">위기와 반등 사이</h1>
+        <p class="sub">기술은 앞서가고, 사람은 줄어드는 나라 — 대한민국의 지금</p>
+        <p class="source" data-in="38.2">자료: 국가데이터처 「2025년 출생·사망통계(잠정)」, 2025년 연간 수출입동향, 행정안전부 주민등록 인구통계, 장래인구추계</p>
+      </section>
+    </div>
+
+    <div id="fade"></div>
+    <div id="hint">클릭: 처음부터 다시 재생</div>
+
+    <script type="module" src="/src/korea/main.ts"></script>
+  </body>
+</html>
