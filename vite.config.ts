@@ -9,6 +9,7 @@ export default defineConfig({
       input: {
         main: resolve(import.meta.dirname, 'index.html'),
         ride: resolve(import.meta.dirname, 'ride.html'),
+        assistant: resolve(import.meta.dirname, 'assistant.html'),
       },
     },
   },
