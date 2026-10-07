@@ -108,6 +108,33 @@ tests/assistant/      150개: 경계 값, 저장소 오류, .ics, 지어낸 출�
 4. 브리핑 비용 표시 (응답의 사용량으로 1회 비용 보여 주기)
 5. 작은 서버(예: Vercel 함수) 추가 → 키를 서버에 숨기고, 다른 사람과 실시간 일정 공유·정해진 시간 자동 브리핑
 
+## 📚 시험 생존 (`survive.html`)
+
+**공부 안 하던 학생이 시험 직전에 일단 시작하게 만드는** 모바일 우선 웹앱. 설계: [docs/survive/PLAN.md](docs/survive/PLAN.md)
+
+> 전부 공부하지 마세요. 지금 필요한 것부터 살아남게 해드릴게요.
+
+![첫 화면 · 생존모드 · 선택형 문제 · 3분 체크포인트 · 결과](docs/survive/screens.jpg)
+
+- 과목·시험 날짜·자료(PDF / 텍스트 / 샘플)만 넣으면, 남은 시간에 맞춰 **꼭 필요한 개념만 고른 생존 루트**를 만듭니다.
+  "이번엔 버리는 것"도 숨기지 않고 보여 줍니다.
+- 학생은 고르지 않습니다. **N분 생존 루트 시작** 또는 **3분만 시작**을 누르면, 카드마다 답하기 · 모르겠음 · 헷갈림 · 다음만 누릅니다.
+  다음 카드(떠올리기 → 20초 설명 → 선택형 → 암기카드 → 유사문제)와 건너뛸 것, 다시 낼 것은 앱이 정합니다.
+- **시험 준비도** 게이지가 공부할 때마다 오릅니다. 실제 시험 점수가 아니라고 화면마다 적어 둡니다.
+- `npm run dev` 후 http://localhost:5173/survive.html (배포본은 `/memoryz/survive.html`). **샘플로 체험**을 누르면 파일·키 없이 바로 써 볼 수 있습니다.
+- 분석은 기본으로 **브라우저 안에서**(빠른 분석, 무료). 설정에서 Anthropic API 키를 넣으면 **Claude 정밀 분석**(`claude-opus-5-5`)을 쓸 수 있습니다.
+  키는 이 브라우저에만 저장되고, 자료 1개당 Claude 호출 1번입니다. 콘솔에서 월 사용 한도를 걸어 두세요.
+
+```
+src/survive/core/   순수 로직: 생존 루트·시간 예산(plan.ts), 자동코스 엔진(engine.ts), 준비도(readiness.ts),
+                    빠른 분석(extract.ts), 한국어 조사·셔플(text.ts), 저장(store.ts), Claude 응답 검사(validate.ts),
+                    약리학 샘플(sample.ts)
+src/survive/ai.ts   Claude 정밀 분석 (구조화 출력 + 스트리밍, 스캔 PDF는 문서 블록으로)
+src/survive/pdf.ts  pdf.js로 PDF 글자 읽기 (PDF를 고를 때만 불러옴)
+src/survive/ui/     첫 화면(home) 시험 만들기(create) 분석(analyze) 생존모드(plan) 자동코스(course) 결과(done)
+tests/survive/      루트 예산, 엔진 경로·복습, 준비도, 강의노트 분석, 저장소, 가짜 네트워크로 Claude 스트리밍
+```
+
 ## 배포 (GitHub Pages)
 
 `.github/workflows/ci.yml`이 모든 push에서 테스트와 빌드를 돌리고, 저장소 **기본 브랜치**에 push되면
