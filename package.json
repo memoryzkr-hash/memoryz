@@ -8,16 +8,22 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "promo": "tsx src/promo/cli.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.131.0",
     "@mediapipe/tasks-vision": "^1.0.1",
+    "marked": "^18.1.0",
     "phaser": "^3.90.0",
-    "three": "^0.186.0"
+    "playwright-core": "^1.64.0",
+    "three": "^0.186.0",
+    "yaml": "^2.9.1"
   },
   "devDependencies": {
+    "@types/node": "^22.20.5",
     "@types/three": "^0.186.0",
+    "tsx": "^4.23.15",
     "typescript": "^7.0.2",
     "vite": "^8.3.0",
     "vitest": "^5.0.1"

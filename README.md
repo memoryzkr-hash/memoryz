@@ -108,6 +108,37 @@ tests/assistant/      150개: 경계 값, 저장소 오류, .ics, 지어낸 출�
 4. 브리핑 비용 표시 (응답의 사용량으로 1회 비용 보여 주기)
 5. 작은 서버(예: Vercel 함수) 추가 → 키를 서버에 숨기고, 다른 사람과 실시간 일정 공유·정해진 시간 자동 브리핑
 
+## 📣 홍보 에이전트 (`promo/`, `src/promo/`)
+
+블로그 · 인스타그램 · 쓰레드에 **알아서 글을 올리고 댓글을 관리하는** 에이전트. GitHub Actions에서 매시간 돌아서 서버가 필요 없습니다.
+기획서: [docs/promo/PLAN.md](docs/promo/PLAN.md) · 계정 연결: [docs/promo/SETUP.md](docs/promo/SETUP.md)
+
+| 글 만들기 (정해진 요일·시간) | 댓글 관리 (매시간) |
+| --- | --- |
+| ① 주제 정하기 → ② 같은 주제의 인기 글을 웹에서 찾아 후킹·구성·해시태그 분석 → ③ `promo/templates/`의 **내 글 구성대로** 세 플랫폼 글 쓰기 → ④ 규칙 검사 + Claude 검수 → ⑤ 카드뉴스 이미지 렌더링 → ⑥ 발행 | 새 댓글 분류 → 칭찬·FAQ로 답할 수 있는 질문·구매 문의는 답글, 스팸·욕설은 숨김, 불만·민감한 댓글은 답하지 않고 `inbox.md` + 알림으로 사람에게 |
+
+- **쓰레드**(타래 글), **인스타그램**(카드뉴스 캐러셀), **워드프레스**는 자동 발행. **네이버 블로그·티스토리**는 글쓰기 API가 종료돼서 붙여넣기용 발행본을 만들어 알려 줍니다.
+- 사용자는 `promo/`의 파일(브랜드 설명, 글 구성, FAQ, 참고 계정)과 각 플랫폼 **공식 토큰**만 준비합니다. 비밀번호 로그인 자동화는 쓰지 않습니다(약관 위반·정지 위험).
+- `mode: auto`는 검수를 통과하면 바로, `mode: review`는 초안(`promo-data/drafts/*.md`)의 `status`를 `approved`로 바꾸면 올라갑니다.
+- 기록(발행 내역, 처리한 댓글, 초안, 실행 보고서)은 `promo-data` 브랜치에, 카드 이미지는 `promo-media` 브랜치에 쌓입니다.
+
+```bash
+npm run promo -- check                 # 설정·토큰·이미지 저장소 연결 확인 (아무것도 올리지 않음)
+npm run promo -- preview --topic "…"   # 올리지 않고 초안 + 카드 이미지만 → .promo-data/
+npm run promo -- run                   # 평소 실행 (Actions가 매시간 하는 일)
+```
+
+```
+promo/                    사용자가 채우는 설정: config.yml, brand.md, faq.md, references.md, templates/
+src/promo/core/           순수 로직: 설정 검사(config), 슬롯 계산(schedule), 글자 수·금지어·링크 규칙(rules),
+                          초안 파일(draft), 댓글 정책(comments), 기록(state), 토큰 암호화(secrets)
+src/promo/ai/             Claude 호출: 주제 → 레퍼런스 조사(웹 검색·열람) → 쓰기 → 검수, 댓글 분류
+src/promo/platforms/      threads · instagram · wordpress · naver(발행본) — 공식 API만
+src/promo/media/          카드뉴스 HTML → JPEG(Chromium), GitHub에 공개 이미지 올리기
+src/promo/agent.ts        실행 흐름, 보고서·inbox·알림      .github/workflows/promo.yml  매시간 실행
+tests/promo/              가짜 네트워크·가짜 Claude로 발행·재시도·승인·댓글 정책까지
+```
+
 ## 배포 (GitHub Pages)
 
 `.github/workflows/ci.yml`이 모든 push에서 테스트와 빌드를 돌리고, 저장소 **기본 브랜치**에 push되면

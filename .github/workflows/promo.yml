@@ -1,0 +1,122 @@
+name: Promo agent
+
+# Posts to Threads / Instagram / blogs on the slots in promo/config.yml and answers comments.
+# Scheduled runs start only after the repository variable PROMO_ENABLED is set to "true"
+# (Settings → Secrets and variables → Actions → Variables). Manual runs always work.
+# Setup guide: docs/promo/SETUP.md
+
+on:
+  schedule:
+    # Every hour at :07 (GitHub may start it a few minutes late). Use '*/30 * * * *' for faster comment replies.
+    - cron: '7 * * * *'
+  workflow_dispatch:
+    inputs:
+      command:
+        description: '할 일 (run: 평소 실행 · post-now: 지금 한 편 · preview: 올리지 않고 미리보기 · comments: 댓글만 · check: 연결 확인)'
+        type: choice
+        options: [run, post-now, preview, comments, check]
+        default: run
+      topic:
+        description: 'post-now / preview 주제 (비우면 알아서)'
+        type: string
+        required: false
+
+concurrency:
+  group: promo-agent
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  agent:
+    if: github.event_name == 'workflow_dispatch' || vars.PROMO_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PROMO_DATA_DIR: .promo-data
+      DATA_BRANCH: promo-data
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check out promo-data branch (records, drafts, reports)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          url="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          if git ls-remote --exit-code --heads "$url" "$DATA_BRANCH" >/dev/null; then
+            git clone --quiet --depth 1 --branch "$DATA_BRANCH" "$url" "$PROMO_DATA_DIR"
+          else
+            mkdir -p "$PROMO_DATA_DIR"
+            git -C "$PROMO_DATA_DIR" init --quiet -b "$DATA_BRANCH"
+            git -C "$PROMO_DATA_DIR" remote add origin "$url"
+          fi
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      - name: Will this run make card images?
+        id: due
+        run: |
+          cmd="${{ inputs.command || 'run' }}"
+          if [ "$cmd" = post-now ] || [ "$cmd" = preview ]; then echo "browser=true" >> "$GITHUB_OUTPUT"
+          elif [ "$cmd" = run ]; then echo "browser=$(npm run -s promo -- due)" >> "$GITHUB_OUTPUT"
+          else echo "browser=false" >> "$GITHUB_OUTPUT"; fi
+
+      - name: Korean fonts and Chromium for card images
+        if: steps.due.outputs.browser == 'true'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq fonts-noto-cjk >/dev/null
+          npx playwright-core install --with-deps chromium
+
+      - name: Run the agent
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          THREADS_ACCESS_TOKEN: ${{ secrets.THREADS_ACCESS_TOKEN }}
+          INSTAGRAM_ACCESS_TOKEN: ${{ secrets.INSTAGRAM_ACCESS_TOKEN }}
+          INSTAGRAM_USER_ID: ${{ secrets.INSTAGRAM_USER_ID }}
+          INSTAGRAM_API_HOST: ${{ vars.INSTAGRAM_API_HOST }}
+          WORDPRESS_USER: ${{ secrets.WORDPRESS_USER }}
+          WORDPRESS_APP_PASSWORD: ${{ secrets.WORDPRESS_APP_PASSWORD }}
+          PROMO_SECRET_KEY: ${{ secrets.PROMO_SECRET_KEY }}
+          PROMO_MEDIA_TOKEN: ${{ secrets.PROMO_MEDIA_TOKEN }}
+          NOTIFY_WEBHOOK_URL: ${{ secrets.NOTIFY_WEBHOOK_URL }}
+          GITHUB_TOKEN: ${{ github.token }}
+          TOPIC: ${{ inputs.topic }}
+        run: |
+          cmd="${{ inputs.command || 'run' }}"
+          if [ -n "$TOPIC" ]; then npm run -s promo -- "$cmd" --topic "$TOPIC"; else npm run -s promo -- "$cmd"; fi
+
+      - name: Keep preview card images as a downloadable artifact
+        if: always() && inputs.command == 'preview'
+        uses: actions/upload-artifact@v4
+        with:
+          name: preview-cards
+          path: .promo-data/media
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Save records to promo-data
+        if: always()
+        run: |
+          cd "$PROMO_DATA_DIR"
+          git add -A
+          if git diff --cached --quiet; then echo "nothing to save"; exit 0; fi
+          git config user.name "promo-agent"
+          git config user.email "promo-agent@users.noreply.github.com"
+          git commit --quiet -m "promo: ${{ inputs.command || 'run' }} $(date -u +%Y-%m-%dT%H:%MZ)"
+          # Someone may have edited a draft on GitHub meanwhile. On a clash the agent's record wins,
+          # because it says what was actually posted (losing it could mean posting twice).
+          for i in 1 2 3; do
+            if git ls-remote --exit-code --heads origin "$DATA_BRANCH" >/dev/null; then
+              git pull --quiet --rebase -X theirs origin "$DATA_BRANCH" || { git rebase --abort; sleep 5; continue; }
+            fi
+            git push --quiet origin "HEAD:$DATA_BRANCH" && exit 0
+            sleep 5
+          done
+          echo "::error::promo-data에 기록을 저장하지 못했어요"
+          exit 1
