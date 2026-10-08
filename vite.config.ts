@@ -10,6 +10,7 @@ export default defineConfig({
         main: resolve(import.meta.dirname, 'index.html'),
         ride: resolve(import.meta.dirname, 'ride.html'),
         assistant: resolve(import.meta.dirname, 'assistant.html'),
+        travel: resolve(import.meta.dirname, 'travel.html'),
       },
     },
   },
