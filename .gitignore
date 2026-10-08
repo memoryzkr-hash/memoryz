@@ -3,3 +3,4 @@ dist
 *.log
 .env
 .promo-data
+dist-artifact
