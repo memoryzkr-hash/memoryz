@@ -11,6 +11,7 @@ export default defineConfig({
         ride: resolve(import.meta.dirname, 'ride.html'),
         assistant: resolve(import.meta.dirname, 'assistant.html'),
         usage: resolve(import.meta.dirname, 'usage.html'),
+        beat: resolve(import.meta.dirname, 'beat.html'),
       },
     },
   },
