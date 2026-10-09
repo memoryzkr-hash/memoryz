@@ -10,7 +10,7 @@
   --display: 'Black Han Sans', 'Bungee', system-ui, sans-serif;
   --latin: 'Bungee', 'Black Han Sans', system-ui, sans-serif;
   --body: 'IBM Plex Sans KR', system-ui, -apple-system, 'Apple SD Gothic Neo', sans-serif;
-  --beat: 0.556s; /* one beat at 108 BPM, the first stage */
+  --beat: 0.625s; /* one beat at 96 BPM, the first track */
   color-scheme: dark;
 }
 html, body {
@@ -124,6 +124,7 @@ h2 { margin: 0; font: 34px var(--display); letter-spacing: 0.02em; }
 .logo .ko i:nth-child(3) { animation-delay: calc(var(--beat) * -0.5); }
 .logo .ko i:nth-child(4) { animation-delay: calc(var(--beat) * -0.75); }
 .logo .ko i:nth-child(5) { animation-delay: calc(var(--beat) * -1); }
+.logo .ko i:nth-child(6) { animation-delay: calc(var(--beat) * -1.25); }
 .logo .en { font: clamp(12px, 1.6vw, 16px) var(--latin); letter-spacing: 0.42em; color: #fff; opacity: 0.9; text-shadow: 0 2px 0 var(--ink); }
 @keyframes hop {
   from { transform: translateY(0) scale(1.06, 0.94); }

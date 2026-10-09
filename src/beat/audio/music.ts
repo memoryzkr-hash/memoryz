@@ -1,5 +1,5 @@
-import type { BuiltLevel } from '../core/chart';
-import type { SongDef, StageDef } from '../core/levels';
+import type { EchoSong } from '../core/echo';
+import { midiOf, type SongDef, type StageDef } from '../core/levels';
 
 const midiHz = (m: number) => 440 * 2 ** ((m - 69) / 12);
 
@@ -93,6 +93,24 @@ export class AudioEngine {
     o.stop(t + 0.35);
   }
 
+  /** The ball dropping through a missing note. */
+  fall(): void {
+    const ctx = this.ctx;
+    if (!ctx) return;
+    const t = ctx.currentTime;
+    const o = ctx.createOscillator();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(700, t);
+    o.frequency.exponentialRampToValueAtTime(110, t + 0.45);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.2, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+    o.connect(g).connect(this.master);
+    o.start(t);
+    o.stop(t + 0.55);
+  }
+
   fanfare(root: number): void {
     const ctx = this.ctx;
     if (!ctx) return;
@@ -131,8 +149,8 @@ export class AudioEngine {
 const LOOKAHEAD = 0.14;
 
 /**
- * Plays one attempt of a stage's song from any beat. The band follows each bar's energy, and every
- * note of the chart is doubled by a lead pluck so the level can be heard as well as seen.
+ * Plays one attempt of a stage's song from any beat. The band follows each bar's energy; the lead
+ * sings every call, and stays silent in response bars, where the player's presses play it instead.
  */
 export class SongPlayer {
   private bus: GainNode;
@@ -144,10 +162,10 @@ export class SongPlayer {
   private stopped = true;
   private readonly spb: number;
   private readonly song: SongDef;
-  /** Chart notes and cues by sixteenth-step index. */
-  private readonly hits = new Map<number, { kind: 'note' | 'pad' | 'down'; cell: number; orb: boolean }[]>();
+  /** MIDI notes the call sings, by sixteenth-step index. */
+  private readonly calls = new Map<number, number[]>();
 
-  constructor(private readonly engine: AudioEngine, stage: StageDef, private readonly level: BuiltLevel) {
+  constructor(private readonly engine: AudioEngine, stage: StageDef, private readonly level: EchoSong) {
     const ctx = engine.ctx!;
     this.spb = 60 / stage.bpm;
     this.song = stage.song;
@@ -163,14 +181,27 @@ export class SongPlayer {
     this.delaySend.gain.value = 0.28;
     this.delaySend.connect(delay).connect(lp).connect(fb).connect(delay);
     lp.connect(this.bus);
-    const add = (beat: number, item: { kind: 'note' | 'pad' | 'down'; cell: number; orb: boolean }) => {
-      const k = Math.round(beat * 4);
-      const list = this.hits.get(k) ?? [];
-      list.push(item);
-      this.hits.set(k, list);
-    };
-    for (const n of level.notes) add(n.beat, { kind: 'note', cell: Math.round((n.beat % 4) * 2), orb: n.kind === 'orb' });
-    for (const c of level.cues) add(c.beat, { kind: c.kind, cell: 0, orb: false });
+    for (const n of level.notes) {
+      if (n.role !== 'call') continue;
+      const k = Math.round(n.beat * 4);
+      this.calls.set(k, [...(this.calls.get(k) ?? []), midiOf(this.song, n.pitch)]);
+    }
+  }
+
+  /** The player's press: the lead voice right now, through the same echo as the call. */
+  playNote(midi: number): void {
+    if (this.stopped) return;
+    this.pluck(this.engine.ctx!.currentTime, midi, 0.2);
+  }
+
+  /** A press that answered nothing: a dull knock. */
+  knock(): void {
+    if (this.stopped) return;
+    const at = this.engine.ctx!.currentTime;
+    const g = this.env(at, 0.25, 0.09);
+    g.connect(this.bus);
+    const o = this.osc('triangle', 140, at, 0.1, g);
+    o.frequency.exponentialRampToValueAtTime(70, at + 0.08);
   }
 
   /** Starts so that `fromBeat` sounds `leadIn` seconds from now; beats before `countInUntil` are only clicks. */
@@ -223,9 +254,11 @@ export class SongPlayer {
     }
   }
 
+  /** A call and its response share one chord. */
   private chordAt(bar: number): number[] {
     const { scale, progression, root } = this.song;
-    const deg = progression[((bar % progression.length) + progression.length) % progression.length];
+    const phrase = Math.floor(bar / 2);
+    const deg = progression[((phrase % progression.length) + progression.length) % progression.length];
     return [0, 2, 4].map((i) => {
       const d = deg + i;
       return root + scale[d % 7] + 12 * Math.floor(d / 7);
@@ -249,7 +282,7 @@ export class SongPlayer {
       return;
     }
     const bar = Math.floor(beat / 4);
-    const energy = this.level.bars[bar]?.energy ?? 1;
+    const energy = this.level.energy[bar] ?? 1;
     const s = ((k % 16) + 16) % 16;
     const chord = this.chordAt(bar);
     const song = this.song;
@@ -257,6 +290,8 @@ export class SongPlayer {
 
     if (s === 0) {
       this.pad(at, chord, this.spb * 4, energy === 0 ? 0.03 : 0.022);
+      // "Your turn": a little rising chirp as each response bar starts.
+      if (bar % 2 === 1) this.chirp(at, chord[0] + 24);
       if (bar % 4 === 0 && energy >= 2) this.crash(at, 0.12);
     }
     if (energy === 0 ? s === 0 || s === 8 : song.kick[s] === 'x') this.kick(at, energy === 0 ? 0.6 : 0.95);
@@ -278,14 +313,7 @@ export class SongPlayer {
       const order = [0, 1, 2, 1];
       this.arp(at, chord[order[(s >> 1) % 4]] + 12);
     }
-    for (const h of this.hits.get(k) ?? []) {
-      if (h.kind === 'pad') this.whoosh(at);
-      else if (h.kind === 'down') this.tom(at);
-      else {
-        const contour = [0, 2, 1, 2, 0, 1, 2, 1][h.cell] ?? 0;
-        this.pluck(at, chord[contour] + (h.orb ? 24 : 12));
-      }
-    }
+    for (const midi of this.calls.get(k) ?? []) this.pluck(at, midi);
   }
 
   // ---------- instruments ----------
@@ -379,8 +407,16 @@ export class SongPlayer {
     }
   }
 
-  private pluck(at: number, midi: number): void {
-    const g = this.env(at, 0.17, 0.3);
+  private chirp(at: number, midi: number): void {
+    [0, 7].forEach((st, i) => {
+      const g = this.env(at + i * 0.05, 0.05, 0.08);
+      g.connect(this.bus);
+      this.osc('sine', midiHz(midi + st), at + i * 0.05, 0.1, g);
+    });
+  }
+
+  private pluck(at: number, midi: number, vol = 0.17): void {
+    const g = this.env(at, vol, 0.3);
     g.connect(this.bus);
     g.connect(this.delaySend);
     const ctx = this.engine.ctx!;
@@ -407,20 +443,6 @@ export class SongPlayer {
     this.noise(at, 1.4, hp);
   }
 
-  private whoosh(at: number): void {
-    const g = this.env(at, 0.14, 0.32, 0.02);
-    g.connect(this.bus);
-    g.connect(this.delaySend);
-    const o = this.osc('sine', 260, at, 0.35, g);
-    o.frequency.exponentialRampToValueAtTime(1400, at + 0.3);
-  }
-
-  private tom(at: number): void {
-    const g = this.env(at, 0.45, 0.22);
-    g.connect(this.bus);
-    const o = this.osc('sine', 190, at, 0.25, g);
-    o.frequency.exponentialRampToValueAtTime(85, at + 0.2);
-  }
 }
 
 /** A plain click track for the sync screen. */

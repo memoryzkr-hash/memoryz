@@ -7,9 +7,9 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="비트 바운스" />
-    <meta name="description" content="박자에 맞춰 눌러서 가시와 구멍을 뛰어넘는 리듬 플랫포머" />
-    <title>비트 바운스</title>
+    <meta name="apple-mobile-web-app-title" content="메아리 바운스" />
+    <meta name="description" content="음악이 부른 멜로디를 따라 치면, 친 음표가 발판이 되는 리듬 게임" />
+    <title>메아리 바운스</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Bungee&family=IBM+Plex+Sans+KR:wght@400;600&display=swap" rel="stylesheet" />
@@ -24,25 +24,25 @@
 
     <section id="title" class="overlay title">
       <header class="brand">
-        <h1 class="logo" aria-label="비트 바운스">
-          <span class="ko" aria-hidden="true"><i>비</i><i>트</i> <i>바</i><i>운</i><i>스</i></span>
-          <span class="en" aria-hidden="true">BEAT BOUNCE</span>
+        <h1 class="logo" aria-label="메아리 바운스">
+          <span class="ko" aria-hidden="true"><i>메</i><i>아</i><i>리</i> <i>바</i><i>운</i><i>스</i></span>
+          <span class="en" aria-hidden="true">ECHO BOUNCE</span>
         </h1>
-        <p class="tag">박자에 맞춰 누르면, 공이 튄다</p>
+        <p class="tag">들은 대로 치면, 그 음표가 길이 된다</p>
       </header>
       <div class="deck">
         <div class="deck-head" aria-hidden="true"><span>트랙</span><span>BPM</span><span>길이</span><span>기록</span></div>
         <ol id="tracks" class="tracks"></ol>
         <div class="chips">
-          <label class="chip"><input type="checkbox" id="opt-guide" /><span>박자 가이드</span></label>
-          <label class="chip"><input type="checkbox" id="opt-practice" /><span>연습 모드</span></label>
+          <label class="chip"><input type="checkbox" id="opt-guide" /><span>메아리 그림자</span></label>
+          <label class="chip"><input type="checkbox" id="opt-practice" /><span>무한 하트</span></label>
           <button id="open-sync" class="chip" type="button">싱크 <b id="sync-value">0ms</b></button>
           <button id="mute" class="chip" type="button" aria-pressed="false">소리 켬</button>
         </div>
       </div>
       <p class="hint">
-        <span class="keys-hint"><kbd>Space</kbd> 점프 · 누르고 있으면 연속 점프 · <kbd>↑</kbd><kbd>↓</kbd> 트랙 고르기 · <kbd>Enter</kbd> 시작</span>
-        <span class="touch-hint">화면 아무 데나 탭하면 점프 · 누르고 있으면 연속 점프</span>
+        <span class="keys-hint">"잘 들어" 마디의 멜로디를 "따라 쳐!" 마디에 <kbd>Space</kbd>로 · 3번 트랙은 <kbd>↓</kbd> 낮은 음 <kbd>↑</kbd> 높은 음 · <kbd>Enter</kbd> 시작</span>
+        <span class="touch-hint">들은 멜로디를 다음 마디에 탭으로 따라 치기 · 3번 트랙은 왼쪽 낮은 음, 오른쪽 높은 음</span>
       </p>
     </section>
 
@@ -53,7 +53,7 @@
         <div class="buttons column">
           <button id="resume" class="primary" type="button">계속하기 <kbd>Esc</kbd></button>
           <button id="restart" type="button">처음부터 <kbd>R</kbd></button>
-          <button id="quit" type="button">스테이지 선택</button>
+          <button id="quit" type="button">트랙 목록</button>
         </div>
       </div>
     </section>
@@ -70,7 +70,7 @@
           <div><dt>GOOD</dt><dd id="res-good">0</dd></div>
           <div><dt>MISS</dt><dd id="res-miss">0</dd></div>
           <div><dt>최고 콤보</dt><dd id="res-combo">0</dd></div>
-          <div><dt>시도</dt><dd id="res-attempts">0</dd></div>
+          <div><dt>살린 구절</dt><dd id="res-attempts">0</dd></div>
         </dl>
         <div class="timing">
           <div class="timing-head"><span>타이밍</span><b id="res-avg">정박</b></div>
@@ -80,8 +80,8 @@
         </div>
         <div class="buttons">
           <button id="again" type="button">다시 하기 <kbd>R</kbd></button>
-          <button id="next" class="primary" type="button">다음 스테이지 <kbd>Enter</kbd></button>
-          <button id="to-title" type="button">스테이지 선택</button>
+          <button id="next" class="primary" type="button">다음 트랙 <kbd>Enter</kbd></button>
+          <button id="to-title" type="button">트랙 목록</button>
         </div>
       </div>
     </section>

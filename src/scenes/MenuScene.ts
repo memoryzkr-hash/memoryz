@@ -27,9 +27,9 @@ export class MenuScene extends Phaser.Scene {
       .text(24, 30, '🏍️ 네온 라이더 →', { fontFamily: FONT, fontSize: '26px', color: '#ff7be5', fontStyle: 'bold' })
       .setInteractive({ useHandCursor: true })
       .on('pointerup', () => location.assign('ride.html'));
-    // And a rhythm platformer (beat.html).
+    // And a call-and-response rhythm game (beat.html).
     this.add
-      .text(24, 72, '🎵 비트 바운스 →', { fontFamily: FONT, fontSize: '26px', color: '#ffc93f', fontStyle: 'bold' })
+      .text(24, 72, '🎵 메아리 바운스 →', { fontFamily: FONT, fontSize: '26px', color: '#ffc93f', fontStyle: 'bold' })
       .setInteractive({ useHandCursor: true })
       .on('pointerup', () => location.assign('beat.html'));
     this.add.text(cx, 170, '⚔️', { fontFamily: FONT, fontSize: '96px' }).setOrigin(0.5);

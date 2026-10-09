@@ -74,8 +74,12 @@ export interface ResultView {
   accuracy: number;
   counts: Record<Grade, number>;
   maxCombo: number;
-  attempts: number;
+  /** Phrases echoed back without a miss. */
+  restored: number;
+  phrases: number;
   practice: boolean;
+  /** Played with the echo shadows turned off. */
+  noHint: boolean;
   improved: boolean;
   hasNext: boolean;
   timing: TimingSummary;
@@ -93,7 +97,7 @@ export function timingText(t: TimingSummary): string {
 }
 
 export function fillResult(r: ResultView): void {
-  $('res-stage').textContent = r.practice ? `${r.stage.name} 연습 완료` : `${r.stage.name} 클리어`;
+  $('res-stage').textContent = `${r.stage.name} ${r.practice ? '연습 완료' : '클리어'}${r.noHint ? ' · 그림자 없이' : ''}`;
   const rank = $('res-rank');
   rank.textContent = r.rank;
   rank.dataset.rank = r.rank;
@@ -108,7 +112,7 @@ export function fillResult(r: ResultView): void {
   $('res-good').textContent = String(r.counts.good);
   $('res-miss').textContent = String(r.counts.miss);
   $('res-combo').textContent = String(r.maxCombo);
-  $('res-attempts').textContent = String(r.attempts);
+  $('res-attempts').textContent = `${r.restored}/${r.phrases}`;
   $('next').hidden = !r.hasNext;
 
   $('res-avg').textContent = timingText(r.timing);

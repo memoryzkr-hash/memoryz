@@ -1,54 +1,46 @@
 import './beat.css';
 import { ClickTrack, SongPlayer, AudioEngine } from './audio/music';
-import { idealInputs, type BuiltLevel, type InputEvent } from './core/chart';
-import { SPEED, START_BEAT } from './core/constants';
-import { Judge, timingSummary, type Grade, type JudgeState } from './core/judge';
-import { levelFor, STAGES, type StageDef } from './core/levels';
-import { cloneRun, groundAt, newRun, press, release, step, type RunState } from './core/physics';
+import { START_BEAT } from './core/constants';
+import {
+  accuracy, advance, ballAt, heightOf, idealTaps, keyOf, newEcho, progress, rank, tap, xAt, type EchoSong, type EchoState, type Key,
+} from './core/echo';
+import { timingSummary, type Grade } from './core/judge';
+import { midiOf, songFor, STAGES, type StageDef } from './core/levels';
 import {
   loadRecords, loadSettings, mergeRecord, saveRecords, saveSettings, syncOffset, type StageRecord,
 } from './core/records';
-import { Renderer, type DeathCard, type Tip } from './render/draw';
+import { Renderer, type EndCard } from './render/draw';
 import { $, fillResult, nextTrack, renderTracks, show } from './ui/screens';
 
 type Mode = 'title' | 'play' | 'paused' | 'result' | 'sync';
 
-interface Checkpoint { run: RunState; judge: JudgeState }
-
 interface Session {
   stage: StageDef;
-  level: BuiltLevel;
-  judge: Judge;
-  run: RunState;
+  song: EchoSong;
+  state: EchoState;
   player: SongPlayer;
   attempt: number;
   practice: boolean;
-  /** Beat the song is counting in to; the run is frozen before it. */
-  countInUntil: number;
-  checkpoint: Checkpoint | null;
-  nextCheckpoint: number;
-  marks: number[];
-  deadAt: number | null;
+  overAt: number | null;
   finishedAt: number | null;
-  /** Beat of the last frame, for drawing. */
+  /** Beat of the last frame, for drawing while paused. */
   beat: number;
-  /** First-time hints for this stage's obstacle kinds. */
-  tips: Tip[];
   /** Timing of the latest presses, for the HUD meter. */
   recent: number[];
-  death: DeathCard | null;
+  card: EndCard | null;
 }
 
-const CHECKPOINT_EVERY = 16;
-const RESTART_AFTER_MS = 900;
-const JUMP_KEYS = new Set(['Space', 'ArrowUp', 'KeyW', 'KeyZ', 'KeyX']);
+/** One-key songs: any of these. Two-key songs: the low and high sets. */
+const LOW_KEYS = new Set(['ArrowDown', 'KeyS', 'KeyD', 'KeyF', 'KeyZ']);
+const HIGH_KEYS = new Set(['ArrowUp', 'KeyW', 'KeyJ', 'KeyK', 'KeyX']);
+const ANY_KEYS = new Set(['Space', 'Enter', ...LOW_KEYS, ...HIGH_KEYS]);
 const GRADE_TEXT: Record<Grade, string> = { perfect: 'PERFECT', great: 'GREAT', good: 'GOOD', miss: 'MISS' };
 const GRADE_COLOR: Record<Grade, string> = { perfect: '#ffffff', great: '#ffe14a', good: '#9fe8ff', miss: '#ff8a8a' };
-/** Hints show on the first few attempts of a stage, with the beat guide on. */
-const TIP_ATTEMPTS = 3;
-const TIP_TEXT = { spike: '박자에 맞춰 탭!', pit: '구멍도 탭으로 점프', up: '탭해서 계단 위로', orb: '링 안에서 한 번 더 탭', pad: '노란 발판은 자동 점프' } as const;
-/** A tap this long after breaking skips the rest of the wait. */
-const SKIP_DEATH_MS = 250;
+/** Presses this long before the first beat are just warming up. */
+const WARMUP_BEATS = 0.4;
+const RESULT_AFTER_MS = 1200;
+/** A press this long after the game ends starts again. */
+const RETRY_AFTER_MS = 400;
 
 const engine = new AudioEngine();
 const renderer = new Renderer($('stage'));
@@ -57,27 +49,24 @@ let records: Record<string, StageRecord> = loadRecords();
 let mode: Mode = 'title';
 let session: Session | null = null;
 let lastFrame = performance.now();
-const queue: { time: number; type: 'press' | 'release' }[] = [];
+const touchDevice = matchMedia('(hover: none) and (pointer: coarse)').matches;
 
 engine.setMuted(settings.muted);
 
 // ---------------------------------------------------------------- title demo
 
-/** Stage 1 played perfectly behind the title screen, on the page clock, silently. */
+/** Track 1 echoed perfectly behind the title screen, on the page clock, silently. */
 const demo = {
   stage: STAGES[0],
-  level: levelFor(STAGES[0]),
-  run: newRun(),
-  judge: new Judge([], 1),
-  inputs: [] as InputEvent[],
+  song: songFor(STAGES[0]),
+  state: newEcho(songFor(STAGES[0])),
+  taps: idealTaps(songFor(STAGES[0])),
   next: 0,
   t0: 0,
 };
 
 function resetDemo(now: number): void {
-  demo.run = newRun();
-  demo.judge = new Judge(demo.level.notes, demo.stage.bpm);
-  demo.inputs = idealInputs(demo.level);
+  demo.state = newEcho(demo.song);
   demo.next = 0;
   demo.t0 = now;
   renderer.reset();
@@ -85,85 +74,53 @@ function resetDemo(now: number): void {
 
 function demoFrame(now: number, dt: number): void {
   const beat = START_BEAT + ((now - demo.t0) / 1000) * (demo.stage.bpm / 60);
-  const { run, level } = demo;
-  while (demo.next < demo.inputs.length && demo.inputs[demo.next].beat <= beat) {
-    const input = demo.inputs[demo.next++];
-    while (run.t < input.beat - 1e-9 && !run.dead && !run.finished) step(run, level.world);
-    if (input.type === 'press') press(run, level.world);
-    else release(run);
+  const { state, song } = demo;
+  while (demo.next < demo.taps.length && demo.taps[demo.next].beat <= beat) {
+    const p = demo.taps[demo.next++];
+    advance(state, song, p.beat);
+    tap(state, song, p.beat, p.key, demo.stage.bpm);
   }
-  while (run.t < beat - 1e-9 && !run.dead && !run.finished) step(run, level.world);
-  for (const e of run.events) {
-    if (e.type === 'jump' || e.type === 'orb') demo.judge.hit(e.t, e.type);
-    if (e.type === 'land') renderer.landed(e.t, e.x, e.y, e.impact, demo.stage.palette.edge);
+  advance(state, song, beat);
+  for (const e of state.events) {
+    if (e.type === 'bounce') {
+      const n = song.notes[e.note];
+      renderer.bounced(e.note, e.t, xAt(n.beat), heightOf(n.pitch), n.role === 'call' ? demo.stage.palette.staff : demo.stage.palette.accent);
+    }
   }
-  run.events.length = 0;
-  renderer.render({ stage: demo.stage, level, run, beat: Math.max(beat, START_BEAT), guide: true, judged: demo.judge.state.judged, hud: null, countIn: null, deadFor: -1, tips: [], death: null }, dt);
-  if (run.finished || run.dead || beat > level.endBeat + 2) resetDemo(now);
+  state.events.length = 0;
+  renderer.render({
+    stage: demo.stage, song, state, beat: Math.max(beat, START_BEAT), hint: true, hud: null, countIn: null, overFor: -1, card: null, touchKeys: false,
+  }, dt);
+  if (state.finished || beat > song.endBeat + 2) resetDemo(now);
 }
 
 // ---------------------------------------------------------------- sessions
 
-/** One hint above the first obstacle of each kind in a level. */
-function buildTips(level: BuiltLevel): Tip[] {
-  const tips: Tip[] = [];
-  const seen = new Set<string>();
-  for (const n of level.notes) {
-    if (seen.has(n.kind)) continue;
-    seen.add(n.kind);
-    const x = n.beat * SPEED;
-    if (n.kind === 'orb') {
-      const orb = level.world.orbs.find((o) => Math.abs(o.x - x) < 0.01);
-      if (orb) tips.push({ x, y: orb.y + 1.1, text: TIP_TEXT.orb });
-    } else {
-      const top = groundAt(level.world, x) ?? 0;
-      tips.push({ x: x + 2, y: top + 3.5, text: TIP_TEXT[n.kind] });
-    }
-  }
-  const pad = level.world.pads[0];
-  if (pad) tips.push({ x: pad.x, y: pad.y + 1.6, text: TIP_TEXT.pad });
-  return tips;
-}
-
 function startStage(stage: StageDef): void {
   engine.unlock();
-  const level = levelFor(stage);
+  const song = songFor(stage);
   session?.player.stop();
   session = {
-    stage, level, judge: new Judge(level.notes, stage.bpm), run: newRun(), player: new SongPlayer(engine, stage, level),
-    attempt: 0, practice: settings.practice, countInUntil: 0, checkpoint: null, nextCheckpoint: CHECKPOINT_EVERY,
-    marks: [], deadAt: null, finishedAt: null, beat: START_BEAT, tips: buildTips(level), recent: [], death: null,
+    stage, song, state: newEcho(song, settings.practice), player: new SongPlayer(engine, stage, song), attempt: 0,
+    practice: settings.practice, overAt: null, finishedAt: null, beat: START_BEAT, recent: [], card: null,
   };
   document.documentElement.style.setProperty('--accent', stage.palette.accent);
   beginAttempt();
 }
 
-/** A fresh attempt: from the top, or in practice from the last checkpoint after a one-bar count-in. */
+/** From the top, after a one-bar count-in. */
 function beginAttempt(): void {
   const s = session!;
   s.player.stop();
-  s.player = new SongPlayer(engine, s.stage, s.level);
+  s.player = new SongPlayer(engine, s.stage, s.song);
   s.attempt++;
-  s.deadAt = null;
+  s.state = newEcho(s.song, s.practice);
+  s.overAt = null;
   s.finishedAt = null;
-  s.death = null;
+  s.card = null;
   s.recent = [];
-  queue.length = 0;
   renderer.reset();
-  if (s.practice && s.checkpoint) {
-    s.run = cloneRun(s.checkpoint.run);
-    s.judge.restore(s.checkpoint.judge);
-    s.countInUntil = s.run.t;
-    s.player.start(s.run.t - 4, s.run.t);
-  } else {
-    s.run = newRun();
-    s.judge = new Judge(s.level.notes, s.stage.bpm);
-    s.checkpoint = null;
-    s.nextCheckpoint = CHECKPOINT_EVERY;
-    s.marks = [];
-    s.countInUntil = 0;
-    s.player.start(START_BEAT, 0);
-  }
+  s.player.start(START_BEAT, 0);
   mode = 'play';
   show(null);
 }
@@ -173,20 +130,23 @@ function heardBeat(s: Session, perfMs: number): number {
   return s.player.beatAt(engine.heardTimeAt(perfMs) - settings.offsetMs / 1000);
 }
 
-/** Steps the run to beat `to`, saving practice checkpoints on the way. */
-function advance(s: Session, to: number): void {
-  const run = s.run;
-  while (run.t < to - 1e-9 && !run.dead && !run.finished) {
-    step(run, s.level.world);
-    if (s.practice && run.t >= s.nextCheckpoint && run.grounded && Number.isInteger(run.t)) {
-      const saved = cloneRun(run);
-      saved.holding = false;
-      saved.pressAt = -Infinity;
-      s.checkpoint = { run: saved, judge: s.judge.snapshot() };
-      s.marks.push(Math.min(1, (run.t * SPEED) / s.level.world.endX));
-      s.nextCheckpoint = run.t + CHECKPOINT_EVERY;
-    }
+/** A press, handled the moment it happens so its note sounds without waiting for a frame. */
+function onPress(time: number, key: Key): void {
+  const s = session;
+  if (!s || mode !== 'play') return;
+  if (s.overAt !== null) {
+    if (performance.now() - s.overAt > RETRY_AFTER_MS) beginAttempt();
+    return;
   }
+  if (s.finishedAt !== null) return;
+  if (s.song.twoKeys && key === 'any') return;
+  renderer.pressed(key);
+  const b = heardBeat(s, time);
+  if (b < -WARMUP_BEATS) return;
+  const at = Math.max(b, s.state.t);
+  advance(s.state, s.song, at);
+  tap(s.state, s.song, at, key, s.stage.bpm);
+  handleEvents(s, performance.now());
 }
 
 function playFrame(now: number, dt: number): void {
@@ -194,104 +154,90 @@ function playFrame(now: number, dt: number): void {
   s.player.pump();
   // The audio clock is suspended while paused; hold the picture still too.
   const beatNow = mode === 'paused' ? s.beat : heardBeat(s, now);
-  const run = s.run;
-
-  if (mode === 'play' && s.deadAt === null && s.finishedAt === null) {
-    for (const input of queue.splice(0)) {
-      const b = heardBeat(s, input.time);
-      if (b > run.t) advance(s, Math.min(b, beatNow));
-      if (input.type === 'press') {
-        if (b >= s.countInUntil - 0.25 || s.countInUntil <= 0) press(run, s.level.world);
-      } else release(run);
-    }
-    if (beatNow >= s.countInUntil || s.countInUntil <= 0) advance(s, beatNow);
+  if (mode === 'play' && s.overAt === null) {
+    advance(s.state, s.song, Math.max(beatNow, s.state.t));
     handleEvents(s, now);
-    if (s.judge.sweep(run.t).length) renderer.popup('MISS', '', GRADE_COLOR.miss, run.y);
-  } else queue.length = 0;
-
-  // After the finish line the ball keeps rolling out with the music for a couple of bars.
-  if (s.finishedAt !== null && run.grounded) {
-    run.t = Math.min(Math.max(run.t, beatNow), s.level.endBeat + 8);
-    run.x = run.t * SPEED;
   }
   s.beat = beatNow;
-
-  const countIn = beatNow < s.countInUntil ? beatNow - s.countInUntil : null;
+  const st = s.state;
   renderer.render({
-    stage: s.stage, level: s.level, run, beat: beatNow, guide: settings.guide, judged: s.judge.state.judged,
+    stage: s.stage, song: s.song, state: st, beat: beatNow, hint: settings.guide,
     hud: {
-      attempt: s.attempt, combo: s.judge.state.combo, accuracy: s.judge.accuracy(),
-      progress: Math.min(1, Math.max(0, run.x / s.level.world.endX)),
-      best: s.practice ? 0 : s.death ? s.death.best : records[s.stage.id]?.bestPct ?? 0, practice: s.practice, checkpoints: s.marks,
-      recent: s.recent,
+      hearts: st.hearts, combo: st.combo, accuracy: accuracy(st), progress: progress(s.song, Math.max(0, beatNow)),
+      best: s.practice ? 0 : s.card ? s.card.best : records[s.stage.id]?.bestPct ?? 0, practice: s.practice,
+      restored: st.restored, phrases: s.song.phrases, recent: s.recent,
     },
-    countIn, deadFor: s.deadAt === null ? -1 : (now - s.deadAt) / 1000,
-    tips: settings.guide && s.attempt <= TIP_ATTEMPTS ? s.tips : [],
-    death: s.death,
+    countIn: beatNow < 0 ? beatNow : null, overFor: s.overAt === null ? -1 : (now - s.overAt) / 1000, card: s.card,
+    touchKeys: s.song.twoKeys && touchDevice,
   }, dt);
-
-  if (s.deadAt !== null && now - s.deadAt > RESTART_AFTER_MS && mode === 'play') beginAttempt();
-  if (s.finishedAt !== null && now - s.finishedAt > 900 && mode === 'play') showResult(s);
+  if (s.finishedAt !== null && now - s.finishedAt > RESULT_AFTER_MS && mode === 'play') showResult(s);
 }
 
 function handleEvents(s: Session, now: number): void {
   const p = s.stage.palette;
-  for (const e of s.run.events) {
-    if (e.type === 'jump' || e.type === 'orb') {
-      if (e.type === 'orb') renderer.sparks(e.x, e.y + 0.4, p.accent);
-      const j = s.judge.hit(e.t, e.type);
-      if (j) {
-        s.recent.push(j.deltaMs);
+  const song = s.song;
+  for (const e of s.state.events) {
+    if (e.type === 'bounce') {
+      const n = song.notes[e.note];
+      renderer.bounced(e.note, e.t, xAt(n.beat), heightOf(n.pitch), e.role === 'call' ? p.staff : p.accent);
+    } else if (e.type === 'tap') {
+      const n = song.notes[e.note];
+      const pitch = e.wrong ? (keyOf(n.pitch) === 'high' ? 1 : 4) : n.pitch;
+      s.player.playNote(midiOf(s.stage.song, pitch));
+      if (e.wrong) renderer.popup('MISS', '다른 음', GRADE_COLOR.miss, heightOf(pitch));
+      else {
+        s.recent.push(e.deltaMs);
         if (s.recent.length > 12) s.recent.shift();
-        const sub = j.grade === 'perfect' ? '' : j.deltaMs < 0 ? '빠름' : '느림';
-        renderer.popup(GRADE_TEXT[j.grade], sub, GRADE_COLOR[j.grade], e.y);
+        renderer.popup(GRADE_TEXT[e.grade], e.grade === 'perfect' ? '' : e.deltaMs < 0 ? '빠름' : '느림', GRADE_COLOR[e.grade], heightOf(n.pitch));
       }
-    } else if (e.type === 'pad') renderer.sparks(e.x, e.y, p.accent);
-    else if (e.type === 'land') renderer.landed(e.t, e.x, e.y, e.impact, p.edge);
-    else if (e.type === 'die') {
-      s.deadAt = now;
-      s.player.stop(0.02);
-      engine.death();
-      renderer.shatter(e.x, e.y, [p.ball, p.accent, p.ink]);
+    } else if (e.type === 'stray') {
+      s.player.knock();
+      renderer.popup('헛박', '', '#d6d0e6', ballAt(s.state, song, e.t).y);
+    } else if (e.type === 'fall') {
+      engine.fall();
       try {
         navigator.vibrate?.(40);
       } catch {
-        // Not allowed here; the flash and sound are enough.
+        // Not allowed here; the sound is enough.
       }
-      const pct = Math.min(1, Math.max(0, e.x / s.level.world.endX));
+      if (!s.practice) renderer.popup('♥ -1', '', '#ff8a8a', heightOf(song.notes[e.note].pitch));
+    } else if (e.type === 'phrase' && e.perfect) {
+      const y = ballAt(s.state, song, e.t).y;
+      renderer.burst(xAt(e.t), y + 0.4, [p.accent, p.staff, '#ffe14a']);
+      renderer.popup(e.healed ? '♥ +1' : 'ECHO!', '완벽한 메아리', p.accent, y);
+    } else if (e.type === 'gameover') {
+      s.overAt = now;
+      s.player.stop(0.3);
+      const pct = progress(song, e.t);
       const before = records[s.stage.id]?.bestPct ?? 0;
-      let newBest = false;
-      if (!s.practice) {
-        const merged = mergeRecord(records[s.stage.id], { cleared: false, pct });
-        records[s.stage.id] = merged.record;
-        newBest = merged.improved;
-        saveRecords(records);
-      }
-      s.death = { pct, best: Math.max(before, s.practice ? 0 : pct), newBest, practice: s.practice };
+      const merged = mergeRecord(records[s.stage.id], { cleared: false, pct });
+      records[s.stage.id] = merged.record;
+      saveRecords(records);
+      s.card = { pct, best: Math.max(before, pct), newBest: merged.improved };
     } else if (e.type === 'finish') {
       s.finishedAt = now;
-      s.judge.sweep(Infinity);
     }
   }
-  s.run.events.length = 0;
+  s.state.events.length = 0;
 }
 
 function showResult(s: Session): void {
   mode = 'result';
-  const rank = s.judge.rank();
-  const accuracy = s.judge.accuracy();
+  const st = s.state;
+  const r = rank(st);
+  const acc = accuracy(st);
   let improved = false;
   if (!s.practice) {
-    const merged = mergeRecord(records[s.stage.id], { cleared: true, rank, accuracy });
+    const merged = mergeRecord(records[s.stage.id], { cleared: true, rank: r, accuracy: acc });
     records[s.stage.id] = merged.record;
     improved = merged.improved;
     saveRecords(records);
   }
   const idx = STAGES.indexOf(s.stage);
   fillResult({
-    stage: s.stage, rank, accuracy, counts: s.judge.state.counts, maxCombo: s.judge.state.maxCombo,
-    attempts: s.attempt, practice: s.practice, improved, hasNext: idx < STAGES.length - 1,
-    timing: timingSummary(s.judge.state.judged),
+    stage: s.stage, rank: r, accuracy: acc, counts: st.counts, maxCombo: st.maxCombo, restored: st.restored,
+    phrases: s.song.phrases, practice: s.practice, noHint: !settings.guide, improved, hasNext: idx < STAGES.length - 1,
+    timing: timingSummary(st.judged),
   });
   engine.fanfare(s.stage.song.root);
   show('result');
@@ -310,11 +256,12 @@ function toTitle(): void {
 }
 
 function pause(): void {
-  if (mode !== 'play' || !session || session.deadAt !== null || session.finishedAt !== null) return;
+  if (mode !== 'play' || !session || session.overAt !== null || session.finishedAt !== null) return;
   mode = 'paused';
   void engine.suspend();
-  const pct = Math.floor(Math.min(1, Math.max(0, session.run.x / session.level.world.endX)) * 100);
-  $('pause-info').textContent = `${session.stage.name} · ${pct}% 지점 · 시도 ${session.attempt}`;
+  const pct = Math.floor(progress(session.song, Math.max(0, session.beat)) * 100);
+  const hearts = session.practice ? '연습' : `하트 ${session.state.hearts}`;
+  $('pause-info').textContent = `${session.stage.name} · ${pct}% · ${hearts} · 구절 ${session.state.restored}/${session.song.phrases}`;
   show('pause');
   $('resume').focus();
 }
@@ -323,7 +270,6 @@ function resume(): void {
   if (mode !== 'paused') return;
   void engine.resume();
   mode = 'play';
-  queue.length = 0;
   show(null);
 }
 
@@ -399,7 +345,7 @@ function closeSync(): void {
 let trackButtons: HTMLButtonElement[] = [];
 
 function renderTitle(): void {
-  trackButtons = renderTracks(STAGES, STAGES.map((st) => levelFor(st).bars.length), records, startStage);
+  trackButtons = renderTracks(STAGES, STAGES.map((st) => songFor(st).endBeat / 4), records, startStage);
   $<HTMLInputElement>('opt-guide').checked = settings.guide;
   $<HTMLInputElement>('opt-practice').checked = settings.practice;
   $('sync-value').textContent = `${settings.offsetMs > 0 ? '+' : ''}${settings.offsetMs}ms`;
@@ -447,12 +393,11 @@ $('res-sync').addEventListener('click', openSync);
 
 // ---------------------------------------------------------------- input
 
-/** During the death card, any press jumps straight to the next attempt. */
-function skipDeath(now: number): boolean {
-  const s = session;
-  if (mode !== 'play' || !s || s.deadAt === null || now - s.deadAt < SKIP_DEATH_MS) return false;
-  beginAttempt();
-  return true;
+function keyFor(code: string): Key | null {
+  if (!session?.song.twoKeys) return ANY_KEYS.has(code) ? 'any' : null;
+  if (LOW_KEYS.has(code)) return 'low';
+  if (HIGH_KEYS.has(code)) return 'high';
+  return ANY_KEYS.has(code) ? 'any' : null;
 }
 
 addEventListener('keydown', (e) => {
@@ -465,15 +410,14 @@ addEventListener('keydown', (e) => {
     return;
   }
   if (mode === 'play') {
-    if (JUMP_KEYS.has(e.code) && !e.repeat && skipDeath(performance.now())) {
+    const key = keyFor(e.code);
+    if (key) {
       e.preventDefault();
-      return;
-    }
-    if (JUMP_KEYS.has(e.code)) {
-      e.preventDefault();
-      if (!e.repeat) queue.push({ time: e.timeStamp, type: 'press' });
-    } else if (e.code === 'Escape' || e.code === 'KeyP') pause();
-    else if (e.code === 'KeyR' && session) startStage(session.stage);
+      if (!e.repeat) onPress(e.timeStamp, key);
+    } else if (e.code === 'Escape' || e.code === 'KeyP') {
+      if (session?.overAt !== null) toTitle();
+      else pause();
+    } else if (e.code === 'KeyR' && session) startStage(session.stage);
   } else if (mode === 'paused') {
     if (e.code === 'Escape' || e.code === 'KeyP') {
       e.preventDefault();
@@ -487,30 +431,19 @@ addEventListener('keydown', (e) => {
     else if (e.code === 'Escape') toTitle();
   } else if (mode === 'sync') {
     if (e.code === 'Escape') closeSync();
-    else if (!e.repeat && (JUMP_KEYS.has(e.code) || e.code === 'Enter')) {
+    else if (!e.repeat && (ANY_KEYS.has(e.code))) {
       e.preventDefault();
       syncTap(e.timeStamp);
     }
   }
 });
-addEventListener('keyup', (e) => {
-  if (mode === 'play' && JUMP_KEYS.has(e.code)) queue.push({ time: e.timeStamp, type: 'release' });
-});
 
-const pointers = new Set<number>();
 renderer.canvas.addEventListener('pointerdown', (e) => {
   if (mode !== 'play') return;
   e.preventDefault();
-  if (skipDeath(performance.now())) return;
-  pointers.add(e.pointerId);
-  if (pointers.size === 1) queue.push({ time: e.timeStamp, type: 'press' });
+  const key: Key = session?.song.twoKeys ? (e.clientX < innerWidth / 2 ? 'low' : 'high') : 'any';
+  onPress(e.timeStamp, key);
 });
-const lift = (e: PointerEvent) => {
-  if (!pointers.delete(e.pointerId)) return;
-  if (pointers.size === 0 && mode === 'play') queue.push({ time: e.timeStamp, type: 'release' });
-};
-addEventListener('pointerup', lift);
-addEventListener('pointercancel', lift);
 renderer.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 
 document.addEventListener('visibilitychange', () => {
