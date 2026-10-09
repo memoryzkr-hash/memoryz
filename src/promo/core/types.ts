@@ -111,11 +111,38 @@ export interface TopicPlan {
   keywords: string[];
 }
 
+export type ReferenceKind = 'blog' | 'instagram' | 'threads' | 'news' | 'video' | 'other';
+export const REFERENCE_KINDS: ReferenceKind[] = ['blog', 'instagram', 'threads', 'news', 'video', 'other'];
+
 export interface Reference {
   title: string;
   url: string;
   /** What is worth borrowing: hook, structure, format. Never the wording. */
   note: string;
+  /** Where it was published, for the reference feed. */
+  kind?: ReferenceKind;
+  /** Site or account name. */
+  source?: string;
+  /** The opening move, described or quoted in a few words. */
+  hook?: string;
+  /** The order of the piece, e.g. "문제 → 흔한 실수 3개 → 해결 → 요약". */
+  structure?: string;
+  /** Why it probably gets attention. */
+  why?: string;
+  /** Engagement shown on the page (e.g. "공감 1.2천"), or "" when none was visible. Never estimated. */
+  popularity?: string;
+  /** Text a person pasted from a post they found. */
+  excerpt?: string;
+  /** Picked by a person in the dashboard: the writer follows these first. */
+  chosen?: boolean;
+}
+
+/** A batch of references found for one topic (promo-data/references/*.json). */
+export interface ReferenceSet {
+  topic: string;
+  platform: string;
+  createdAt: string;
+  references: Reference[];
 }
 
 export interface Fact {

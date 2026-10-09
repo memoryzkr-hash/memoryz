@@ -26,6 +26,7 @@ import {
   type UiPlatform,
 } from './model';
 import { blogPreview, instagramPreview, threadsPreview } from './previews';
+import { pickedRefs, refsSection, topics, unpick } from './refs';
 
 const GUIDE = 'https://github.com/memoryzkr-hash/memoryz/blob/main/docs/promo/SETUP.md';
 
@@ -219,7 +220,8 @@ function draftActions(app: App, ui: UiPlatform, file: DraftFile, onEdit: () => v
 
 function makeSection(app: App, ui: UiPlatform): HTMLElement {
   const st = make[ui];
-  const topic = h('input', { class: 'input', id: `topic-${ui}`, placeholder: '예: 야근 날 편의점에서 단백질 채우기 (비우면 알아서 정해요)', maxLength: 80 });
+  const topic = h('input', { class: 'input', id: `topic-${ui}`, value: topics[ui], placeholder: '예: 야근 날 편의점에서 단백질 채우기 (비우면 알아서 정해요)', maxLength: 80, onInput: (e: Event) => (topics[ui] = (e.target as HTMLInputElement).value) });
+  const chosen = pickedRefs(app, ui);
   const start = async () => {
     st.running = true;
     st.ctl = new AbortController();
@@ -227,7 +229,7 @@ function makeSection(app: App, ui: UiPlatform): HTMLElement {
     st.editing = false;
     app.render();
     try {
-      st.file = await app.backend.generate(app.m!, ui, topic.value.trim(), (msg) => ((st.msg = msg), app.render()), st.ctl.signal);
+      st.file = await app.backend.generate(app.m!, ui, topics[ui].trim(), (msg) => ((st.msg = msg), app.render()), st.ctl.signal, chosen);
     } catch (e) {
       if (!(e instanceof BackendError && e.message === '취소했어요')) toast(e instanceof BackendError ? e.message : '글을 만들지 못했어요');
     } finally {
@@ -238,13 +240,21 @@ function makeSection(app: App, ui: UiPlatform): HTMLElement {
   };
   const busy = st.running || st.publishing;
   const parts: (HTMLElement | null)[] = [
-    h('div', { class: 'section-head' }, h('h2', null, '글 만들기'), st.file ? h('button', { class: 'btn ghost small', type: 'button', onClick: () => ((st.file = null), app.render()) }, '새로 만들기') : null),
+    h('div', { class: 'section-head' }, h('h2', null, '2. 글 만들기'), st.file ? h('button', { class: 'btn ghost small', type: 'button', onClick: () => ((st.file = null), app.render()) }, '새로 만들기') : null),
   ];
   if (busy) {
     parts.push(h('div', { class: 'progress', role: 'status' }, h('span', { class: 'msg' }, st.msg), h('div', { class: 'bar-anim' }, h('i')), h('div', { class: 'row' }, h('button', { class: 'btn ghost small', type: 'button', onClick: () => st.ctl?.abort() }, '그만두기'))));
   }
   if (!st.file && !st.running) {
     parts.push(
+      chosen.length
+        ? h(
+            'div',
+            { class: 'field' },
+            h('span', { class: 'label' }, '참고할 인기 글'),
+            h('div', { class: 'choices' }, ...chosen.map((r) => h('button', { class: 'choice', type: 'button', 'aria-pressed': 'true', title: '빼기', onClick: () => (unpick(ui, r), app.render()) }, `${r.title.slice(0, 24)}${r.title.length > 24 ? '…' : ''} ✕`))),
+          )
+        : h('p', { class: 'help' }, h('a', { href: '#refs', onClick: (e: Event) => (e.preventDefault(), document.getElementById('refs')?.scrollIntoView({ behavior: 'smooth' })) }, '위에서 인기 글을 고르면'), ' 그 형식을 따라 써요. 안 골라도 알아서 찾아봐요.'),
       h('div', { class: 'field' }, h('label', { htmlFor: `topic-${ui}` }, '어떤 내용으로 쓸까요?'), topic),
       h('p', { class: 'help' }, app.backend.kind === 'github' ? '레퍼런스를 찾아보고 내 브랜드 소개와 글 구성에 맞춰 써요. 2~5분 걸려요.' : '내 브랜드 소개에 맞춰 바로 써 드려요.'),
       h('div', { class: 'row' }, h('button', { class: 'btn primary', type: 'button', onClick: start }, `${UI_NAME[ui]} 글 만들기`)),
@@ -444,6 +454,7 @@ export function platformView(app: App): HTMLElement {
     h('div', { class: 'bar' }, h('button', { class: 'iconbtn', type: 'button', 'aria-label': '처음으로', onClick: () => app.go('home') }, icon('back')), h('span', { class: 'help' }, m.config.brand.name)),
     h('header', { class: 'ptitle' }, h('span', { class: 'pmark', 'aria-hidden': 'true' }, MARK[ui]), h('div', null, h('h1', null, `${UI_NAME[ui]} 자동화`), h('p', { class: 'help' }, subtitle(m, ui)))),
     app.backend.kind === 'preview' ? h('div', { class: 'note-preview' }, PREVIEW_ONLY ? '미리보기 · 실제 게시는 연결된 앱에서 돼요' : '미리보기 · 설정에서 GitHub을 연결하면 실제로 올라가요') : null,
+    refsSection(app, ui),
     makeSection(app, ui),
     autoSection(app, ui),
     accountSection(app, ui),

@@ -1,5 +1,5 @@
 /**
- * npm run promo -- <command> [--dry-run] [--topic "..."] [--platform blog|instagram|threads]
+ * npm run promo -- <command> [--dry-run] [--topic "..."] [--platform blog|instagram|threads] [--refs references/picked.json]
  * Commands: run · post-now · preview · comments · check · due (docs/promo/PLAN.md §7)
  */
 import Anthropic from '@anthropic-ai/sdk';
@@ -12,19 +12,21 @@ import { DataDir } from './core/store';
 import { PLATFORM_LABELS, type PlatformId } from './core/types';
 import { describeError } from './errors';
 import { renderCards } from './media/render';
+import { parseChosen } from './core/references';
 import { buildHost, buildPlatforms, dataLinkBase, loadConfigDir, maintainTokens, missingEnv, resolvePlatforms, sendWebhook } from './setup';
 
-const COMMANDS = ['run', 'post-now', 'preview', 'comments', 'check', 'due'] as const;
+const COMMANDS = ['run', 'post-now', 'preview', 'research', 'comments', 'check', 'due'] as const;
 type Command = (typeof COMMANDS)[number];
 
 function parseArgs(argv: string[]) {
-  const args = { command: 'run' as Command, dryRun: false, topic: null as string | null, platform: null as string | null };
+  const args = { command: 'run' as Command, dryRun: false, topic: null as string | null, platform: null as string | null, refs: null as string | null };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--dry-run') args.dryRun = true;
     else if (a === '--topic') args.topic = argv[++i]?.trim() || null;
     else if (a.startsWith('--topic=')) args.topic = a.slice(8).trim() || null;
     else if (a === '--platform') args.platform = argv[++i]?.trim() || null;
+    else if (a === '--refs') args.refs = argv[++i]?.trim() || null;
     else if (a.startsWith('--platform=')) args.platform = a.slice(11).trim() || null;
     else if ((COMMANDS as readonly string[]).includes(a)) args.command = a as Command;
     else throw new Error(`모르는 명령이에요: ${a} (쓸 수 있는 명령: ${COMMANDS.join(', ')})`);
@@ -158,8 +160,15 @@ async function main() {
   try {
     if (args.command === 'run') await agent.run();
     else if (args.command === 'post-now' || args.command === 'preview') {
-      const draft = await agent.postNow(args.topic, resolvePlatforms(args.platform, config, env));
+      // Only files the dashboard writes, never a path outside promo-data/references.
+      const refsPath = args.refs && /^references\/[\w.-]+\.json$/.test(args.refs) ? args.refs : null;
+      const chosen = refsPath ? parseChosen(await data.read(refsPath)) : [];
+      if (args.refs && !chosen.length) agent.events.push({ kind: 'warn', message: `고른 레퍼런스(${args.refs})를 읽지 못해 레퍼런스 없이 썼어요` });
+      const draft = await agent.postNow(args.topic, resolvePlatforms(args.platform, config, env), chosen);
       if (draft) log(`초안: ${data.path(`drafts/${draft.id}.md`)}`);
+    } else if (args.command === 'research') {
+      const path = await agent.findReferences(args.topic, resolvePlatforms(args.platform, config, env));
+      if (path) log(`레퍼런스: ${data.path(path)}`);
     } else if (args.command === 'comments') await agent.handleComments();
   } finally {
     await agent.save();

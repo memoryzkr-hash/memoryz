@@ -18,7 +18,7 @@ platforms:
   naver: { enabled: false }
 `;
 
-function fakeGitHub(opts: { secrets?: string[]; runs?: { conclusion: string }[]; draftAfterRun?: () => string } = {}) {
+function fakeGitHub(opts: { secrets?: string[]; runs?: { conclusion: string }[]; draftAfterRun?: () => string; afterRun?: (files: Record<string, { text: string; sha: string }>) => void } = {}) {
   const files: Record<string, { text: string; sha: string }> = {
     'main:promo/config.yml': { text: CONFIG, sha: 'c1' },
     'main:promo/brand.md': { text: '# 단백한끼', sha: 'b1' },
@@ -60,7 +60,12 @@ function fakeGitHub(opts: { secrets?: string[]; runs?: { conclusion: string }[];
       polls++;
       if (polls < 2) return json({ status: 'in_progress', conclusion: null, html_url: 'h' });
       if (opts.draftAfterRun) files['promo-data:drafts/new.md'] = { text: opts.draftAfterRun(), sha: 'd1' };
+      opts.afterRun?.(files);
       return json({ status: 'completed', conclusion: opts.runs?.[0]?.conclusion ?? 'success', html_url: 'https://github.com/o/r/actions/runs/7' });
+    }
+    if (path === '/contents/references') {
+      const list = Object.keys(files).filter((k) => k.startsWith('promo-data:references/'));
+      return list.length ? json(list.map((k) => ({ name: k.split('/').pop(), path: k.slice(11), type: 'file' }))) : json({}, 404);
     }
     if (path === '/contents/drafts') return json(Object.keys(files).filter((k) => k.startsWith('promo-data:drafts/')).map((k) => ({ name: k.split('/').pop(), path: k.slice(11), type: 'file' })));
     if (path.startsWith('/contents/')) {
@@ -202,5 +207,56 @@ describe('GitHub backend', () => {
     const kp = sodium.crypto_box_keypair();
     const sealed = await sealForGitHub(sodium.to_base64(kp.publicKey, sodium.base64_variants.ORIGINAL), '비밀값');
     expect(sodium.to_string(sodium.crypto_box_seal_open(sodium.from_base64(sealed, sodium.base64_variants.ORIGINAL), kp.publicKey, kp.privateKey))).toBe('비밀값');
+  });
+
+  it('인기 글 찾기 runs the research command and adds what it found to the feed', async () => {
+    const found = { topic: '편의점 단백질', platform: 'instagram', createdAt: '2026-10-09T00:00:00Z', references: [{ title: '조합 공식', url: 'https://gq.example/1', kind: 'blog', source: 'GQ', hook: '공식', structure: 'a → b', why: 'w', popularity: '', note: 'n' }] };
+    const { f, calls } = fakeGitHub({ afterRun: (files) => (files['promo-data:references/2026-10-09-1000-now-instagram.json'] = { text: JSON.stringify(found), sha: 'r1' }) });
+    const be = createGitHubBackend('o/r', 't', f, 0);
+    const m = await be.load();
+    expect(m.references).toEqual([]);
+    const fresh = await be.findReferences(m, 'instagram', '편의점 단백질', () => {}, new AbortController().signal);
+    expect(fresh.map((r) => r.title)).toEqual(['조합 공식']);
+    expect(m.references[0].url).toBe('https://gq.example/1');
+    expect(calls.find((c) => c.path.endsWith('/dispatches'))!.body.inputs).toEqual({ command: 'research', platform: 'instagram', topic: '편의점 단백질' });
+  }, 20000);
+
+  it('a pasted post becomes my reference, saved to promo-data', async () => {
+    const { f, files } = fakeGitHub();
+    const be = createGitHubBackend('o/r', 't', f, 0);
+    const m = await be.load();
+    const ref = await be.addReference(m, 'threads', { text: '야근하는 날 편의점에서 이렇게 먹어 봄\n1. 계란', url: 'https://www.threads.net/@a/post/1' });
+    expect(ref).toMatchObject({ title: '야근하는 날 편의점에서 이렇게 먹어 봄', kind: 'threads', source: '직접 추가' });
+    expect(JSON.parse(files['promo-data:references/mine.json'].text).references[0].excerpt).toContain('1. 계란');
+    const again = await be.load();
+    expect(again.references[0].source).toBe('직접 추가');
+  });
+
+  it('글 만들기 with picked references saves them and passes the file to the agent', async () => {
+    const made = () => serializeDraft(testDraft({ id: 'new', platforms: ['threads'], createdAt: new Date().toISOString() }));
+    const { f, files, calls } = fakeGitHub({ draftAfterRun: made });
+    const be = createGitHubBackend('o/r', 't', f, 0);
+    const m = await be.load();
+    await be.generate(m, 'threads', '', () => {}, new AbortController().signal, [{ title: '고른 글', url: 'https://a.example', note: '', hook: 'h' }]);
+    const inputs = calls.find((c) => c.path.endsWith('/dispatches'))!.body.inputs;
+    expect(inputs.refs).toMatch(/^references\/picked-\d+\.json$/);
+    expect(JSON.parse(files[`promo-data:${inputs.refs}`].text).references[0].title).toBe('고른 글');
+  }, 20000);
+});
+
+
+describe('preview references', () => {
+  it('ships real example references with nothing invented about popularity', async () => {
+    const { DEMO_REFERENCES, writePrompt } = await import('../../src/promo/ui/preview');
+    expect(DEMO_REFERENCES.length).toBeGreaterThanOrEqual(6);
+    for (const r of DEMO_REFERENCES) {
+      expect(r.url).toMatch(/^https:\/\//);
+      expect(r.popularity).toBe('');
+      expect(r.hook && r.structure && r.why).toBeTruthy();
+    }
+    const p = writePrompt('instagram', '단백한끼', '소개', '', '', [], [DEMO_REFERENCES[0]]);
+    expect(p).toContain('<references>');
+    expect(p).toContain(DEMO_REFERENCES[0].hook!);
+    expect(p).toContain('베끼지');
   });
 });

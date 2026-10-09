@@ -12,9 +12,9 @@ on:
   workflow_dispatch:
     inputs:
       command:
-        description: '할 일 (run: 평소 실행 · post-now: 지금 한 편 · preview: 올리지 않고 미리보기 · comments: 댓글만 · check: 연결 확인)'
+        description: '할 일 (run: 평소 실행 · post-now: 지금 한 편 · preview: 올리지 않고 미리보기 · research: 인기 글 찾기 · comments: 댓글만 · check: 연결 확인)'
         type: choice
-        options: [run, post-now, preview, comments, check]
+        options: [run, post-now, preview, research, comments, check]
         default: run
       topic:
         description: 'post-now / preview 주제 (비우면 알아서)'
@@ -25,6 +25,10 @@ on:
         type: choice
         options: [all, blog, instagram, threads]
         default: all
+      refs:
+        description: 'post-now / preview에서 따를 레퍼런스 파일 (promo-data 안 경로, 관제 화면이 채워요)'
+        type: string
+        required: false
 
 concurrency:
   group: promo-agent
@@ -93,10 +97,12 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           TOPIC: ${{ inputs.topic }}
           PLATFORM: ${{ inputs.platform || 'all' }}
+          REFS: ${{ inputs.refs }}
         run: |
           cmd="${{ inputs.command || 'run' }}"
           set -- "$cmd" --platform "$PLATFORM"
           if [ -n "$TOPIC" ]; then set -- "$@" --topic "$TOPIC"; fi
+          if [ -n "$REFS" ]; then set -- "$@" --refs "$REFS"; fi
           npm run -s promo -- "$@"
 
       - name: Keep preview card images as a downloadable artifact

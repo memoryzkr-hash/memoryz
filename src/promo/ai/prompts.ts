@@ -60,8 +60,15 @@ export const RESEARCH_SYSTEM = `당신은 SNS 마케팅 리서처입니다. 주�
 3. 다 봤으면 반드시 submit_research 도구를 한 번 호출해 제출합니다. 다른 답변 글은 쓰지 않아도 됩니다.
 
 제출 항목
-- references: 참고한 글 3~8개. url은 이번에 검색·열람한 결과에 실제로 나온 주소만 그대로 씁니다. 지어내지 마세요.
-  note에는 빌려 쓸 "형식"만 적습니다(후킹 방식, 구성 순서, 카드 장수, 제목 공식, 마무리 방식). 문장을 옮겨 적지 마세요.
+- references: 참고한 글 5~10개. 반응이 좋아 보이는 글(검색 상위, 공감·댓글·조회가 많이 보이는 글, 여러 곳에서 인용된 글)을 우선합니다.
+  url은 이번에 검색·열람한 결과에 실제로 나온 주소만 그대로 씁니다. 지어내지 마세요.
+  - kind: blog(블로그·브런치·매거진), instagram, threads, news, video, other 중 하나
+  - source: 사이트나 계정 이름
+  - hook: 첫 문장이나 제목이 어떤 방식으로 시선을 끄는지 (짧게 인용하거나 "숫자 + 통념 깨기"처럼 설명, 40자 이내)
+  - structure: 글 순서를 화살표로 (예: "공감 → 공식 1개 → 조합 3개 → 피할 조합 → 요약")
+  - why: 왜 반응이 좋을지 한 문장
+  - popularity: 페이지에 보인 반응 수치만 그대로(예: "공감 1,240"). 안 보였으면 빈 문자열. 추측하지 마세요.
+  - note: 우리 글에 빌려 쓸 "형식" 한 줄. 문장을 옮겨 적지 마세요.
 - hooks: 이 주제에 먹힐 첫 문장 패턴 3~6개 (예: "숫자 + 손해 회피", "질문으로 공감").
 - structures: 잘 되는 글 구성 2~4개 (예: "문제 → 흔한 실수 3개 → 해결 → 요약 카드").
 - keywords: 검색에 실제로 쓰이는 키워드 5~10개.
@@ -80,8 +87,18 @@ export const SUBMIT_RESEARCH_TOOL = {
         type: 'array',
         items: {
           type: 'object',
-          properties: { title: { type: 'string' }, url: { type: 'string' }, note: { type: 'string' } },
-          required: ['title', 'url', 'note'],
+          properties: {
+            title: { type: 'string' },
+            url: { type: 'string' },
+            kind: { type: 'string', enum: ['blog', 'instagram', 'threads', 'news', 'video', 'other'] },
+            source: { type: 'string' },
+            hook: { type: 'string' },
+            structure: { type: 'string' },
+            why: { type: 'string' },
+            popularity: { type: 'string' },
+            note: { type: 'string' },
+          },
+          required: ['title', 'url', 'kind', 'source', 'hook', 'structure', 'why', 'popularity', 'note'],
           additionalProperties: false,
         },
       },
@@ -125,6 +142,7 @@ export const WRITE_SYSTEM = `당신은 한국 SNS에서 반응을 잘 끌어내�
 - <brand>의 말투·타깃·강조점을 따르고, 브랜드 설명에 없는 혜택·가격·후기·수치를 지어내지 않습니다.
 - 수치나 사실은 <research>의 facts에 있는 것만 씁니다. 블로그에서는 출처 링크를 문장 끝에 붙여도 됩니다.
 - <research>의 references는 형식만 참고합니다. 문장을 베끼지 않습니다.
+  chosen이 true인 레퍼런스는 사용자가 직접 고른 것입니다. 그 글들의 hook·structure를 가장 먼저 따르고, excerpt가 있으면 말투와 리듬만 참고합니다.
 - 링크는 <links>에 있는 주소와 facts의 출처만 씁니다. 다른 주소는 넣지 않습니다.
 - 금지 표현(<rules>)은 쓰지 않습니다. "최고·1위·완벽·무조건" 같은 근거 없는 최상급, 질병 치료·효능 보장 표현을 쓰지 않습니다.
 - 광고 표기는 시스템이 따로 넣으므로 쓰지 않아도 됩니다.

@@ -27,6 +27,8 @@ import {
   type PromoConfig,
   type PromoState,
   type PublishResult,
+  type Reference,
+  type ReferenceSet,
   type RemoteComment,
   type Research,
 } from './core/types';
@@ -178,20 +180,42 @@ export class Agent {
   }
 
   /** Makes one post now. `platforms` empty means every scheduled platform. */
-  async postNow(topic: string | null, platforms: PlatformId[] = []): Promise<Draft | null> {
-    return this.createAndPublish(null, topic, platforms.length ? platforms : this.automated());
+  async postNow(topic: string | null, platforms: PlatformId[] = [], chosen: Reference[] = []): Promise<Draft | null> {
+    return this.createAndPublish(null, topic, platforms.length ? platforms : this.automated(), chosen);
+  }
+
+  /** Finds popular posts on a topic and saves them for the dashboard's reference feed. */
+  async findReferences(topic: string | null, platforms: PlatformId[]): Promise<string | null> {
+    const config = scopeConfig(this.config, platforms.length ? platforms : this.automated());
+    const now = this.d.now();
+    const local = localParts(now, config.timeZone);
+    const today = todayLine(local.date, WEEKDAY_KO[local.weekday], config.timeZone);
+    try {
+      this.d.log('① 주제 정하는 중…');
+      const plan = await this.d.ai.planTopic({ docs: this.d.docs, config, today, recent: this.state.topics.slice(0, 30).map((t) => t.topic), forced: topic });
+      this.d.log(`② "${plan.topic}" 인기 글 찾는 중…`);
+      const research = await this.d.ai.research({ docs: this.d.docs, config, today, plan });
+      const set: ReferenceSet = { topic: plan.topic, platform: platforms.join(',') || 'all', createdAt: now.toISOString(), references: research.references };
+      const path = `references/${draftIdFor(now, config.timeZone, null)}-${platforms.join('-') || 'all'}.json`;
+      await this.d.data.write(path, `${JSON.stringify(set, null, 1)}\n`);
+      this.events.push({ kind: 'info', message: `"${plan.topic}" 레퍼런스 ${research.references.length}개를 찾았어요 (${path})` });
+      return path;
+    } catch (e) {
+      this.warn(`레퍼런스를 찾지 못했어요: ${describeError(e)}`);
+      return null;
+    }
   }
 
   // ---------------- posting ----------------
 
-  private async createAndPublish(slotKey: string | null, topic: string | null, platforms: PlatformId[]): Promise<Draft | null> {
+  private async createAndPublish(slotKey: string | null, topic: string | null, platforms: PlatformId[], chosen: Reference[] = []): Promise<Draft | null> {
     if (!platforms.length) {
       this.warn('올릴 곳이 정해지지 않았어요. 자동화를 켠 플랫폼이 없어요');
       return null;
     }
     let draft: Draft;
     try {
-      draft = await this.createDraft(slotKey, topic, platforms);
+      draft = await this.createDraft(slotKey, topic, platforms, chosen);
     } catch (e) {
       const msg = describeError(e);
       this.warn(`글을 만들지 못했어요: ${msg}`);
@@ -217,7 +241,7 @@ export class Agent {
     return this.config.content.topics.find((t) => !used.has(t)) ?? null;
   }
 
-  async createDraft(slotKey: string | null, topic: string | null, platforms: PlatformId[] = this.automated()): Promise<Draft> {
+  async createDraft(slotKey: string | null, topic: string | null, platforms: PlatformId[] = this.automated(), chosen: Reference[] = []): Promise<Draft> {
     const { docs, ai } = this.d;
     const config = scopeConfig(this.config, platforms);
     const now = this.d.now();
@@ -239,7 +263,18 @@ export class Agent {
       this.warn(`레퍼런스 조사를 건너뛰었어요: ${describeError(e)}`);
       research = { references: [], hooks: [], structures: [], keywords: plan.keywords, hashtags: [], facts: [], avoid: [] };
     }
-    this.d.log(`   참고 글 ${research.references.length}개, 근거 있는 사실 ${research.facts.length}개`);
+    if (chosen.length) {
+      // References a person picked lead; the search adds facts and a few more examples.
+      const picked = chosen.map((r) => ({ ...r, chosen: true }));
+      const urls = new Set(picked.map((r) => r.url).filter(Boolean));
+      research = {
+        ...research,
+        references: [...picked, ...research.references.filter((r) => !urls.has(r.url)).slice(0, 3)],
+        hooks: [...picked.map((r) => r.hook ?? '').filter(Boolean), ...research.hooks],
+        structures: [...picked.map((r) => r.structure ?? '').filter(Boolean), ...research.structures],
+      };
+    }
+    this.d.log(`   참고 글 ${research.references.length}개(직접 고른 글 ${chosen.length}개), 근거 있는 사실 ${research.facts.length}개`);
 
     this.d.log('③ 글 쓰는 중…');
     const allowed = allowedUrls(config, research.facts.map((f) => f.sourceUrl));

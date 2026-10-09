@@ -300,3 +300,16 @@ describe('state', () => {
     expect(DEFAULT_CONFIG.comments.actions.spam).toBe('hide');
   });
 });
+
+describe('picked references', () => {
+  it('reads a set or a list, drops broken entries and unsafe links', async () => {
+    const { parseChosen } = await import('../../src/promo/core/references');
+    const list = parseChosen(JSON.stringify({ references: [{ title: '좋은 글', url: 'https://a.example', kind: 'blog', hook: 'h' }, { title: 'x', url: 'javascript:alert(1)' }, { excerpt: '붙여넣은 인기 글 첫 줄\n둘째 줄' }, 3] }));
+    expect(list.map((r) => [r.title, r.kind, r.url])).toEqual([
+      ['좋은 글', 'blog', 'https://a.example'],
+      ['붙여넣은 인기 글 첫 줄', 'other', ''],
+    ]);
+    expect(parseChosen('{nope')).toEqual([]);
+    expect(parseChosen(null)).toEqual([]);
+  });
+});

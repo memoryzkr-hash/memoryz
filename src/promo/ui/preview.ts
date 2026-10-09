@@ -7,9 +7,10 @@ import { DEFAULT_CONFIG } from '../core/config';
 import { checkContent, normalizeContent, allowedUrls } from '../core/rules';
 import { addDays, draftIdFor, localParts } from '../core/schedule';
 import { emptyState } from '../core/state';
-import type { ContentSet, Draft, PromoConfig, PromoState, PublishResult } from '../core/types';
+import type { ContentSet, Draft, PromoConfig, PromoState, PublishResult, Reference } from '../core/types';
 import type { AccountKey, Backend, BrandForm } from './backend';
-import { BackendError } from './backend';
+import { BackendError, kindOfUrl } from './backend';
+import { cleanReference } from '../core/references';
 import { blogKindOf, platformsOf, scopedFor, withAutomation, type Accounts, type Automation, type BlogKind, type DraftFile, type Model, type UiPlatform } from './model';
 
 const HOUR = 3600000;
@@ -38,7 +39,23 @@ interface Saved {
   brandDoc?: string;
   accounts?: Accounts;
   drafts?: Draft[];
+  myRefs?: Reference[];
 }
+
+/**
+ * Real articles that ranked high in a web search for the example brand's topics (October 2026).
+ * hook / structure / why are our reading of each piece; popularity stays empty because no counts were visible.
+ */
+export const DEMO_REFERENCES: Reference[] = [
+  { title: '닭가슴살 아님, 충분한 단백질 섭취 가능한 간단한 고단백 식단 7', url: 'https://www.gqkorea.co.kr/?p=330171', kind: 'blog', source: 'GQ Korea', hook: '"닭가슴살 아님" — 통념을 먼저 깨는 제목', structure: '통념 부정 → 대안 식단 7가지 → 항목마다 한 줄 이유', why: '다들 지겨워하는 닭가슴살을 정면으로 부정해서 클릭할 이유를 만들어요', popularity: '', note: '제목 첫머리에서 흔한 답을 부정하고, 번호 목록으로 대안을 준다' },
+  { title: '이왕 먹는 거 든든하고 건강하게, 전문가 추천! 편의점 한 끼 조합 공식', url: 'https://www.gqkorea.co.kr/?p=402515', kind: 'blog', source: 'GQ Korea', hook: '"조합 공식" — 외우기 쉬운 틀을 약속', structure: '공식 1개(단백질1+탄수0.5~1+채소1+무가당) → 조합 예시 → 피할 조합', why: '따라 하기 쉬운 공식 하나로 저장하고 싶게 만들어요', popularity: '', note: '한 줄 공식을 표지에 두고 예시 카드로 풀어 준다' },
+  { title: '[CU/GS25] 편의점 다이어트 꿀조합 BEST 3: 혈당스파이크 없이 -2kg (라면OK)', url: 'https://www.blanclucy.co.kr/2025/12/cugs25-best-3-2kg-ok.html', kind: 'blog', source: '블로그', hook: '대괄호 브랜드명 + BEST 3 + "(라면OK)" 반전', structure: '편의점 이름 → 꿀조합 3개 → 조합별 이유 → 주의점', why: '구체적인 편의점 이름과 "라면도 된다"는 허용이 검색과 공감을 같이 잡아요', popularity: '', note: '제목에 장소와 개수를 넣고 예상 밖 허용 한 가지로 끝낸다 (효과 수치 표현은 빼기)' },
+  { title: '간단하게 뚝딱! 직장인을 위한 점심 도시락 아이디어 7', url: 'https://www.gqkorea.co.kr/?p=315656', kind: 'blog', source: 'GQ Korea', hook: '"간단하게 뚝딱!" — 부담 없음을 먼저 약속', structure: '도시락 7가지 → 메뉴마다 재료와 좋은 점 한 줄', why: '바쁜 직장인에게 "쉬움"이 가장 큰 클릭 이유예요', popularity: '', note: '난이도를 낮추는 첫 단어 + 메뉴당 한 줄 효과' },
+  { title: '직장인을 위한 간단 다이어트 도시락 레서피', url: 'https://www.allurekorea.com/?p=231081', kind: 'blog', source: 'Allure Korea', hook: '"양참덮"처럼 줄임말 메뉴 이름', structure: '메뉴 이름 → 왜 좋은지(가격·보관·설거지) → 만드는 법 → 응용 팁', why: '부르기 쉬운 이름과 설거지·보관 같은 현실 장점이 공유를 부르죠', popularity: '', note: '메뉴에 기억하기 쉬운 이름을 붙이고 현실적인 장점을 앞에 쓴다' },
+  { title: '직장인들의 점심값 평균은 얼마? (ft. 도시락)', url: 'https://help.3o3.co.kr/hc/ko/articles/9279630099225', kind: 'blog', source: '삼쩜삼 도움말', hook: '질문형 제목 + 숫자 궁금증', structure: '질문 → 조사 수치 → 도시락이 아끼는 금액 → 도시락 구성 팁', why: '내 점심값과 비교해 보고 싶어지는 질문이라 끝까지 읽어요', popularity: '', note: '독자가 자기와 비교할 수 있는 숫자 질문으로 시작한다' },
+  { title: "고단백 식당에 제로 편의점까지…'헬시플레저'가 바꾼 식탁", url: 'https://v.daum.net/v/B2oBohlwli?f=p', kind: 'news', source: '다음 뉴스', hook: '트렌드 키워드 "헬시플레저"', structure: '트렌드 이름 → 사례들 → 왜 지금인지', why: '이름 붙은 트렌드에 올라타면 "나도 해당되네" 공감을 얻어요', popularity: '', note: '요즘 유행어 하나를 제목에 걸고 우리 제품을 그 흐름 안에 둔다' },
+  { title: '일을 위한 쉽고 건강한 점심 아이디어 25가지 이상', url: 'https://clickup.com/ko/blog/251815/lunch-ideas-for-work', kind: 'blog', source: 'ClickUp 블로그', hook: '"25가지 이상" — 많은 선택지', structure: '상황별 묶음 → 아이디어 목록 → 준비 팁', why: '선택지가 많아서 저장해 두고 다시 보게 돼요', popularity: '', note: '상황별로 묶은 긴 목록은 블로그용, 그중 3~5개만 카드뉴스로' },
+];
 
 function load(): Saved {
   try {
@@ -164,7 +181,26 @@ const FORMAT: Record<UiPlatform, string> = {
 - tags는 # 없이 5~8개.`,
 };
 
-export function writePrompt(ui: UiPlatform, brandName: string, brandDoc: string, links: string, topic: string, recent: string[]): string {
+function refsBlock(chosen: Reference[]): string {
+  if (!chosen.length) return '';
+  const rows = chosen.map((r, i) =>
+    [`${i + 1}. ${r.title}${r.source ? ` (${r.source})` : ''}`, r.hook && `   - 후킹: ${r.hook}`, r.structure && `   - 구성: ${r.structure}`, r.why && `   - 잘 되는 이유: ${r.why}`, r.excerpt && `   - 원문 일부: ${r.excerpt.slice(0, 800)}`].filter(Boolean).join('\n'),
+  );
+  return `\n<references>\n사용자가 고른 인기 글이에요. 후킹 방식과 구성 순서를 따르되, 문장은 절대 베끼지 말고 우리 브랜드 이야기로 새로 쓰세요.\n${rows.join('\n')}\n</references>\n`;
+}
+
+export function analyzePrompt(text: string): string {
+  return `아래는 SNS나 블로그에서 반응이 좋았던 글이에요. 우리 글에 빌려 쓸 "형식"을 뽑아 주세요. 문장을 옮겨 적지 마세요.
+
+<post>
+${text.slice(0, 6000)}
+</post>
+
+아래 JSON 하나로만 답하세요.
+{"title": "글을 알아볼 수 있는 짧은 이름", "kind": "blog | instagram | threads | news | video | other", "hook": "첫 문장이 시선을 끄는 방식 (40자 이내)", "structure": "글 순서를 화살표로", "why": "반응이 좋은 이유 한 문장", "note": "우리 글에 빌려 쓸 형식 한 줄"}`;
+}
+
+export function writePrompt(ui: UiPlatform, brandName: string, brandDoc: string, links: string, topic: string, recent: string[], chosen: Reference[] = []): string {
   return `당신은 한국 SNS에서 반응을 잘 끌어내는 브랜드 콘텐츠 작가입니다. 아래 브랜드를 위해 ${ui === 'blog' ? '블로그 글' : ui === 'instagram' ? '인스타그램 카드뉴스와 캡션' : '쓰레드 글(타래)'}을 한 편 씁니다.
 
 <brand name="${brandName}">
@@ -173,7 +209,7 @@ ${brandDoc.slice(0, 6000)}
 <links>
 ${links || '(없음)'}
 </links>
-${topic ? `주제: ${topic}` : `주제는 직접 정하세요. 타깃이 저장하고 싶어 할 구체적인 주제로, 최근 주제와 겹치지 않게.\n최근 주제: ${recent.join(' / ') || '(없음)'}`}
+${refsBlock(chosen)}${topic ? `주제: ${topic}` : `주제는 직접 정하세요. 타깃이 저장하고 싶어 할 구체적인 주제로, 최근 주제와 겹치지 않게.\n최근 주제: ${recent.join(' / ') || '(없음)'}`}
 
 지킬 것
 - 정보·공감 7, 홍보 3. 브랜드 설명의 말투를 따릅니다.
@@ -237,7 +273,8 @@ const EXAMPLE: Record<UiPlatform, Written> = {
 export function createPreviewBackend(now = new Date()): Backend {
   const saved = load();
   const config = saved.config ? { ...demoConfig(), ...saved.config } : demoConfig();
-  const persist = (m: Model) => save({ config: m.config, brandDoc: m.brandDoc, accounts: m.accounts, drafts: m.drafts.filter((f) => f.draft?.id.endsWith('preview')).map((f) => f.draft!) });
+  const persist = (m: Model) =>
+    save({ config: m.config, brandDoc: m.brandDoc, accounts: m.accounts, drafts: m.drafts.filter((f) => f.draft?.id.endsWith('preview')).map((f) => f.draft!), myRefs: m.references.filter((r) => r.source === '직접 추가').slice(0, 50) });
   const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
   return {
@@ -257,6 +294,7 @@ export function createPreviewBackend(now = new Date()): Backend {
         inboxDone: [],
         accounts: saved.accounts ?? { threads: true, instagram: true, wordpress: false, claude: true },
         hasData: true,
+        references: [...(saved.myRefs ?? []), ...DEMO_REFERENCES],
       };
     },
 
@@ -301,7 +339,35 @@ export function createPreviewBackend(now = new Date()): Backend {
       persist(m);
     },
 
-    async generate(m, ui, topic, progress, signal) {
+    async findReferences(m, _ui, topic, progress) {
+      progress('예시 레퍼런스를 고르는 중…');
+      await wait(900);
+      const words = topic.split(/\s+/).filter((w) => w.length > 1);
+      const score = (r: Reference) => words.filter((w) => `${r.title} ${r.hook} ${r.structure}`.includes(w)).length;
+      const sorted = [...DEMO_REFERENCES].sort((a, b) => score(b) - score(a));
+      m.references = [...m.references.filter((r) => r.source === '직접 추가'), ...sorted];
+      return sorted;
+    },
+
+    async addReference(m, _ui, input) {
+      const sample = await getSample();
+      let ref: Reference | null = null;
+      if (sample && input.text.trim()) {
+        try {
+          const a = await sample.json<Partial<Reference>>(analyzePrompt(input.text), { cache: false });
+          ref = cleanReference({ ...a, url: input.url, excerpt: input.text, kind: a.kind ?? kindOfUrl(input.url), source: '직접 추가' });
+        } catch (e) {
+          if ((e as { code?: string }).code === 'not_granted') throw new BackendError('Claude 사용을 허락해야 글을 분석할 수 있어요');
+        }
+      }
+      ref ??= cleanReference({ title: input.text.split('\n')[0].slice(0, 60) || input.url, url: input.url, excerpt: input.text, kind: kindOfUrl(input.url), source: '직접 추가' });
+      if (!ref) throw new BackendError('글 내용이나 링크를 넣어 주세요');
+      m.references = [ref, ...m.references];
+      persist(m);
+      return ref;
+    },
+
+    async generate(m, ui, topic, progress, signal, chosen = []) {
       const sample = await getSample();
       let w: Written;
       if (sample) {
@@ -309,7 +375,7 @@ export function createPreviewBackend(now = new Date()): Backend {
         const links = m.config.brand.links.map((l) => `- ${l.label}: ${l.url}`).join('\n');
         const recent = m.drafts.slice(0, 8).map((f) => f.draft?.plan.topic ?? '').filter(Boolean);
         try {
-          w = await sample.json<Written>(writePrompt(ui, m.config.brand.name, m.brandDoc, links, topic, recent), {
+          w = await sample.json<Written>(writePrompt(ui, m.config.brand.name, m.brandDoc, links, topic, recent, chosen), {
             signal,
             cache: false,
             onText: ({ text }: { text: string }) => progress(`Claude가 쓰는 중… ${text.length.toLocaleString()}자`),
@@ -337,7 +403,7 @@ export function createPreviewBackend(now = new Date()): Backend {
         status: 'draft',
         createdAt: at.toISOString(),
         plan: { topic: String(w.topic ?? topic ?? '').trim() || '새 글', angle: '', pillar: '', keywords: [] },
-        references: [],
+        references: chosen.map((r) => ({ ...r, chosen: true })),
         issues: [...checkContent(content, scoped, allowedUrls(scoped, [])), ...(sample ? [] : [{ severity: 'warn' as const, platform: 'all' as const, message: '예시 글이에요. Claude 안에서 열면 실제로 새 글을 써 드려요' }])],
         images: [],
         imagesFor: '',

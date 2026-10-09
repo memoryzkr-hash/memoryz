@@ -1,7 +1,7 @@
 /** What the simple dashboard works with: three automations (blog, Instagram, Threads), each with an account and a cycle. */
 import { scopeConfig, slotsFor } from '../core/config';
 import { nextSlot } from '../core/schedule';
-import type { Draft, PlatformId, PromoConfig, PromoState, Slot, Weekday } from '../core/types';
+import type { Draft, PlatformId, PromoConfig, PromoState, Reference, Slot, Weekday } from '../core/types';
 
 export type UiPlatform = 'blog' | 'instagram' | 'threads';
 export const UI_PLATFORMS: UiPlatform[] = ['blog', 'instagram', 'threads'];
@@ -35,6 +35,8 @@ export interface Model {
   accounts: Accounts;
   /** False until the agent has run once (no promo-data branch yet). */
   hasData: boolean;
+  /** The reference feed: popular posts found by search, plus ones the person added. Newest first. */
+  references: Reference[];
 }
 
 /** The config platforms behind one card. The blog card is WordPress or the Naver/Tistory paste-ready export. */

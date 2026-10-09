@@ -367,6 +367,28 @@ describe('posting', () => {
   });
 });
 
+describe('references', () => {
+  it('finds references for a topic and saves them for the dashboard feed', async () => {
+    const agent = await makeAgent(testConfig(), fakeAi(), {});
+    const path = await agent.findReferences('편의점 단백질', ['instagram']);
+    expect(path).toBe('references/2026-10-09-0910-now-instagram.json');
+    const set = JSON.parse((await data.read(path!))!);
+    expect(set).toMatchObject({ topic: '편의점 단백질', platform: 'instagram' });
+    expect(set.references[0].url).toBe('https://ref.example.com/a');
+  });
+
+  it('writes from the references a person picked, ahead of the search results', async () => {
+    const ai = fakeAi();
+    const threads = fakePlatform('threads');
+    const agent = await makeAgent(testConfig(), ai, { threads });
+    const picked = [{ title: '고른 글', url: 'https://picked.example/1', note: '', hook: '통념 깨기 + 숫자', structure: '공감 → 공식 → 조합 3개' }];
+    await agent.postNow(null, ['threads'], picked);
+    const research = (ai.write as unknown as { mock: { calls: [{ research: { references: { url: string; chosen?: boolean }[]; hooks: string[] } }][] } }).mock.calls[0][0].research;
+    expect(research.references.map((r) => [r.url, !!r.chosen])).toEqual([['https://picked.example/1', true], ['https://ref.example.com/a', false]]);
+    expect(research.hooks[0]).toBe('통념 깨기 + 숫자');
+  });
+});
+
 describe('comments', () => {
   const config = testConfig((c) => (c.schedule.slots = []));
 

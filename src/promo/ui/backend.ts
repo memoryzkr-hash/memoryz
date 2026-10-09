@@ -10,7 +10,8 @@ import { parseDocument } from 'yaml';
 import { parseConfig } from '../core/config';
 import { parseDraft, serializeDraft } from '../core/draft';
 import { parseState } from '../core/state';
-import type { Draft } from '../core/types';
+import { cleanReference } from '../core/references';
+import type { Draft, Reference, ReferenceSet } from '../core/types';
 import { blogKindOf, platformsOf, slotOf, type Automation, type BlogKind, type DraftFile, type Model, type UiPlatform } from './model';
 
 export type AccountKey = 'threads' | 'instagram' | 'wordpress' | 'claude';
@@ -30,7 +31,12 @@ export interface Backend {
   setBlogKind(m: Model, kind: BlogKind): Promise<void>;
   saveBrand(m: Model, b: BrandForm): Promise<void>;
   registerAccount(m: Model, key: AccountKey, fields: Record<string, string>): Promise<void>;
-  generate(m: Model, ui: UiPlatform, topic: string, progress: (msg: string) => void, signal: AbortSignal): Promise<DraftFile>;
+  /** Generates one post for one platform, following the picked references first. */
+  generate(m: Model, ui: UiPlatform, topic: string, progress: (msg: string) => void, signal: AbortSignal, chosen?: Reference[]): Promise<DraftFile>;
+  /** Searches for popular posts on a topic and adds them to m.references. Returns the new ones. */
+  findReferences(m: Model, ui: UiPlatform, topic: string, progress: (msg: string) => void, signal: AbortSignal): Promise<Reference[]>;
+  /** Adds a post the person found (pasted text and/or link) to m.references, analysed where possible. */
+  addReference(m: Model, ui: UiPlatform, input: { text: string; url: string }): Promise<Reference>;
   saveDraft(file: DraftFile, draft: Draft): Promise<DraftFile>;
   publish(m: Model, file: DraftFile, progress: (msg: string) => void, signal: AbortSignal): Promise<DraftFile>;
   markInboxDone(keys: string[]): Promise<void>;
@@ -202,6 +208,38 @@ export function createGitHubBackend(repo: string, token: string, f: typeof fetch
     );
   }
 
+  /** The newest few search batches plus the person's own, newest first, without repeats. */
+  async function loadReferences(): Promise<Reference[]> {
+    let listing: { name: string; path: string; type: string }[] = [];
+    try {
+      listing = await gh(`/contents/references?ref=${DATA}`);
+    } catch (e) {
+      if (!notFound(e)) throw e;
+      return [];
+    }
+    const files = listing.filter((x) => x.type === 'file' && x.name.endsWith('.json') && !x.name.startsWith('picked-'));
+    const ordered = [...files.filter((x) => x.name === 'mine.json'), ...files.filter((x) => x.name !== 'mine.json').sort((a, b) => b.name.localeCompare(a.name)).slice(0, 6)];
+    const out: Reference[] = [];
+    const seen = new Set<string>();
+    for (const x of ordered) {
+      const got = await read(x.path, DATA);
+      let list: unknown[] = [];
+      try {
+        list = got ? ((JSON.parse(got.text) as ReferenceSet).references ?? []) : [];
+      } catch {
+        list = [];
+      }
+      for (const r of list.map(cleanReference)) {
+        const key = r?.url || r?.title;
+        if (r && key && !seen.has(key)) {
+          seen.add(key);
+          out.push(x.name === 'mine.json' ? { ...r, source: r.source || '직접 추가' } : r);
+        }
+      }
+    }
+    return out;
+  }
+
   const backend: Backend = {
     kind: 'github',
     label: repo,
@@ -239,6 +277,7 @@ export function createGitHubBackend(repo: string, token: string, f: typeof fetch
           claude: names.has('ANTHROPIC_API_KEY'),
         },
         hasData,
+        references: hasData ? await loadReferences() : [],
       };
     },
 
@@ -294,8 +333,14 @@ export function createGitHubBackend(repo: string, token: string, f: typeof fetch
       m.accounts[key] = true;
     },
 
-    async generate(m, ui, topic, progress, signal) {
-      const since = await dispatch({ command: 'preview', platform: ui, ...(topic ? { topic } : {}) });
+    async generate(m, ui, topic, progress, signal, chosen = []) {
+      let refs: string | null = null;
+      if (chosen.length) {
+        refs = `references/picked-${Date.now()}.json`;
+        const set: ReferenceSet = { topic, platform: ui, createdAt: new Date().toISOString(), references: chosen };
+        await write(refs, `${JSON.stringify(set, null, 1)}\n`, null, DATA, `dashboard: pick ${chosen.length} reference(s)`);
+      }
+      const since = await dispatch({ command: 'preview', platform: ui, ...(topic ? { topic } : {}), ...(refs ? { refs } : {}) });
       progress('에이전트를 깨우는 중…');
       await waitRun(since, progress, signal, '레퍼런스를 찾고 글을 쓰는');
       m.drafts = await loadDrafts();
@@ -303,6 +348,34 @@ export function createGitHubBackend(repo: string, token: string, f: typeof fetch
       const made = m.drafts.find((x) => x.draft && new Date(x.draft.createdAt).getTime() >= since && x.draft.platforms.some((p) => targets.includes(p)));
       if (!made) throw new BackendError('글이 만들어지지 않았어요. 실행 기록을 확인해 주세요');
       return made;
+    },
+
+    async findReferences(m, ui, topic, progress, signal) {
+      const since = await dispatch({ command: 'research', platform: ui, ...(topic ? { topic } : {}) });
+      progress('에이전트를 깨우는 중…');
+      await waitRun(since, progress, signal, '인기 글을 찾는');
+      const all = await loadReferences();
+      const fresh = all.filter((r) => !m.references.some((x) => x.url && x.url === r.url));
+      m.references = all;
+      if (!fresh.length) throw new BackendError('새 레퍼런스를 찾지 못했어요. 주제를 바꿔 다시 찾아 보세요');
+      return fresh;
+    },
+
+    async addReference(m, _ui, input) {
+      // No Claude in the browser here: the pasted text goes in as-is and the writer analyses it.
+      const ref = cleanReference({ title: input.text.split('\n')[0].slice(0, 60) || input.url, url: input.url, excerpt: input.text, kind: kindOfUrl(input.url), source: '직접 추가' });
+      if (!ref) throw new BackendError('글 내용이나 링크를 넣어 주세요');
+      const cur = await read('references/mine.json', DATA);
+      let mine: Reference[] = [];
+      try {
+        mine = cur ? (JSON.parse(cur.text) as ReferenceSet).references : [];
+      } catch {
+        mine = [];
+      }
+      const set: ReferenceSet = { topic: '직접 추가', platform: 'all', createdAt: new Date().toISOString(), references: [ref, ...mine].slice(0, 100) };
+      await write('references/mine.json', `${JSON.stringify(set, null, 1)}\n`, cur?.sha ?? null, DATA, 'dashboard: add a reference');
+      m.references = [ref, ...m.references];
+      return ref;
     },
 
     async saveDraft(file, draft) {
@@ -335,6 +408,14 @@ export function createGitHubBackend(repo: string, token: string, f: typeof fetch
     runLink: () => `https://github.com/${repo}/actions/workflows/promo.yml`,
   };
   return backend;
+}
+
+export function kindOfUrl(url: string): Reference['kind'] {
+  if (/instagram\.com/i.test(url)) return 'instagram';
+  if (/threads\.(net|com)/i.test(url)) return 'threads';
+  if (/youtube\.com|youtu\.be/i.test(url)) return 'video';
+  if (/blog\.naver|tistory|brunch|velog|medium|wordpress|blogspot/i.test(url)) return 'blog';
+  return 'other';
 }
 
 /** owner/repo from a GitHub Pages address (owner.github.io/repo/...), else null. */

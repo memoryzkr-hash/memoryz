@@ -4,7 +4,7 @@
  */
 import Anthropic from '@anthropic-ai/sdk';
 import type { BetaMessage, BetaMessageParam } from '@anthropic-ai/sdk/resources/beta/messages/messages';
-import type { BrandDocs, CommentDecision, ContentSet, Issue, PromoConfig, RemoteComment, Research, TopicPlan } from '../core/types';
+import type { BrandDocs, CommentDecision, ContentSet, Issue, PromoConfig, Reference, RemoteComment, Research, TopicPlan } from '../core/types';
 import { COMMENT_CATEGORIES } from '../core/types';
 import {
   COMMENTS_SCHEMA,
@@ -94,7 +94,18 @@ export function checkResearch(v: unknown, seen: Set<string>): Research {
   const norm = (u: string) => u.replace(/\/+$/, '');
   const known = new Set([...seen].map(norm));
   const ok = (u: string) => /^https?:\/\//.test(u) && known.has(norm(u));
-  const refs = (Array.isArray(v.references) ? v.references : []).filter(isObj).map((r) => ({ title: str(r.title), url: str(r.url), note: str(r.note) }));
+  const kinds = ['blog', 'instagram', 'threads', 'news', 'video', 'other'];
+  const refs = (Array.isArray(v.references) ? v.references : []).filter(isObj).map((r) => ({
+    title: str(r.title),
+    url: str(r.url),
+    note: str(r.note),
+    kind: (kinds.includes(str(r.kind)) ? str(r.kind) : 'other') as Reference['kind'],
+    source: str(r.source),
+    hook: str(r.hook),
+    structure: str(r.structure),
+    why: str(r.why),
+    popularity: str(r.popularity),
+  }));
   const facts = (Array.isArray(v.facts) ? v.facts : []).filter(isObj).map((f) => ({ claim: str(f.claim), sourceUrl: str(f.sourceUrl) }));
   return {
     references: refs.filter((r) => ok(r.url)),
