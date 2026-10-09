@@ -1,7 +1,7 @@
 /** Sheets: start a new trip (sample or Claude) and add a stop where the map was tapped. */
 import { checkApiKey } from '../../assistant/core/rules';
 import { append, h, openSheet, replaceChildren } from '../../assistant/ui/dom';
-import { checkRequest, createPlannerAi, type PlannerAi } from '../ai';
+import { checkRequest, createPlannerAi, createSamplePlanner, type PlannerAi, type SampleFn } from '../ai';
 import { MODE_CHOICES, MODES } from '../core/modes';
 import { scheduleTrip } from '../core/schedule';
 import { formatKrw } from '../core/regions';
@@ -20,9 +20,9 @@ function field(label: string, control: HTMLElement, hint?: string): HTMLElement 
   return h('label', { class: 'field' }, h('span', { class: 'label' }, label), control, hint ? h('span', { class: 'hint' }, hint) : null);
 }
 
-export function openCreateSheet(store: TravelStore, onPlan: (p: TripPlan) => void, makeAi: (key: string) => PlannerAi = createPlannerAi): void {
+export function openCreateSheet(store: TravelStore, onPlan: (p: TripPlan) => void, sample: SampleFn | null, makeAi: (key: string) => PlannerAi = createPlannerAi): void {
   let controller: AbortController | null = null;
-  const sheet = openSheet('새 여행 만들기', () => controller?.abort());
+  const sheet = openSheet('새 여행', () => controller?.abort());
 
   // ---------- samples ----------
   const samples = h(
@@ -41,6 +41,7 @@ export function openCreateSheet(store: TravelStore, onPlan: (p: TripPlan) => voi
             sheet.close();
           },
         },
+        h('span', { class: 'sample-place' }, p.destination),
         h('b', null, p.title),
         h('span', { class: 'muted' }, `${p.days.length}일 · ${p.days.reduce((n, d) => n + d.stops.length, 0)}곳 · 약 ${formatKrw(s.totalKrw)}`),
       );
@@ -49,7 +50,7 @@ export function openCreateSheet(store: TravelStore, onPlan: (p: TripPlan) => voi
 
   // ---------- AI form ----------
   const req = store.request();
-  const dest = h('input', { class: 'input', placeholder: '예: 오사카, 강릉, 다낭, 뉴욕', maxLength: 60, value: req.destination });
+  const dest = h('input', { class: 'input', id: 'f-dest', placeholder: '예: 오사카, 강릉, 다낭, 뉴욕', maxLength: 60, value: req.destination });
   const days = h('select', { class: 'input' }, ...Array.from({ length: LIMITS.days }, (_, i) => h('option', { value: String(i + 1), selected: i + 1 === req.days }, i === 0 ? '당일' : `${i}박 ${i + 1}일`)));
   const people = h('select', { class: 'input' }, ...Array.from({ length: LIMITS.travelers }, (_, i) => h('option', { value: String(i + 1), selected: i + 1 === req.travelers }, `${i + 1}명`)));
   const budget = h('input', { class: 'input', type: 'number', min: 0, step: 10000, inputMode: 'numeric', placeholder: '없음', value: req.budgetKrw ?? '' });
@@ -57,9 +58,9 @@ export function openCreateSheet(store: TravelStore, onPlan: (p: TripPlan) => voi
   const interests = h('textarea', { class: 'input', rows: 2, maxLength: 300, placeholder: '예: 맛집 위주, 아이와 함께, 미술관 좋아함, 걷기 싫어함' }, req.interests);
   const keyInput = h('input', { class: 'input', type: 'password', placeholder: 'sk-ant-…', autocomplete: 'off', spellcheck: false });
   const keyField = field('Anthropic API 키', keyInput, '이 브라우저에만 저장돼요 (개인 비서와 같이 써요). 콘솔에서 월 사용 한도를 걸어 두세요.');
-  keyField.hidden = !!store.apiKey();
+  keyField.hidden = !!sample || !!store.apiKey();
   const error = h('div', { class: 'err', role: 'alert' });
-  const submit = h('button', { type: 'submit', class: 'btn primary wide' }, '✨ AI로 일정 만들기');
+  const submit = h('button', { type: 'submit', class: 'btn primary wide' }, '일정 만들기');
   const cancel = h('button', { type: 'button', class: 'btn wide', hidden: true, onClick: () => controller?.abort() }, '취소');
 
   const read = (): PlanRequest => ({
@@ -82,7 +83,12 @@ export function openCreateSheet(store: TravelStore, onPlan: (p: TripPlan) => voi
     error,
     submit,
     cancel,
-    h('p', { class: 'fine' }, 'Claude가 장소와 순서를 정하고, 이동 시간·비용은 이 앱이 직접 계산해요. 30초~1분 걸려요.'),
+    h(
+      'p',
+      { class: 'fine' },
+      sample ? '지금 로그인한 claude.ai 계정의 Claude가 일정을 짜요. 처음 한 번 사용 허락을 물어봐요. ' : '',
+      'Claude는 장소와 순서만 정하고, 이동 시간과 비용은 이 앱이 직접 계산해요. 30초~1분쯤 걸려요.',
+    ),
   );
 
   form.addEventListener('submit', async (e) => {
@@ -96,7 +102,7 @@ export function openCreateSheet(store: TravelStore, onPlan: (p: TripPlan) => voi
     }
     store.saveRequest(r);
     let key = store.apiKey();
-    if (!key) {
+    if (!sample && !key) {
       const k = checkApiKey(keyInput.value);
       if (!k.ok) {
         error.textContent = k.message || 'API 키를 넣어 주세요';
@@ -108,16 +114,16 @@ export function openCreateSheet(store: TravelStore, onPlan: (p: TripPlan) => voi
     }
     controller = new AbortController();
     submit.disabled = true;
-    submit.textContent = `🧭 ${r.destination} 일정 짜는 중…`;
+    submit.textContent = `${r.destination} 일정을 짜는 중…`;
     cancel.hidden = false;
     try {
-      const plan = await makeAi(key).plan(r, controller.signal);
-      if (!store.apiKey()) store.setApiKey(key); // only keep a key that worked
+      const plan = await (sample ? createSamplePlanner(sample) : makeAi(key!)).plan(r, controller.signal);
+      if (!sample && !store.apiKey()) store.setApiKey(key); // only keep a key that worked
       onPlan(plan);
       sheet.close();
     } catch (err) {
       const kind = (err as { kind?: string }).kind;
-      if (kind === 'auth') {
+      if (kind === 'auth' && !sample) {
         keyField.hidden = false;
         store.setApiKey(null);
         error.textContent = 'API 키가 맞지 않아요. 다시 넣어 주세요';
@@ -125,18 +131,17 @@ export function openCreateSheet(store: TravelStore, onPlan: (p: TripPlan) => voi
     } finally {
       controller = null;
       submit.disabled = false;
-      submit.textContent = '✨ AI로 일정 만들기';
+      submit.textContent = '일정 만들기';
       cancel.hidden = true;
     }
   });
 
   append(sheet.body, [
-    h('h3', null, '🗺️ 바로 시연해 보기'),
-    h('p', { class: 'muted' }, 'API 키 없이 샘플 여행으로 시뮬레이션을 돌려 볼 수 있어요.'),
-    samples,
-    h('h3', null, '✨ Claude에게 맡기기'),
+    h('h3', null, 'Claude에게 일정 맡기기'),
     form,
-    store.apiKey()
+    h('h3', null, '샘플 여행으로 바로 보기'),
+    samples,
+    !sample && store.apiKey()
       ? h('button', { type: 'button', class: 'link-btn', onClick: (e: Event) => { store.setApiKey(null); keyField.hidden = false; (e.target as HTMLElement).remove(); } }, '저장된 API 키 지우기')
       : null,
   ]);

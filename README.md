@@ -114,10 +114,15 @@ tests/assistant/      150개: 경계 값, 저장소 오류, .ics, 지어낸 출�
 기획서: [docs/TRAVEL_PLAN.md](docs/TRAVEL_PLAN.md)
 
 - `npm run dev` 후 http://localhost:5173/travel.html (배포본은 `/memoryz/travel.html`)
+- **웹 링크 (claude.ai)**: https://claude.ai/artifact/VA4G8iiHfEjrbRuidBgz3Q — `npm run build:travel-artifact`로 만든 한 파일짜리 판입니다.
+  여기서는 API 키 없이 보는 사람의 Claude 계정으로 일정을 만들고, 지도 그림 대신 격자 위 경로도로 보여 줍니다.
+- **화면**: 지도 위에는 출발 안내판처럼 생긴 현재 상태 카드(시각·하는 일·남은 시간·쓴 돈)와, 하루를 한 줄로 그린 **시간표 띠**
+  (머무름은 회색, 이동은 수단 색)가 있어 끌어서 아무 시각으로나 이동합니다. 오른쪽은 **일정 · 비용 · 여행 정보** 탭이고,
+  일정은 지하철 노선도처럼 수단 색 선으로 장소를 잇습니다. Space 재생/정지, ← → 이전/다음 장소.
 - **바로 시연**: API 키 없이 샘플 여행 4개(서울 하루 · 제주 1박 2일 렌터카 · 도쿄 · 파리)가 들어 있습니다. ▶를 누르면 여행자가 시간표대로 이동하고,
   왼쪽 위에 현재 시각 · 하는 일 · 지금까지 쓴 돈 · 이동 거리가 실시간으로 나옵니다. 속도(1초에 1분~1시간), 되감기, 따라가기 가능.
-- **✨ 새 여행 → Claude에게 맡기기**: 여행지·기간·인원·예산·일정 밀도·관심사를 적으면 Claude(`claude-opus-5-5`)가 날짜별 방문지와 좌표를 짭니다.
-  키는 개인 비서와 같은 `localStorage` 항목을 함께 씁니다.
+- **새 여행 → Claude에게 일정 맡기기**: 여행지·기간·인원·예산·일정 밀도·관심사를 적으면 Claude(`claude-opus-5-5`)가 날짜별 방문지와 좌표를 짭니다.
+  키는 개인 비서와 같은 `localStorage` 항목을 함께 씁니다 (claude.ai 링크에서는 키가 필요 없습니다).
 - **예측은 AI가 아니라 공식으로**: 직선거리 × 수단별 우회 계수, 수단별 속도·대기 시간, 출퇴근 시간 정체(×1.35), 지역별 요금표(택시 기본요금·심야 할증,
   지하철 거리 비례 요금, 택시는 4명당 1대), 개장 시간 대기, 숙박(2인 1실). 그래서 같은 계획이면 언제나 같은 숫자가 나옵니다.
 - **고쳐 보면서 비교**: 구간마다 수단을 바꾸거나 **수단 비교**표에서 고르기, 머무는 시간 ±15분, 순서 바꾸기·빼기(되돌리기), 지도를 눌러 장소 추가,
@@ -128,7 +133,8 @@ tests/assistant/      150개: 경계 값, 저장소 오류, .ics, 지어낸 출�
 src/travel/core/   순수 로직: 거리·경로 곡선(geo.ts), 수단별 시간·요금(modes.ts), 지역 요금표·환율(regions.ts),
                    시간표·비용·경고(schedule.ts), 이동 시뮬레이션(sim.ts), 동선 최적화(optimize.ts), 검사(validate.ts), 저장(store.ts)
 src/travel/ai.ts   Claude 호출 (structured outputs JSON 스키마, 거절 시 서버 측 폴백)
-src/travel/ui/     Leaflet 지도(map.ts), 재생기·HUD(player.ts), 일정 패널(panel.ts), 새 여행·장소 추가 시트(create.ts)
+src/travel/ui/     Leaflet 지도(map.ts), 재생기·안내판·시간표 띠(player.ts), 일정·비용·정보 탭(panel.ts), 새 여행·장소 추가 시트(create.ts)
+scripts/build-travel-artifact.mjs  claude.ai 링크용 한 파일 빌드 (dist-artifact/travel.html)
 tests/travel/      엔진·시뮬레이션·최적화·검사·저장소 + 가짜 네트워크로 Claude 호출
 ```
 

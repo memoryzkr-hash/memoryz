@@ -37,6 +37,15 @@ export function planPrompt(r: PlanRequest): string {
   return lines.join('\n');
 }
 
+/** The same shape as PLAN_SCHEMA, written out for prompts that can't pass a schema. */
+export const PLAN_JSON_SHAPE = `{"title": "부산 바다 하루", "region": "KR", "lodgingPerNight": 120000, "tips": ["짧은 팁"],
+ "days": [{"label": "1일차 · 바다", "start": "09:30", "stops": [
+   {"name": "부산역", "lat": 35.1151, "lng": 129.0414, "kind": "station", "stayMin": 0, "cost": 0, "modeIn": "auto", "open": null, "close": null, "note": null},
+   {"name": "해운대해수욕장", "lat": 35.1587, "lng": 129.1604, "kind": "nature", "stayMin": 90, "cost": 0, "modeIn": "subway", "open": null, "close": null, "note": "짧은 팁"}]}]}
+kind: ${KINDS.join(' | ')}
+modeIn: ${MODE_CHOICES.join(' | ')}
+region: ${REGION_IDS.join(' | ')}`;
+
 const nullableString = { anyOf: [{ type: 'string' }, { type: 'null' }] };
 
 export const PLAN_SCHEMA = {

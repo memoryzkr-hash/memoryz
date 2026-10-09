@@ -1,6 +1,6 @@
 /** travel ai.ts against a fake network: the real SDK runs, only fetch is replaced. No real API calls. */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { AiError, checkRequest, createPlannerAi, MODEL } from '../../src/travel/ai';
+import { AiError, checkRequest, createPlannerAi, createSamplePlanner, MODEL } from '../../src/travel/ai';
 import { DEFAULT_REQUEST, type PlanRequest } from '../../src/travel/core/store';
 import { PLAN_SCHEMA, planPrompt } from '../../src/travel/prompts';
 
@@ -89,5 +89,24 @@ describe('planner ai', () => {
     expect(checkRequest({ ...REQ, days: 0 })).toMatch(/기간/);
     expect(checkRequest({ ...REQ, travelers: 9 })).toMatch(/인원/);
     expect(planPrompt({ ...REQ, budgetKrw: null, interests: '' })).not.toMatch(/예산|관심사/);
+  });
+});
+
+describe('planner on claude.ai (sample capability)', () => {
+  it('sends the request in the prompt and validates the answer', async () => {
+    let prompt = '';
+    const plan = await createSamplePlanner({ json: async (p) => ((prompt = p), PLAN) }).plan(REQ);
+    expect(prompt).toContain('여행지: 부산');
+    expect(prompt).toContain('"stops"');
+    expect(plan.travelers).toBe(3);
+    expect(plan.days[0].stops).toHaveLength(2);
+  });
+
+  it('maps capability errors to friendly ones', async () => {
+    const fail = (code: string) => createSamplePlanner({ json: async () => Promise.reject({ code, message: 'x' }) }).plan(REQ);
+    await expect(fail('not_granted')).rejects.toMatchObject({ kind: 'auth' });
+    await expect(fail('rate_limited')).rejects.toMatchObject({ kind: 'rate' });
+    await expect(fail('cancelled')).rejects.toMatchObject({ kind: 'aborted' });
+    await expect(fail('something_new')).rejects.toMatchObject({ kind: 'server' });
   });
 });
