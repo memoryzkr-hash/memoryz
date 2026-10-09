@@ -331,9 +331,12 @@ export function parseUsageBatch(text: string): ImportBatch | null {
   return one ? { items: [one], failed: [] } : null;
 }
 
-/** The registered account an import belongs to: same name, same email, or a name equal to the email's local part. */
+/**
+ * The registered account an import belongs to: same name, same email, or a name equal to the email's local part.
+ * Names compare by letters and digits only, so an env-var style MEMORYZ_KR finds "memoryz.kr".
+ */
 export function matchAccount(accounts: Account[], imp: ImportedUsage): Account | undefined {
-  const norm = (s: string) => s.trim().toLowerCase();
+  const norm = (s: string) => s.toLowerCase().replace(/[^\p{L}\p{N}@]/gu, '');
   if (imp.name) {
     const n = norm(imp.name);
     const hit = accounts.find((a) => norm(a.name) === n || (a.email && norm(a.email.split('@')[0]) === n));

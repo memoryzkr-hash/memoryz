@@ -240,5 +240,6 @@ describe('parseUsageBatch', () => {
     expect(matchAccount([a, b], imp('memoryz.kr', null))?.id).toBe('2');
     expect(matchAccount([a, b], imp(null, 'memoryz.kr@gmail.com'))?.id).toBe('2');
     expect(matchAccount([a, b], imp('other', null))).toBeUndefined();
+    expect(matchAccount([a, b], imp('MEMORYZ_KR', null))?.id).toBe('2');
   });
 });
