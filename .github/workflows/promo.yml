@@ -20,6 +20,11 @@ on:
         description: 'post-now / preview 주제 (비우면 알아서)'
         type: string
         required: false
+      platform:
+        description: 'post-now / preview 대상 (all: 자동화를 켠 곳 전부)'
+        type: choice
+        options: [all, blog, instagram, threads]
+        default: all
 
 concurrency:
   group: promo-agent
@@ -87,9 +92,12 @@ jobs:
           NOTIFY_WEBHOOK_URL: ${{ secrets.NOTIFY_WEBHOOK_URL }}
           GITHUB_TOKEN: ${{ github.token }}
           TOPIC: ${{ inputs.topic }}
+          PLATFORM: ${{ inputs.platform || 'all' }}
         run: |
           cmd="${{ inputs.command || 'run' }}"
-          if [ -n "$TOPIC" ]; then npm run -s promo -- "$cmd" --topic "$TOPIC"; else npm run -s promo -- "$cmd"; fi
+          set -- "$cmd" --platform "$PLATFORM"
+          if [ -n "$TOPIC" ]; then set -- "$@" --topic "$TOPIC"; fi
+          npm run -s promo -- "$@"
 
       - name: Keep preview card images as a downloadable artifact
         if: always() && inputs.command == 'preview'

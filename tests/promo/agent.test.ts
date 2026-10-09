@@ -143,7 +143,8 @@ describe('posting', () => {
     expect(draft.status).toBe('published');
     expect(draft.results.naver!.status).toBe('manual');
     expect(draft.images[0]).toMatch(/^https:\/\/raw\.example\//);
-    expect(agent.state.slots['2026-10-09@09:00']).toBe('2026-10-09-0900');
+    expect(agent.state.slots['2026-10-09@09:00#threads']).toBe('2026-10-09-0900');
+    expect(agent.state.slots['2026-10-09@09:00#naver']).toBe('2026-10-09-0900');
     expect(agent.state.posts.map((p) => p.platform).sort()).toEqual(['instagram', 'threads']);
 
     const report = (await data.read('report.md'))!;
@@ -172,7 +173,7 @@ describe('posting', () => {
   });
 
   it('review mode drafts only; approving on GitHub publishes the edited text', async () => {
-    const config = testConfig((c) => (c.mode = 'review'));
+    const config = testConfig((c) => ((c.mode = 'review'), (c.platforms.instagram.enabled = false), (c.platforms.naver.enabled = false)));
     const threads = fakePlatform('threads');
     const agent = await runOnce(config, fakeAi(), { threads });
     expect(threads.published).toEqual([]);
@@ -262,10 +263,10 @@ describe('posting', () => {
     });
     const threads = fakePlatform('threads');
     let agent = await runOnce(testConfig(), ai, { threads });
-    expect(agent.state.slots['2026-10-09@09:00']).toBe('failed:1');
+    expect(agent.state.slots['2026-10-09@09:00#threads']).toBe('failed:1');
     clock = new Date('2026-10-09T01:10:00Z');
     agent = await runOnce(testConfig(), ai, { threads });
-    expect(agent.state.slots['2026-10-09@09:00']).toBe('failed:2');
+    expect(agent.state.slots['2026-10-09@09:00#threads']).toBe('failed:2');
     clock = new Date('2026-10-09T02:10:00Z');
     const ai2 = fakeAi();
     await runOnce(testConfig(), ai2, { threads });
@@ -277,7 +278,51 @@ describe('posting', () => {
     const threads = fakePlatform('threads');
     const agent = await runOnce(config, fakeAi(), { threads });
     expect(threads.published).toEqual(['2026-10-09-0900']);
-    expect(agent.state.slots['2026-10-09@07:00']).toBe('skipped');
+    expect(agent.state.slots['2026-10-09@07:00#threads']).toBe('skipped');
+  });
+
+  it('each platform keeps its own cycle; same-time platforms share one draft', async () => {
+    const config = testConfig((c) => {
+      c.platforms.threads.schedule = [{ days: ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'], time: '08:00' }];
+      c.platforms.instagram.schedule = [{ days: ['fri'], time: '09:00' }];
+      c.platforms.naver.schedule = [{ days: ['fri'], time: '09:00' }];
+    });
+    const ai = fakeAi();
+    const threads = fakePlatform('threads');
+    const instagram = fakePlatform('instagram');
+    const naver = fakePlatform('naver', { manual: true });
+    await runOnce(config, ai, { threads, instagram, naver });
+    expect(threads.published).toEqual(['2026-10-09-0800-threads']);
+    expect(instagram.published).toEqual(['2026-10-09-0900-instagram-naver']);
+    expect(naver.published).toEqual(['2026-10-09-0900-instagram-naver']);
+    // The writer only hears about the platforms of its draft.
+    const writes = (ai.write as unknown as { mock: { calls: [{ config: PromoConfig }][] } }).mock.calls.map(([a]) => Object.entries(a.config.platforms).filter(([, v]) => v.enabled).map(([k]) => k));
+    expect(writes).toEqual([['threads'], ['instagram', 'naver']]);
+  });
+
+  it('slots recorded before per-platform posting still count as done', async () => {
+    await data.write('state.json', JSON.stringify({ version: 1, slots: { '2026-10-09@09:00': 'old' }, topics: [], posts: [], comments: {}, inbox: [], tokens: {}, lastRun: null }));
+    const threads = fakePlatform('threads');
+    await runOnce(testConfig(), fakeAi(), { threads });
+    expect(threads.published).toEqual([]);
+  });
+
+  it('post-now for one platform writes and posts only there, even with its automation off', async () => {
+    const config = testConfig((c) => (c.platforms.threads.enabled = false));
+    const threads = fakePlatform('threads');
+    const instagram = fakePlatform('instagram');
+    const agent = await makeAgent(config, fakeAi(), { threads, instagram });
+    const d = await agent.postNow(null, ['threads']);
+    expect(d!.platforms).toEqual(['threads']);
+    expect(threads.published).toHaveLength(1);
+    expect(instagram.published).toEqual([]);
+  });
+
+  it('an unregistered account is a clear failure', async () => {
+    const config = testConfig((c) => ((c.platforms.instagram.enabled = false), (c.platforms.naver.enabled = false)));
+    await runOnce(config, fakeAi(), {});
+    const draft = parseDraft((await data.read('drafts/2026-10-09-0900.md'))!);
+    expect(draft.results.threads!.error).toBe('쓰레드 계정이 등록되지 않았어요');
   });
 
   it('preview (dry run) writes a draft and images but posts nothing and uploads nothing', async () => {

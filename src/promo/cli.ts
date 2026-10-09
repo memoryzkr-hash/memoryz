@@ -1,5 +1,5 @@
 /**
- * npm run promo -- <command> [--dry-run] [--topic "..."]
+ * npm run promo -- <command> [--dry-run] [--topic "..."] [--platform blog|instagram|threads]
  * Commands: run · post-now · preview · comments · check · due (docs/promo/PLAN.md §7)
  */
 import Anthropic from '@anthropic-ai/sdk';
@@ -7,24 +7,25 @@ import { appendFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { Agent, downloadTo, imagesStale } from './agent';
 import { createPromoAi, MODEL, type PromoAi } from './ai/claude';
-import { dueSlots } from './core/schedule';
 import { parseDraft } from './core/draft';
 import { DataDir } from './core/store';
 import { PLATFORM_LABELS, type PlatformId } from './core/types';
 import { describeError } from './errors';
 import { renderCards } from './media/render';
-import { buildHost, buildPlatforms, dataLinkBase, loadConfigDir, maintainTokens, missingEnv, sendWebhook } from './setup';
+import { buildHost, buildPlatforms, dataLinkBase, loadConfigDir, maintainTokens, missingEnv, resolvePlatforms, sendWebhook } from './setup';
 
 const COMMANDS = ['run', 'post-now', 'preview', 'comments', 'check', 'due'] as const;
 type Command = (typeof COMMANDS)[number];
 
 function parseArgs(argv: string[]) {
-  const args = { command: 'run' as Command, dryRun: false, topic: null as string | null };
+  const args = { command: 'run' as Command, dryRun: false, topic: null as string | null, platform: null as string | null };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--dry-run') args.dryRun = true;
     else if (a === '--topic') args.topic = argv[++i]?.trim() || null;
     else if (a.startsWith('--topic=')) args.topic = a.slice(8).trim() || null;
+    else if (a === '--platform') args.platform = argv[++i]?.trim() || null;
+    else if (a.startsWith('--platform=')) args.platform = a.slice(11).trim() || null;
     else if ((COMMANDS as readonly string[]).includes(a)) args.command = a as Command;
     else throw new Error(`모르는 명령이에요: ${a} (쓸 수 있는 명령: ${COMMANDS.join(', ')})`);
   }
@@ -84,7 +85,7 @@ async function main() {
 
   if (args.command === 'due') {
     // Lets the workflow skip installing Chromium and fonts when no images will be made.
-    const due = dueSlots(new Date(), config.timeZone, config.schedule.slots, config.schedule.catchUpHours, (k) => k in agent.state.slots && agent.state.slots[k] !== 'failed:1');
+    const due = agent.hasDueSlot();
     let approved = false;
     for (const name of await data.list('drafts')) {
       try {
@@ -94,7 +95,7 @@ async function main() {
         // reported by the real run
       }
     }
-    console.log(due.length || approved ? 'true' : 'false');
+    console.log(due || approved ? 'true' : 'false');
     return;
   }
 
@@ -103,9 +104,12 @@ async function main() {
   if (missing.length) {
     const msg = `환경 변수(또는 GitHub Secrets)가 비어 있어요: ${missing.join(', ')} — docs/promo/SETUP.md 참고`;
     if (args.command === 'check') console.log(`⚠️ ${msg}`);
-    else {
+    else if (missing.includes('ANTHROPIC_API_KEY')) {
       console.error(msg);
       process.exit(1);
+    } else {
+      // A platform without an account fails on its own; the others still post.
+      agent.events.push({ kind: 'warn', message: `자동화를 켰지만 계정이 없어요: ${missing.join(', ')}` });
     }
   }
 
@@ -154,7 +158,7 @@ async function main() {
   try {
     if (args.command === 'run') await agent.run();
     else if (args.command === 'post-now' || args.command === 'preview') {
-      const draft = await agent.postNow(args.topic);
+      const draft = await agent.postNow(args.topic, resolvePlatforms(args.platform, config, env));
       if (draft) log(`초안: ${data.path(`drafts/${draft.id}.md`)}`);
     } else if (args.command === 'comments') await agent.handleComments();
   } finally {

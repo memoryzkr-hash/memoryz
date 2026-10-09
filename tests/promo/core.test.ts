@@ -44,9 +44,18 @@ describe('parseConfig', () => {
     expect(text).toContain('media.repo');
   });
 
-  it('broken YAML and no platforms are errors', () => {
+  it('broken YAML is an error; no automation switched on is fine', () => {
     expect(parseConfig('brand: [').errors[0]).toContain('읽지 못했어요');
-    expect(parseConfig('brand: { name: x }').errors.join()).toContain('켜진 플랫폼이 없어요');
+    expect(parseConfig('brand: { name: x }').errors).toEqual([]);
+  });
+
+  it('reads a cycle per platform, falling back to the shared one', () => {
+    const { config, errors } = parseConfig('brand: { name: x }\nplatforms:\n  threads: { enabled: true, schedule: { days: daily, time: "08:00" } }\n  instagram: { enabled: true, schedule: [{ days: [화, 목], time: "19:00" }] }\n');
+    expect(errors).toEqual([]);
+    expect(config.platforms.threads.schedule).toEqual([{ days: ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'], time: '08:00' }]);
+    expect(config.platforms.instagram.schedule).toEqual([{ days: ['tue', 'thu'], time: '19:00' }]);
+    expect(config.platforms.naver.schedule).toBeNull();
+    expect(parseConfig('brand: { name: x }\nplatforms: { threads: { schedule: { days: [x], time: "1" } } }').errors.join()).toContain('platforms.threads.schedule');
   });
 
   it('adds # to fixed hashtags and rejects bad links', () => {

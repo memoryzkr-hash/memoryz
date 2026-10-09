@@ -39,6 +39,7 @@ export function testContent(): ContentSet {
 export function testDraft(patch: Partial<Draft> = {}): Draft {
   return {
     id: '2026-10-09-0900',
+    platforms: [],
     slotKey: '2026-10-09@09:00',
     status: 'draft',
     createdAt: '2026-10-09T00:00:00.000Z',

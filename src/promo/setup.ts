@@ -82,8 +82,8 @@ export async function maintainTokens(env: Env, data: DataDir, state: PromoState,
 
   const igLogin = !(env.INSTAGRAM_API_HOST ?? '').includes('facebook');
   const plans = [
-    { key: 'threads' as const, env: env.THREADS_ACCESS_TOKEN?.trim(), on: opts.config.platforms.threads.enabled, refreshable: true, refresh: refreshThreadsToken },
-    { key: 'instagram' as const, env: env.INSTAGRAM_ACCESS_TOKEN?.trim(), on: opts.config.platforms.instagram.enabled, refreshable: igLogin, refresh: refreshInstagramToken },
+    { key: 'threads' as const, env: env.THREADS_ACCESS_TOKEN?.trim(), on: true, refreshable: true, refresh: refreshThreadsToken },
+    { key: 'instagram' as const, env: env.INSTAGRAM_ACCESS_TOKEN?.trim(), on: true, refreshable: igLogin, refresh: refreshInstagramToken },
   ];
   for (const p of plans) {
     if (!p.env || !p.on) continue;
@@ -113,14 +113,15 @@ export async function maintainTokens(env: Env, data: DataDir, state: PromoState,
 
 export function buildPlatforms(config: PromoConfig, env: Env, tokens: TokenOutcome['tokens'], data: DataDir, linkBase: string | null): Partial<Record<keyof PromoConfig['platforms'], Platform>> {
   const p: Partial<Record<keyof PromoConfig['platforms'], Platform>> = {};
-  if (config.platforms.threads.enabled && tokens.threads) p.threads = createThreads(tokens.threads, { attachImage: config.platforms.threads.attachImage });
-  if (config.platforms.instagram.enabled && tokens.instagram) {
+  // An account is usable as soon as it is registered; `enabled` only decides scheduled posting.
+  if (tokens.threads) p.threads = createThreads(tokens.threads, { attachImage: config.platforms.threads.attachImage });
+  if (tokens.instagram) {
     p.instagram = createInstagram(tokens.instagram, { host: env.INSTAGRAM_API_HOST?.trim() || undefined, userId: env.INSTAGRAM_USER_ID?.trim() || undefined });
   }
-  if (config.platforms.wordpress.enabled && env.WORDPRESS_USER && env.WORDPRESS_APP_PASSWORD) {
+  if (config.platforms.wordpress.url && env.WORDPRESS_USER && env.WORDPRESS_APP_PASSWORD) {
     p.wordpress = createWordPress(config.platforms.wordpress.url, env.WORDPRESS_USER, env.WORDPRESS_APP_PASSWORD, { status: config.platforms.wordpress.status });
   }
-  if (config.platforms.naver.enabled) p.naver = createNaverExport(data.root, linkBase);
+  p.naver = createNaverExport(data.root, linkBase);
   return p;
 }
 
@@ -129,6 +130,17 @@ export function buildHost(config: PromoConfig, env: Env): MediaHost | null {
   const token = env.PROMO_MEDIA_TOKEN || env.GITHUB_TOKEN;
   if (!repo || !token) return null;
   return createGitHubHost(repo, config.media.branch, token);
+}
+
+/** `--platform blog` means the blog in use: WordPress when it is set up, otherwise the Naver/Tistory export. */
+export function resolvePlatforms(arg: string | null, config: PromoConfig, env: Env): (keyof PromoConfig['platforms'])[] {
+  if (!arg || arg === 'all') return [];
+  if (arg === 'blog') {
+    if (config.platforms.wordpress.enabled || config.platforms.naver.enabled) return (['wordpress', 'naver'] as const).filter((p) => config.platforms[p].enabled);
+    return config.platforms.wordpress.url && env.WORDPRESS_USER ? ['wordpress'] : ['naver'];
+  }
+  if (arg === 'threads' || arg === 'instagram' || arg === 'wordpress' || arg === 'naver') return [arg];
+  throw new Error(`모르는 플랫폼이에요: ${arg} (blog, instagram, threads, all)`);
 }
 
 export function dataLinkBase(env: Env): string | null {

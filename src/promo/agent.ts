@@ -10,6 +10,7 @@ import type { PromoAi } from './ai/claude';
 import { describeError } from './errors';
 import { todayLine } from './ai/prompts';
 import { capReplies, commentKey, decide, pendingComments, type FinalDecision } from './core/comments';
+import { scopeConfig, slotsFor } from './core/config';
 import { parseDraft, serializeDraft } from './core/draft';
 import { allowedUrls, checkContent, hasBlocking, normalizeContent } from './core/rules';
 import { draftIdFor, dueSlots, localParts, pickSlot } from './core/schedule';
@@ -88,8 +89,23 @@ export class Agent {
     return this.d.config;
   }
 
-  private enabled(): PlatformId[] {
-    return (Object.keys(this.config.platforms) as PlatformId[]).filter((p) => this.config.platforms[p].enabled && this.d.platforms[p]);
+  /** Platforms whose scheduled posting is switched on. */
+  private automated(): PlatformId[] {
+    return (Object.keys(this.config.platforms) as PlatformId[]).filter((p) => this.config.platforms[p].enabled);
+  }
+
+  /** Platforms with a registered account (an adapter was built). */
+  private connected(): PlatformId[] {
+    return (Object.keys(this.config.platforms) as PlatformId[]).filter((p) => this.d.platforms[p]);
+  }
+
+  /** Where a draft goes; drafts from before per-platform posting go to every scheduled platform. */
+  private targetsOf(draft: Draft): PlatformId[] {
+    return draft.platforms.length ? draft.platforms : this.automated();
+  }
+
+  private scoped(draft: Pick<Draft, 'platforms'>) {
+    return scopeConfig(this.config, draft.platforms.length ? draft.platforms : this.automated());
   }
 
   private warn(message: string) {
@@ -133,33 +149,54 @@ export class Agent {
   async run(): Promise<void> {
     await this.publishApproved();
     await this.retryFailed();
-    // A slot that failed once gets one more try on the next run; after that it is left alone.
-    const done = (k: string) => k in this.state.slots && this.state.slots[k] !== 'failed:1';
-    const due = dueSlots(this.d.now(), this.config.timeZone, this.config.schedule.slots, this.config.schedule.catchUpHours, done);
-    const { run, skipped } = pickSlot(due);
-    for (const key of skipped) {
-      this.state.slots[key] = 'skipped';
-      this.warn(`밀린 슬롯 ${key}은(는) 건너뛰었어요 (가장 최근 슬롯만 올려요)`);
+    // Each platform runs on its own cycle; platforms due at the same moment share one topic and one draft.
+    const groups = new Map<string, PlatformId[]>();
+    for (const p of this.automated()) {
+      const { run, skipped } = pickSlot(dueSlots(this.d.now(), this.config.timeZone, slotsFor(this.config, p), this.config.schedule.catchUpHours, (k) => this.slotDone(k, p)));
+      for (const key of skipped) {
+        this.state.slots[`${key}#${p}`] = 'skipped';
+        this.warn(`${PLATFORM_LABELS[p]}의 밀린 차례 ${key}은(는) 건너뛰었어요 (가장 최근 차례만 올려요)`);
+      }
+      if (run) groups.set(run, [...(groups.get(run) ?? []), p]);
     }
-    if (run) await this.createAndPublish(run, null);
+    for (const [slot, platforms] of [...groups].sort(([a], [b]) => a.localeCompare(b))) await this.createAndPublish(slot, null, platforms);
     if (this.config.comments.enabled) await this.handleComments();
   }
 
-  async postNow(topic: string | null): Promise<Draft | null> {
-    return this.createAndPublish(null, topic);
+  /** True when some platform has a posting slot due now (the workflow installs Chromium only then). */
+  hasDueSlot(): boolean {
+    return this.automated().some(
+      (p) => dueSlots(this.d.now(), this.config.timeZone, slotsFor(this.config, p), this.config.schedule.catchUpHours, (k) => this.slotDone(k, p)).length > 0,
+    );
+  }
+
+  /** A slot that failed once gets one more try on the next run; after that it is left alone. */
+  private slotDone(slot: string, p: PlatformId): boolean {
+    if (slot in this.state.slots) return true; // recorded before per-platform posting: covers every platform
+    const v = this.state.slots[`${slot}#${p}`];
+    return v !== undefined && v !== 'failed:1';
+  }
+
+  /** Makes one post now. `platforms` empty means every scheduled platform. */
+  async postNow(topic: string | null, platforms: PlatformId[] = []): Promise<Draft | null> {
+    return this.createAndPublish(null, topic, platforms.length ? platforms : this.automated());
   }
 
   // ---------------- posting ----------------
 
-  private async createAndPublish(slotKey: string | null, topic: string | null): Promise<Draft | null> {
+  private async createAndPublish(slotKey: string | null, topic: string | null, platforms: PlatformId[]): Promise<Draft | null> {
+    if (!platforms.length) {
+      this.warn('올릴 곳이 정해지지 않았어요. 자동화를 켠 플랫폼이 없어요');
+      return null;
+    }
     let draft: Draft;
     try {
-      draft = await this.createDraft(slotKey, topic);
+      draft = await this.createDraft(slotKey, topic, platforms);
     } catch (e) {
       const msg = describeError(e);
       this.warn(`글을 만들지 못했어요: ${msg}`);
-      // A failed slot is retried once, not every 30 minutes forever.
-      if (slotKey) this.state.slots[slotKey] = this.state.slots[slotKey] === 'failed:1' ? 'failed:2' : 'failed:1';
+      // A failed slot is retried once, not every run forever.
+      if (slotKey) for (const p of platforms) this.state.slots[`${slotKey}#${p}`] = this.state.slots[`${slotKey}#${p}`] === 'failed:1' ? 'failed:2' : 'failed:1';
       return null;
     }
     const blocking = hasBlocking(draft.issues);
@@ -180,12 +217,14 @@ export class Agent {
     return this.config.content.topics.find((t) => !used.has(t)) ?? null;
   }
 
-  async createDraft(slotKey: string | null, topic: string | null): Promise<Draft> {
-    const { config, docs, ai } = this.d;
+  async createDraft(slotKey: string | null, topic: string | null, platforms: PlatformId[] = this.automated()): Promise<Draft> {
+    const { docs, ai } = this.d;
+    const config = scopeConfig(this.config, platforms);
     const now = this.d.now();
     const local = localParts(now, config.timeZone);
     const today = todayLine(local.date, WEEKDAY_KO[local.weekday], config.timeZone);
     let id = draftIdFor(now, config.timeZone, slotKey);
+    if (slotKey && platforms.length < this.automated().length) id = `${id}-${platforms.join('-')}`;
     if (await this.d.data.exists(`drafts/${id}.md`)) id = `${id}-${now.getTime().toString(36)}`;
 
     this.d.log(`① 주제 정하는 중…`);
@@ -219,6 +258,7 @@ export class Agent {
 
     const draft: Draft = {
       id,
+      platforms,
       slotKey,
       status: 'draft',
       createdAt: now.toISOString(),
@@ -236,12 +276,12 @@ export class Agent {
 
     await this.saveDraft(draft);
     this.state.topics.unshift({ date: local.date, topic: plan.topic, draftId: id });
-    if (slotKey) this.state.slots[slotKey] = id;
+    if (slotKey) for (const p of platforms) this.state.slots[`${slotKey}#${p}`] = id;
     return draft;
   }
 
   private needsImages(draft: Draft): boolean {
-    const p = this.config.platforms;
+    const p = this.scoped(draft).platforms;
     return !!draft.content.instagram?.cards.length && (p.instagram.enabled || p.wordpress.enabled || p.naver.enabled || p.threads.attachImage);
   }
 
@@ -261,13 +301,13 @@ export class Agent {
         draft.images = await this.d.host.upload(`${y}/${m}/${draft.id}-${draft.imagesFor}`, files);
       } else {
         draft.images = files.map((f) => f.slice(this.d.data.root.length + 1));
-        if (!this.d.dryRun && this.config.platforms.instagram.enabled) {
+        if (!this.d.dryRun && this.scoped(draft).platforms.instagram.enabled) {
           draft.issues.push({ severity: 'error', platform: 'instagram', message: '카드 이미지를 공개 주소에 올리지 못했어요 (GITHUB_TOKEN 확인)' });
         }
       }
     } catch (e) {
       draft.images = [];
-      const blocks = this.config.platforms.instagram.enabled;
+      const blocks = this.scoped(draft).platforms.instagram.enabled;
       draft.issues.push({ severity: blocks ? 'error' : 'warn', platform: 'instagram', message: `카드 이미지를 만들지 못했어요: ${describeError(e)}` });
     }
   }
@@ -295,10 +335,11 @@ export class Agent {
   async publishApproved(): Promise<void> {
     for (const draft of await this.recentDrafts()) {
       if (draft.status !== 'approved') continue;
-      draft.content = normalizeContent(draft.content, this.config);
-      const allowed = allowedUrls(this.config, draft.references.map((r) => r.url));
+      const scoped = this.scoped(draft);
+      draft.content = normalizeContent(draft.content, scoped);
+      const allowed = allowedUrls(scoped, draft.references.map((r) => r.url));
       // A person approved it, so earlier review notes no longer block; fresh rule breaks still do.
-      draft.issues = checkContent(draft.content, this.config, allowed);
+      draft.issues = checkContent(draft.content, scoped, allowed);
       if (hasBlocking(draft.issues)) {
         draft.status = 'draft';
         await this.saveDraft(draft);
@@ -319,7 +360,7 @@ export class Agent {
     const cutoff = new Date(this.d.now().getTime() - 2 * DAY).toISOString();
     for (const draft of await this.recentDrafts()) {
       if ((draft.status !== 'partial' && draft.status !== 'failed') || draft.createdAt < cutoff) continue;
-      const retry = this.enabled().filter((p) => draft.results[p]?.status === 'failed' && draft.results[p]!.attempts < MAX_ATTEMPTS);
+      const retry = this.targetsOf(draft).filter((p) => draft.results[p]?.status === 'failed' && draft.results[p]!.attempts < MAX_ATTEMPTS);
       if (retry.length) await this.publishDraft(draft, retry);
     }
   }
@@ -340,7 +381,7 @@ export class Agent {
   }
 
   async publishDraft(draft: Draft, only?: PlatformId[]): Promise<void> {
-    const targets = (only ?? this.enabled()).filter((p) => !['ok', 'manual'].includes(draft.results[p]?.status ?? ''));
+    const targets = (only ?? this.targetsOf(draft)).filter((p) => !['ok', 'manual'].includes(draft.results[p]?.status ?? ''));
     let imageFiles: string[] = [];
     try {
       imageFiles = await this.localImages(draft);
@@ -348,11 +389,12 @@ export class Agent {
       this.warn(`카드 이미지를 내려받지 못했어요: ${describeError(e)}`);
     }
     for (const id of targets) {
-      const platform = this.d.platforms[id]!;
+      const platform = this.d.platforms[id];
       const prev = draft.results[id];
       const at = this.d.now().toISOString();
       this.d.log(`⑥ ${PLATFORM_LABELS[id]}에 올리는 중…`);
       try {
+        if (!platform) throw new Error(`${PLATFORM_LABELS[id]} 계정이 등록되지 않았어요`);
         const r = await platform.publish({ draft, images: draft.images, imageFiles });
         draft.results[id] = { status: r.manual ? 'manual' : 'ok', id: r.id, url: r.url, error: null, at, attempts: (prev?.attempts ?? 0) + 1 };
         if (!r.manual) this.state.posts.push({ draftId: draft.id, platform: id, id: r.id, url: r.url, at });
@@ -363,7 +405,7 @@ export class Agent {
         this.events.push({ kind: 'publishFailed', platform: id, draftId: draft.id, error });
       }
     }
-    draft.status = draftStatus(this.enabled().map((p) => draft.results[p]));
+    draft.status = draftStatus(this.targetsOf(draft).map((p) => draft.results[p]));
     await this.saveDraft(draft);
   }
 
@@ -374,7 +416,7 @@ export class Agent {
     const since = new Date(this.d.now().getTime() - config.comments.lookbackDays * DAY);
     const collected: RemoteComment[] = [];
     const me: Record<string, string> = {};
-    for (const id of this.enabled()) {
+    for (const id of this.connected()) {
       const api = this.d.platforms[id]!.comments;
       if (!api) continue;
       try {

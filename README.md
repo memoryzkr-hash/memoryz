@@ -148,8 +148,10 @@ tests/assistant/      150개: 경계 값, 저장소 오류, .ics, 지어낸 출�
 - 사용자는 `promo/`의 파일(브랜드 설명, 글 구성, FAQ, 참고 계정)과 각 플랫폼 **공식 토큰**만 준비합니다. 비밀번호 로그인 자동화는 쓰지 않습니다(약관 위반·정지 위험).
 - `mode: auto`는 검수를 통과하면 바로, `mode: review`는 초안(`promo-data/drafts/*.md`)의 `status`를 `approved`로 바꾸면 올라갑니다.
 - 기록(발행 내역, 처리한 댓글, 초안, 실행 보고서)은 `promo-data` 브랜치에, 카드 이미지는 `promo-media` 브랜치에 쌓입니다.
-- **관제실 (`promo.html`)**: 휴대폰에서 여는 웹 화면. 오늘 확인할 일, 다음 발행 시간, 플랫폼별 미리보기(인스타 카드뉴스·쓰레드 타래·블로그)로 초안 검토 → 글 고치기(글자 수 한도 실시간 표시) → 승인, 직접 답할 댓글함, 최근 7일 기록, 지금 실행(한 편 만들기·미리보기·댓글 확인·연결 점검).
-  배포본은 `/memoryz/promo.html`. 설정에서 저장소와 fine-grained 토큰(Contents·Actions 읽기·쓰기)을 넣으면 실제 데이터와 연결되고, 넣기 전에는 예시 데이터로 보여 줍니다.
+- **홍보 자동화 화면 (`promo.html`)**: 처음 화면에 **블로그 자동화 · 인스타그램 자동화 · 쓰레드 자동화** 카드 3개.
+  카드마다 계정 등록(토큰은 GitHub Secrets에 암호화 저장), **글 만들기**(미리보기 → 고치기 → 지금 올리기), **자동으로 올리기** 스위치와 주기(매일·평일·주 3회·주 2회·주 1회·요일 직접 + 시간).
+  플랫폼마다 주기가 따로라 `promo/config.yml`의 `platforms.<이름>.schedule`에 저장되고, 에이전트가 플랫폼별로 차례를 계산합니다.
+  배포본은 `/memoryz/promo.html`. 설정에서 저장소와 fine-grained 토큰(Contents·Actions·Secrets·Variables 읽기·쓰기)을 넣으면 실제로 동작하고, 넣기 전에는 미리보기입니다.
 
 ```bash
 npm run promo -- check                 # 설정·토큰·이미지 저장소 연결 확인 (아무것도 올리지 않음)
@@ -165,7 +167,7 @@ src/promo/ai/             Claude 호출: 주제 → 레퍼런스 조사(웹 검�
 src/promo/platforms/      threads · instagram · wordpress · naver(발행본) — 공식 API만
 src/promo/media/          카드뉴스 HTML → JPEG(Chromium), GitHub에 공개 이미지 올리기
 src/promo/agent.ts        실행 흐름, 보고서·inbox·알림      .github/workflows/promo.yml  매시간 실행
-src/promo/ui/             관제실 화면 (promo.html): GitHub API로 promo-data 읽기·쓰기, 워크플로 실행
+src/promo/ui/             홍보 자동화 화면 (promo.html): 계정→Secrets, 주기→config.yml, 글 만들기→워크플로 실행
 tests/promo/              가짜 네트워크·가짜 Claude로 발행·재시도·승인·댓글 정책까지
 ```
 

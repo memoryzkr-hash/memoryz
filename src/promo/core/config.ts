@@ -21,10 +21,10 @@ export const DEFAULT_CONFIG: PromoConfig = {
     research: { searches: 5, fetches: 5 },
   },
   platforms: {
-    threads: { enabled: false, attachImage: false, maxPosts: 4 },
-    instagram: { enabled: false, maxCards: 7 },
-    wordpress: { enabled: false, url: '', status: 'publish' },
-    naver: { enabled: false },
+    threads: { enabled: false, schedule: null, attachImage: false, maxPosts: 4 },
+    instagram: { enabled: false, schedule: null, maxCards: 7 },
+    wordpress: { enabled: false, schedule: null, url: '', status: 'publish' },
+    naver: { enabled: false, schedule: null, kind: 'naver' },
   },
   comments: {
     enabled: true,
@@ -149,24 +149,25 @@ export function parseConfig(text: string): ConfigResult {
     }
   }
 
-  const schedule = section(raw.schedule, 'schedule');
-  if (schedule.slots !== undefined) {
+  /** One { days, time } or a list of them. */
+  const slotList = (v: unknown, path: string): Slot[] => {
+    const list = Array.isArray(v) ? v : [v];
     const slots: Slot[] = [];
-    if (!Array.isArray(schedule.slots)) errors.push(`${at('schedule.slots')}은(는) 목록이어야 해요`);
-    else {
-      schedule.slots.forEach((s, i) => {
-        const p = `schedule.slots[${i}]`;
-        if (!isObj(s)) return void errors.push(`${at(p)}은(는) { days: [...], time: "09:00" } 형식이어야 해요`);
-        const time = str(s.time, `${p}.time`, '');
-        if (!TIME.test(time)) errors.push(`${at(`${p}.time`)}은(는) "09:00"처럼 24시간 HH:mm이어야 해요`);
-        const dayNames = s.days === 'daily' || s.days === '매일' ? Object.keys(DAYS).slice(0, 7) : strList(s.days, `${p}.days`, []);
-        const days = dayNames.map((d) => DAYS[d.toLowerCase()]);
-        if (!days.length || days.some((d) => !d)) errors.push(`${at(`${p}.days`)}은(는) [mon, wed, fri] 또는 [월, 수, 금] 또는 daily여야 해요`);
-        else if (TIME.test(time)) slots.push({ days: [...new Set(days)], time });
-      });
-    }
-    c.schedule.slots = slots;
-  }
+    list.forEach((s, i) => {
+      const p = Array.isArray(v) ? `${path}[${i}]` : path;
+      if (!isObj(s)) return void errors.push(`${at(p)}은(는) { days: [...], time: "09:00" } 형식이어야 해요`);
+      const time = str(s.time, `${p}.time`, '');
+      if (!TIME.test(time)) errors.push(`${at(`${p}.time`)}은(는) "09:00"처럼 24시간 HH:mm이어야 해요`);
+      const dayNames = s.days === 'daily' || s.days === '매일' ? Object.keys(DAYS).slice(0, 7) : strList(s.days, `${p}.days`, []);
+      const days = dayNames.map((d) => DAYS[d.toLowerCase()]);
+      if (!days.length || days.some((d) => !d)) errors.push(`${at(`${p}.days`)}은(는) [mon, wed, fri] 또는 [월, 수, 금] 또는 daily여야 해요`);
+      else if (TIME.test(time)) slots.push({ days: [...new Set(days)], time });
+    });
+    return slots;
+  };
+
+  const schedule = section(raw.schedule, 'schedule');
+  if (schedule.slots !== undefined && schedule.slots !== null) c.schedule.slots = slotList(schedule.slots, 'schedule.slots');
   c.schedule.catchUpHours = int(schedule.catchUpHours, 'schedule.catchUpHours', c.schedule.catchUpHours, 1, 48);
 
   const content = section(raw.content, 'content');
@@ -183,14 +184,18 @@ export function parseConfig(text: string): ConfigResult {
 
   const platforms = section(raw.platforms, 'platforms');
   const threads = section(platforms.threads, 'platforms.threads');
+  const own = (o: Obj, name: string) => (o.schedule === undefined || o.schedule === null ? null : slotList(o.schedule, `platforms.${name}.schedule`));
   c.platforms.threads.enabled = bool(threads.enabled, 'platforms.threads.enabled', false);
+  c.platforms.threads.schedule = own(threads, 'threads');
   c.platforms.threads.attachImage = bool(threads.attachImage, 'platforms.threads.attachImage', false);
   c.platforms.threads.maxPosts = int(threads.maxPosts, 'platforms.threads.maxPosts', c.platforms.threads.maxPosts, 1, 10);
   const instagram = section(platforms.instagram, 'platforms.instagram');
   c.platforms.instagram.enabled = bool(instagram.enabled, 'platforms.instagram.enabled', false);
+  c.platforms.instagram.schedule = own(instagram, 'instagram');
   c.platforms.instagram.maxCards = int(instagram.maxCards, 'platforms.instagram.maxCards', c.platforms.instagram.maxCards, 1, 10);
   const wordpress = section(platforms.wordpress, 'platforms.wordpress');
   c.platforms.wordpress.enabled = bool(wordpress.enabled, 'platforms.wordpress.enabled', false);
+  c.platforms.wordpress.schedule = own(wordpress, 'wordpress');
   c.platforms.wordpress.url = str(wordpress.url, 'platforms.wordpress.url', '').replace(/\/+$/, '');
   const wpStatus = str(wordpress.status, 'platforms.wordpress.status', 'publish');
   if (wpStatus === 'publish' || wpStatus === 'draft') c.platforms.wordpress.status = wpStatus;
@@ -200,6 +205,8 @@ export function parseConfig(text: string): ConfigResult {
   }
   const naver = section(platforms.naver, 'platforms.naver');
   c.platforms.naver.enabled = bool(naver.enabled, 'platforms.naver.enabled', false);
+  c.platforms.naver.schedule = own(naver, 'naver');
+  c.platforms.naver.kind = str(naver.kind, 'platforms.naver.kind', 'naver') === 'tistory' ? 'tistory' : 'naver';
 
   const comments = section(raw.comments, 'comments');
   c.comments.enabled = bool(comments.enabled, 'comments.enabled', c.comments.enabled);
@@ -224,7 +231,6 @@ export function parseConfig(text: string): ConfigResult {
   if (c.media.repo && !/^[\w.-]+\/[\w.-]+$/.test(c.media.repo)) errors.push(`${at('media.repo')}은(는) "계정/저장소" 형식이어야 해요`);
   c.media.branch = str(media.branch, 'media.branch', c.media.branch) || c.media.branch;
 
-  if (!Object.values(c.platforms).some((p) => p.enabled)) errors.push('켜진 플랫폼이 없어요. platforms 아래에서 하나 이상 enabled: true로 바꿔 주세요');
   if (!c.brand.name) errors.push(`${at('brand.name')}에 브랜드 이름을 적어 주세요`);
 
   return { config: c, errors };
@@ -232,4 +238,16 @@ export function parseConfig(text: string): ConfigResult {
 
 export function enabledPlatforms(c: PromoConfig) {
   return (Object.keys(c.platforms) as (keyof PromoConfig['platforms'])[]).filter((p) => c.platforms[p].enabled);
+}
+
+/** The posting times for one platform: its own schedule, else the shared one. */
+export function slotsFor(c: PromoConfig, p: keyof PromoConfig['platforms']): Slot[] {
+  return c.platforms[p].schedule ?? c.schedule.slots;
+}
+
+/** A copy of the config where only `targets` are switched on, so one draft is written for just those. */
+export function scopeConfig(c: PromoConfig, targets: (keyof PromoConfig['platforms'])[]): PromoConfig {
+  const s = structuredClone(c);
+  for (const p of Object.keys(s.platforms) as (keyof PromoConfig['platforms'])[]) s.platforms[p].enabled = targets.includes(p);
+  return s;
 }

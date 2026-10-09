@@ -16,9 +16,9 @@ brand:
     - { label: 구독 신청, url: "https://example.com/subscribe" }
 
 schedule:
-  slots:                             # 올리는 요일·시간 (월화수목금토일 또는 mon..sun, daily)
+  slots:                             # 플랫폼에 schedule이 없을 때 쓰는 기본 주기
     - { days: [월, 수, 금], time: "09:00" }
-  catchUpHours: 6                    # 이 시간 넘게 늦어진 슬롯은 건너뜀
+  catchUpHours: 6                    # 이 시간 넘게 늦어진 차례는 건너뜀
 
 content:
   pillars:                           # 콘텐츠 기둥 — 돌아가며 주제를 고릅니다
@@ -35,11 +35,12 @@ content:
     searches: 5                      # 글 1편당 레퍼런스 웹 검색 횟수 (0~10)
     fetches: 5                       # references.md 주소 등 직접 열어 볼 페이지 수 (0~10)
 
+# 플랫폼마다 따로: enabled = 자동화 켜짐, schedule = 올리는 주기 (홍보 자동화 화면에서 켜고 끄면 여기가 바뀌어요)
 platforms:
-  threads:   { enabled: true, attachImage: false, maxPosts: 4 }   # attachImage: 첫 글에 표지 카드 붙이기
-  instagram: { enabled: true, maxCards: 7 }                       # 카드뉴스 최대 장수 (1~10)
-  wordpress: { enabled: false, url: "https://blog.example.com", status: publish }   # status: draft면 워드프레스에 임시글로
-  naver:     { enabled: true }                                    # 네이버·티스토리용 붙여넣기 발행본 만들기
+  threads:   { enabled: false, schedule: { days: daily, time: "08:00" }, attachImage: false, maxPosts: 4 }
+  instagram: { enabled: false, schedule: { days: [월, 수, 금], time: "19:00" }, maxCards: 7 }
+  wordpress: { enabled: false, schedule: { days: [화, 목], time: "10:00" }, url: "", status: publish }   # url을 적으면 블로그가 워드프레스로
+  naver:     { enabled: false, schedule: { days: [화, 목], time: "10:00" }, kind: naver }              # kind: naver 또는 tistory (붙여넣기용 글 준비)
 
 comments:
   enabled: true

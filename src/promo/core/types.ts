@@ -48,11 +48,13 @@ export interface PromoConfig {
     hashtags: { fixed: string[]; max: number };
     research: { searches: number; fetches: number };
   };
+  /** `enabled` means scheduled posting is on; `schedule` overrides `schedule.slots` for that platform. */
   platforms: {
-    threads: { enabled: boolean; attachImage: boolean; maxPosts: number };
-    instagram: { enabled: boolean; maxCards: number };
-    wordpress: { enabled: boolean; url: string; status: 'publish' | 'draft' };
-    naver: { enabled: boolean };
+    threads: { enabled: boolean; schedule: Slot[] | null; attachImage: boolean; maxPosts: number };
+    instagram: { enabled: boolean; schedule: Slot[] | null; maxCards: number };
+    wordpress: { enabled: boolean; schedule: Slot[] | null; url: string; status: 'publish' | 'draft' };
+    /** kind only changes wording: the export works for both. */
+    naver: { enabled: boolean; schedule: Slot[] | null; kind: 'naver' | 'tistory' };
   };
   comments: {
     enabled: boolean;
@@ -144,6 +146,8 @@ export interface PublishResult {
 
 export interface Draft {
   id: string;
+  /** Where this draft goes. Empty on drafts from before per-platform posting: then every scheduled platform. */
+  platforms: PlatformId[];
   slotKey: string | null;
   status: DraftStatus;
   createdAt: string;

@@ -23,7 +23,7 @@ describe('example promo/ folder', () => {
 
 describe('missingEnv', () => {
   it('names exactly what each enabled platform needs', () => {
-    const config = testConfig((c) => (c.platforms.wordpress = { enabled: true, url: 'https://b', status: 'publish' }));
+    const config = testConfig((c) => (c.platforms.wordpress = { enabled: true, schedule: null, url: 'https://b', status: 'publish' }));
     expect(missingEnv(config, {}, true)).toEqual(['ANTHROPIC_API_KEY', 'THREADS_ACCESS_TOKEN', 'INSTAGRAM_ACCESS_TOKEN', 'WORDPRESS_USER', 'WORDPRESS_APP_PASSWORD']);
     expect(missingEnv(config, { INSTAGRAM_API_HOST: 'graph.facebook.com' }, false)).toContain('INSTAGRAM_USER_ID');
   });

@@ -6,6 +6,7 @@ import type { DraftStatus, PlatformId, PublishResult, Weekday } from '../core/ty
 export { h, append, replaceChildren, toast } from '../../assistant/ui/dom';
 
 const ICONS: Record<string, string> = {
+  back: '<path d="M15 5l-7 7 7 7"/>',
   home: '<path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/>',
   drafts: '<path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h5"/>',
   inbox: '<path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/>',

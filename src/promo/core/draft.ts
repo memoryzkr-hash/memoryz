@@ -26,6 +26,7 @@ export function serializeDraft(d: Draft): string {
   const meta = {
     id: d.id,
     status: d.status,
+    platforms: d.platforms,
     slotKey: d.slotKey,
     createdAt: d.createdAt,
     plan: d.plan,
@@ -122,8 +123,10 @@ export function parseDraft(text: string): Draft {
   if (posts.length) content.threads = { posts };
 
   const arr = <T>(v: unknown): T[] => (Array.isArray(v) ? (v as T[]) : []);
+  const known = ['threads', 'instagram', 'wordpress', 'naver'];
   return {
     id: meta.id,
+    platforms: arr<string>(meta.platforms).filter((p) => known.includes(p)) as Draft['platforms'],
     status,
     slotKey: typeof meta.slotKey === 'string' ? meta.slotKey : null,
     createdAt: String(meta.createdAt ?? ''),
