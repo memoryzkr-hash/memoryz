@@ -383,7 +383,7 @@ export function allowed(req: Pick<IncomingMessage, 'headers'>): boolean {
 async function main() {
   if (existsSync(ENV_FILE)) process.loadEnvFile(ENV_FILE);
   const { createServer: createVite } = await import('vite');
-  const vite = await createVite({ server: { middlewareMode: true }, appType: 'mpa', logLevel: 'warn' });
+  const vite = await createVite({ server: { middlewareMode: true, hmr: false, ws: false }, appType: 'mpa', logLevel: 'warn' });
   const server = createServer(async (req, res) => {
     const url = new URL(req.url ?? '/', 'http://localhost');
     if (url.pathname.startsWith('/api/promo/')) {
