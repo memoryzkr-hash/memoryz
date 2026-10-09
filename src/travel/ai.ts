@@ -4,7 +4,7 @@ import { AiError, MODEL, toAiError, type AiErrorKind } from '../assistant/ai';
 import type { PlanRequest } from './core/store';
 import type { TripPlan } from './core/types';
 import { checkPlan, LIMITS } from './core/validate';
-import { PLAN_JSON_SHAPE, PLAN_SCHEMA, PLAN_SYSTEM, planPrompt } from './prompts';
+import { PLAN_JSON_SHAPE, PLAN_SCHEMA, PLAN_SYSTEM, planPrompt, revisePrompt } from './prompts';
 
 export { AiError, MODEL };
 
@@ -13,6 +13,8 @@ const FALLBACK = { betas: ['server-side-fallback-2026-07-01'], fallbacks: 'defau
 
 export interface PlannerAi {
   plan(req: PlanRequest, signal?: AbortSignal): Promise<TripPlan>;
+  /** Rewrites `current` per the traveller's words ("더 여유롭게", "맛집 더 넣어 줘"). */
+  revise(current: TripPlan, req: PlanRequest, feedback: string, signal?: AbortSignal): Promise<TripPlan>;
 }
 
 export function checkRequest(r: PlanRequest): string | null {
@@ -64,51 +66,55 @@ const SAMPLE_ERRORS: Record<string, [AiErrorKind, string]> = {
 };
 
 export function createSamplePlanner(sample: SampleFn): PlannerAi {
+  const ask = async (body: string, req: PlanRequest, signal?: AbortSignal): Promise<TripPlan> => {
+    const prompt = `${PLAN_SYSTEM}\n\n아래 모양의 JSON 하나만 답하세요. 다른 글은 쓰지 마세요.\n${PLAN_JSON_SHAPE}\n\n${body}`;
+    let raw: unknown;
+    try {
+      raw = await sample.json(prompt, { signal, modelTier: 'default', cache: false });
+    } catch (e) {
+      const code = (e as { code?: string }).code ?? '';
+      const [kind, message] = SAMPLE_ERRORS[code] ?? ['server', '지금은 만들 수 없어요. 잠시 후 다시 시도해 주세요'];
+      throw new AiError(kind, message);
+    }
+    return finish(raw, req);
+  };
   return {
-    async plan(req, signal) {
-      const prompt = `${PLAN_SYSTEM}\n\n아래 모양의 JSON 하나만 답하세요. 다른 글은 쓰지 마세요.\n${PLAN_JSON_SHAPE}\n\n[요청]\n${planPrompt(req)}`;
-      let raw: unknown;
-      try {
-        raw = await sample.json(prompt, { signal, modelTier: 'default', cache: false });
-      } catch (e) {
-        const code = (e as { code?: string }).code ?? '';
-        const [kind, message] = SAMPLE_ERRORS[code] ?? ['server', '지금은 만들 수 없어요. 잠시 후 다시 시도해 주세요'];
-        throw new AiError(kind, message);
-      }
-      return finish(raw, req);
-    },
+    plan: (req, signal) => ask(`[요청]\n${planPrompt(req)}`, req, signal),
+    revise: (current, req, feedback, signal) => ask(revisePrompt(current, req, feedback), req, signal),
   };
 }
 
 export function createPlannerAi(apiKey: string): PlannerAi {
   const client = new Anthropic({ apiKey, dangerouslyAllowBrowser: true, maxRetries: 1 });
-  return {
-    async plan(req, signal) {
+  const ask = async (content: string, req: PlanRequest, signal?: AbortSignal): Promise<TripPlan> => {
+    try {
+      const res = await client.beta.messages.create(
+        {
+          ...FALLBACK,
+          model: MODEL,
+          max_tokens: 16000,
+          system: PLAN_SYSTEM,
+          output_config: { effort: 'medium', format: { type: 'json_schema', schema: PLAN_SCHEMA } },
+          messages: [{ role: 'user', content }],
+        },
+        { signal },
+      );
+      if (res.stop_reason === 'refusal') throw new AiError('refusal', '이 요청은 처리할 수 없어요. 내용을 바꿔 다시 시도해 주세요');
+      if (res.stop_reason === 'max_tokens') throw new AiError('bad', '일정이 너무 길어요. 기간을 줄여 다시 시도해 주세요');
+      const text = res.content.flatMap((b) => (b.type === 'text' ? [b.text] : [])).join('');
+      let raw: unknown;
       try {
-        const res = await client.beta.messages.create(
-          {
-            ...FALLBACK,
-            model: MODEL,
-            max_tokens: 16000,
-            system: PLAN_SYSTEM,
-            output_config: { effort: 'medium', format: { type: 'json_schema', schema: PLAN_SCHEMA } },
-            messages: [{ role: 'user', content: planPrompt(req) }],
-          },
-          { signal },
-        );
-        if (res.stop_reason === 'refusal') throw new AiError('refusal', '이 요청은 처리할 수 없어요. 내용을 바꿔 다시 시도해 주세요');
-        if (res.stop_reason === 'max_tokens') throw new AiError('bad', '일정이 너무 길어요. 기간을 줄여 다시 시도해 주세요');
-        const text = res.content.flatMap((b) => (b.type === 'text' ? [b.text] : [])).join('');
-        let raw: unknown;
-        try {
-          raw = JSON.parse(text);
-        } catch {
-          throw new AiError('bad', '응답을 이해하지 못했어요. 다시 시도해 주세요');
-        }
-        return finish(raw, req);
-      } catch (e) {
-        throw toAiError(e);
+        raw = JSON.parse(text);
+      } catch {
+        throw new AiError('bad', '응답을 이해하지 못했어요. 다시 시도해 주세요');
       }
-    },
+      return finish(raw, req);
+    } catch (e) {
+      throw toAiError(e);
+    }
+  };
+  return {
+    plan: (req, signal) => ask(planPrompt(req), req, signal),
+    revise: (current, req, feedback, signal) => ask(revisePrompt(current, req, feedback), req, signal),
   };
 }

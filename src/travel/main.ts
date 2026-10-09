@@ -1,15 +1,16 @@
 import './travel.css';
-import { h, replaceChildren, toast } from '../assistant/ui/dom';
-import { findSample, type SampleFn } from './ai';
+import { toast, h } from '../assistant/ui/dom';
+import { createPlannerAi, createSamplePlanner, findSample, type PlannerAi, type SampleFn } from './ai';
 import { optimizeDay } from './core/optimize';
 import { REGIONS } from './core/regions';
 import { scheduleTrip, type TripSchedule } from './core/schedule';
-import { TravelStore } from './core/store';
+import { TravelStore, type PlanRequest } from './core/store';
 import { formatDuration } from './core/time';
 import type { TripPlan } from './core/types';
 import { LIMITS } from './core/validate';
 import { SAMPLES, samplePlan } from './samples';
-import { openAddStopSheet, openCreateSheet } from './ui/create';
+import { Chat } from './ui/chat';
+import { openAddStopSheet } from './ui/create';
 import { TripMap } from './ui/map';
 import { renderPanel, type PanelActions, type PanelView } from './ui/panel';
 import { Player } from './ui/player';
@@ -27,12 +28,26 @@ function safeStorage(): Storage {
 
 const store = new TravelStore(safeStorage());
 let sample: SampleFn | null = null;
+let keyPlanner: { key: string; ai: PlannerAi } | null = null;
+
+// ---------- state ----------
+
+const saved = store.plan();
+let plan: TripPlan = saved ?? samplePlan(SAMPLES[0].id)!;
+let hasOwnPlan = saved !== null;
+let request: PlanRequest | null = (() => {
+  const r = store.request();
+  return saved && r.destination && r.destination === saved.destination ? r : null;
+})();
+let sched: TripSchedule = scheduleTrip(plan);
+const view: PanelView = { day: 0, tab: 'plan', editing: false, openLeg: null };
 
 // ---------- layout ----------
 
+const app = document.getElementById('app')!;
 const mapEl = h('div', { class: 'map', role: 'application', 'aria-label': '여행 지도. 누르면 장소를 추가해요' });
-const panelEl = h('aside', { class: 'panel', 'aria-label': '여행 일정' });
-const planNote = h('div', { class: 'plan-note', hidden: true }, '지도 이미지 없이 경로도로 보여 줘요');
+const panelEl = h('div', { class: 'panel' });
+const planNote = h('div', { class: 'plan-note', hidden: true }, '지도 이미지 없이 경로만 보여 줘요');
 const player = new Player(
   (s, tl) => {
     map.update(s, tl);
@@ -40,15 +55,47 @@ const player = new Player(
   },
   (on) => (map.follow = on),
 );
-const newBtn = h('button', { type: 'button', class: 'btn primary', onClick: () => openCreate() }, '새 여행');
-const topbar = h(
-  'header',
-  { class: 'topbar' },
-  h('div', { class: 'brand' }, h('span', { class: 'mark', 'aria-hidden': 'true' }), h('span', null, '여행 플래너'), h('small', null, '이동 시뮬레이터')),
-  h('div', { class: 'top-actions' }, newBtn),
+const stage = h('div', { class: 'stage' }, mapEl, planNote, player.hud, player.startCta, player.controls);
+const trip = h(
+  'section',
+  { class: 'trip', 'aria-label': '내 여행' },
+  h(
+    'header',
+    { class: 'trip-nav' },
+    h('button', { type: 'button', class: 'back', 'aria-label': '대화로 돌아가기', onClick: () => showChat() }, h('span', { class: 'chev-left', 'aria-hidden': 'true' }), '대화'),
+    h('b', null, '내 여행'),
+    h('span', { class: 'nav-spacer', 'aria-hidden': 'true' }),
+  ),
+  h('div', { class: 'trip-body' }, stage, panelEl),
 );
-const stage = h('section', { class: 'stage', 'aria-label': '이동 시뮬레이션' }, mapEl, planNote, player.hud, player.startCta, player.controls);
-document.getElementById('app')!.append(topbar, stage, panelEl);
+
+const chat = new Chat({
+  planner() {
+    if (sample) return createSamplePlanner(sample);
+    const key = store.apiKey();
+    if (!key) return null;
+    if (keyPlanner?.key !== key) keyPlanner = { key, ai: createPlannerAi(key) };
+    return keyPlanner.ai;
+  },
+  canTakeKey: () => !sample,
+  saveKey: (key) => store.setApiKey(key),
+  forgetKey: () => void store.setApiKey(null),
+  current: () => (hasOwnPlan ? { plan, req: request } : null),
+  usePlan(p, req) {
+    hasOwnPlan = true;
+    request = req ?? request;
+    if (req) store.saveRequest(req);
+    view.day = 0;
+    view.tab = 'plan';
+    view.editing = false;
+    view.openLeg = null;
+    player.startCta.hidden = false;
+    player.started = false;
+    setPlan(p, { keepTime: false, fit: true });
+  },
+  showTrip,
+});
+app.append(chat.el, trip);
 
 const map = new TripMap(mapEl, ([lat, lng]) => {
   const day = plan.days[view.day];
@@ -61,25 +108,45 @@ const map = new TripMap(mapEl, ([lat, lng]) => {
     toast(`${stop.name}을(를) 넣었어요`);
   });
 });
-map.insets = () => ({
-  top: player.hud.offsetTop + player.hud.offsetHeight + 20,
-  bottom: stage.clientHeight - player.controls.offsetTop + (player.startCta.hidden ? 20 : 70),
-});
+/** Keep a fitted route clear of whatever floats over the map (HUD, controls, start button). */
+map.insets = () => {
+  const m = mapEl.getBoundingClientRect();
+  const hud = player.hud.getBoundingClientRect();
+  const ctl = player.controls.getBoundingClientRect();
+  const cta = player.startCta.hidden ? null : player.startCta.getBoundingClientRect();
+  const lowest = Math.min(ctl.top, cta?.top ?? Infinity);
+  return { top: Math.max(20, hud.bottom - m.top + 20), bottom: Math.max(20, m.bottom - lowest + 20) };
+};
 map.onTilesChange = (ok) => {
   planNote.hidden = ok;
   stage.classList.toggle('no-tiles', !ok);
 };
 
-// ---------- state ----------
+// ---------- screens (phones show one at a time; wide screens show both) ----------
 
-let plan: TripPlan = store.plan() ?? samplePlan(SAMPLES[0].id)!;
-let sched: TripSchedule = scheduleTrip(plan);
-const view: PanelView = { day: 0, tab: 'plan', editing: false, openLeg: null };
+const wide = window.matchMedia('(min-width: 1100px)');
+
+function showTrip(): void {
+  app.dataset.screen = 'trip';
+  requestAnimationFrame(() => {
+    map.invalidate();
+    map.fit(sched.days[view.day]);
+  });
+}
+
+function showChat(): void {
+  player.pause();
+  app.dataset.screen = 'chat';
+  if (wide.matches) document.getElementById('chat-input')?.focus();
+}
+
+// ---------- plan editing ----------
 
 /** Copy, change, re-plan; the simulation clock stays where it is. */
 function edit(change: (p: TripPlan) => void): void {
   const next = structuredClone(plan);
   change(next);
+  hasOwnPlan = true;
   setPlan(next, { keepTime: true, fit: false });
 }
 
@@ -117,15 +184,12 @@ function highlight(visit: number, kind: string): void {
   (moving ? (v?.previousElementSibling as HTMLElement | null) : v)?.classList.add('now');
 }
 
-// ---------- actions ----------
-
 const actions: PanelActions = {
   view(patch) {
     const dayChanged = patch.day !== undefined && patch.day !== view.day;
     Object.assign(view, patch);
     if (dayChanged) draw({ keepTime: false, fit: true });
     else drawPanel();
-    if (patch.tab) panelEl.scrollTop = 0;
   },
   setStart: (value) => edit((p) => (p.days[view.day].start = value)),
   setTravelers: (n) => edit((p) => (p.travelers = Math.min(LIMITS.travelers, Math.max(1, n)))),
@@ -173,29 +237,13 @@ const actions: PanelActions = {
   },
 };
 
-function openCreate(): void {
-  openCreateSheet(
-    store,
-    (p) => {
-      view.day = 0;
-      view.tab = 'plan';
-      view.editing = false;
-      view.openLeg = null;
-      player.startCta.hidden = false;
-      player.started = false;
-      setPlan(p, { keepTime: false, fit: true });
-      toast(`${p.title}을(를) 열었어요. 재생을 눌러 보세요`);
-    },
-    sample,
-  );
-}
-
-// ---------- keyboard ----------
+// ---------- keyboard (trip screen) ----------
 
 document.addEventListener('keydown', (e) => {
   const t = e.target as HTMLElement;
   if (e.altKey || e.ctrlKey || e.metaKey || document.querySelector('.backdrop')) return;
-  if (t.closest('input, select, textarea, [contenteditable]')) return;
+  if (t.closest('input, select, textarea, [contenteditable], .chat')) return;
+  if (!wide.matches && app.dataset.screen !== 'trip') return;
   if (e.key === ' ' && !t.closest('button')) {
     e.preventDefault();
     player.toggle();
@@ -205,14 +253,10 @@ document.addEventListener('keydown', (e) => {
 
 // ---------- start ----------
 
+app.dataset.screen = 'chat';
 draw({ keepTime: false, fit: true });
-requestAnimationFrame(() => {
-  map.invalidate();
-  map.fit(sched.days[view.day]);
-});
 window.addEventListener('resize', () => map.invalidate());
-// On claude.ai the page can ask Claude on the viewer's account; light that up when it answers.
-void findSample().then((s) => {
-  sample = s;
-  if (s) replaceChildren(newBtn, '새 여행 · AI');
-});
+wide.addEventListener('change', () => requestAnimationFrame(() => map.invalidate()));
+// On claude.ai the page can ask Claude on the viewer's account; until then it may need a key.
+void findSample().then((s) => (sample = s));
+void chat.start();

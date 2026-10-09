@@ -218,7 +218,7 @@ export class Player {
     const ticks: HTMLElement[] = [];
     for (let m = first; m <= tl.end; m += every) {
       const f = (m - tl.start) / span;
-      if (f < 0.03 || f > 0.97) continue; // a label at the very edge would spill out of the card
+      if (f < 0.04 || f > 0.95) continue; // a label at the very edge would spill out of the card
       ticks.push(h('span', { style: `left:${((m - tl.start) / span) * 100}%` }, clock(m).slice(-5, -3).replace(/^0/, '') + '시'));
     }
     replaceChildren(this.ticks, ...ticks);

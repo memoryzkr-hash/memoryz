@@ -100,7 +100,7 @@ function planTab(plan: TripPlan, sched: TripSchedule, view: PanelView, a: PanelA
       )
     : null;
 
-  const startInput = h('input', { class: 'input time', type: 'time', id: 'day-start', value: day.plan.start });
+  const startInput = h('input', { class: 'field time', type: 'time', id: 'day-start', value: day.plan.start });
   startInput.addEventListener('change', () => startInput.value && a.setStart(startInput.value));
 
   const toolbar = h(
@@ -271,12 +271,12 @@ function costTab(plan: TripPlan, sched: TripSchedule, a: PanelActions): HTMLElem
   }
   const maxDay = Math.max(1, ...sched.days.map((d) => d.transport + d.places));
 
-  const budgetInput = h('input', { class: 'input', id: 'budget', type: 'number', min: 0, step: 10000, inputMode: 'numeric', placeholder: '정하지 않음', value: plan.budgetKrw ?? '' });
+  const budgetInput = h('input', { class: 'field', id: 'budget', type: 'number', min: 0, step: 10000, inputMode: 'numeric', placeholder: '정하지 않음', value: plan.budgetKrw ?? '' });
   budgetInput.addEventListener('change', () => {
     const v = Number(budgetInput.value);
     a.setBudget(budgetInput.value.trim() && v > 0 ? Math.round(v) : null);
   });
-  const lodgingInput = h('input', { class: 'input', id: 'lodging', type: 'number', min: 0, step: region.decimals ? 1 : 1000, value: plan.lodgingPerNight });
+  const lodgingInput = h('input', { class: 'field', id: 'lodging', type: 'number', min: 0, step: region.decimals ? 1 : 1000, value: plan.lodgingPerNight });
   lodgingInput.addEventListener('change', () => a.setLodging(Math.max(0, Number(lodgingInput.value) || 0)));
 
   const budget = plan.budgetKrw
@@ -358,7 +358,7 @@ function costTab(plan: TripPlan, sched: TripSchedule, a: PanelActions): HTMLElem
         { class: 'conditions' },
         h(
           'div',
-          { class: 'field' },
+          { class: 'form-field' },
           h('span', { class: 'label' }, '인원'),
           h(
             'div',
@@ -368,8 +368,8 @@ function costTab(plan: TripPlan, sched: TripSchedule, a: PanelActions): HTMLElem
             h('button', { type: 'button', class: 'mini', 'aria-label': '한 명 늘리기', disabled: plan.travelers >= LIMITS.travelers, onClick: () => a.setTravelers(plan.travelers + 1) }, '+'),
           ),
         ),
-        h('label', { class: 'field', for: 'budget' }, h('span', { class: 'label' }, '예산 (원)'), budgetInput),
-        h('label', { class: 'field', for: 'lodging' }, h('span', { class: 'label' }, `숙소 1박 · 2인 1실 (${region.currency})`), lodgingInput),
+        h('label', { class: 'form-field', for: 'budget' }, h('span', { class: 'label' }, '예산 (원)'), budgetInput),
+        h('label', { class: 'form-field', for: 'lodging' }, h('span', { class: 'label' }, `숙소 1박 · 2인 1실 (${region.currency})`), lodgingInput),
       ),
       h('p', { class: 'hint' }, '택시·렌터카는 4명당 한 대, 대중교통·기차·비행기는 1인 요금 × 인원으로 계산해요.'),
     ),

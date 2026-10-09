@@ -16,9 +16,26 @@ export interface PlanRequest {
   budgetKrw: number | null;
   pace: 'relaxed' | 'normal' | 'packed';
   interests: string;
+  /** Who is coming, in the traveller's words ("친구", "아이와 함께"). Empty when not asked. */
+  companions: string;
+  transport: Transport;
+  /** "HH:mm" the first day starts. */
+  start: string;
 }
 
-export const DEFAULT_REQUEST: PlanRequest = { destination: '', days: 2, travelers: 2, budgetKrw: null, pace: 'normal', interests: '' };
+export type Transport = 'any' | 'transit' | 'car' | 'taxi';
+
+export const DEFAULT_REQUEST: PlanRequest = {
+  destination: '',
+  days: 2,
+  travelers: 2,
+  budgetKrw: null,
+  pace: 'normal',
+  interests: '',
+  companions: '',
+  transport: 'any',
+  start: '09:00',
+};
 
 export class TravelStore {
   constructor(private readonly storage: Storage) {}
@@ -67,6 +84,9 @@ export class TravelStore {
         budgetKrw: typeof v.budgetKrw === 'number' ? v.budgetKrw : null,
         pace: v.pace === 'relaxed' || v.pace === 'packed' ? v.pace : 'normal',
         interests: typeof v.interests === 'string' ? v.interests : '',
+        companions: typeof v.companions === 'string' ? v.companions : '',
+        transport: v.transport === 'transit' || v.transport === 'car' || v.transport === 'taxi' ? v.transport : 'any',
+        start: typeof v.start === 'string' && /^\d\d:\d\d$/.test(v.start) ? v.start : '09:00',
       };
     } catch {
       return { ...DEFAULT_REQUEST };

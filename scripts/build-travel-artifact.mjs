@@ -35,7 +35,7 @@ if (js.length !== 1) throw new Error(`expected one script, got ${js.length}`);
 const page = `<title>여행 플래너</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@500;600;700&display=swap">
 <style>${css.join('\n')}</style>
 <div id="app"></div>
 <script type="module">${js[0].replace(/<\/script/gi, '<\\/script')}</script>

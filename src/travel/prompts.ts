@@ -1,7 +1,8 @@
 /** What we ask Claude for. Claude picks places; the app computes every time and fare itself. */
 import { MODE_CHOICES } from './core/modes';
 import { REGION_IDS } from './core/regions';
-import type { PlanRequest } from './core/store';
+import type { PlanRequest, Transport } from './core/store';
+import type { TripPlan } from './core/types';
 import { KINDS } from './core/validate';
 
 export const PACE_LABELS: Record<PlanRequest['pace'], string> = {
@@ -25,12 +26,21 @@ export const PLAN_SYSTEM = `당신은 여행 일정을 짜는 전문 플래너�
 - tips는 그 여행지에서 알아 두면 좋은 짧은 팁 2~4개(한국어).
 - title·label·name·note·tips는 한국어로 씁니다(장소 이름은 한국에서 흔히 부르는 이름).`;
 
+export const TRANSPORT_LABELS: Record<Transport, string> = {
+  any: '상관없음 (거리에 맞게)',
+  transit: '대중교통과 도보 위주 (modeIn은 subway·bus·walk, 도시 사이는 train)',
+  car: '렌터카로 다님 (도시 안 이동도 car, 가까우면 walk)',
+  taxi: '택시 위주 (가까우면 walk)',
+};
+
 export function planPrompt(r: PlanRequest): string {
   const lines = [
     `여행지: ${r.destination.trim()}`,
     `기간: ${r.days}일 (${r.days > 1 ? `${r.days - 1}박 ${r.days}일` : '당일'})`,
-    `인원: ${r.travelers}명`,
+    `인원: ${r.travelers}명${r.companions ? ` (${r.companions})` : ''}`,
     `일정 밀도: ${PACE_LABELS[r.pace]}`,
+    `이동 방법: ${TRANSPORT_LABELS[r.transport]}`,
+    `첫날 출발 시각: ${r.start} (둘째 날부터는 알맞게)`,
   ];
   if (r.budgetKrw) lines.push(`총예산: 약 ${r.budgetKrw.toLocaleString('ko-KR')}원 (숙박·교통·입장료·식사 포함). 넘지 않게 짜 주세요.`);
   if (r.interests.trim()) lines.push(`관심사·요청: ${r.interests.trim()}`);
@@ -45,6 +55,36 @@ export const PLAN_JSON_SHAPE = `{"title": "부산 바다 하루", "region": "KR"
 kind: ${KINDS.join(' | ')}
 modeIn: ${MODE_CHOICES.join(' | ')}
 region: ${REGION_IDS.join(' | ')}`;
+
+/** The current plan, trimmed to what Claude needs to rewrite it. */
+export function planForPrompt(p: TripPlan): string {
+  return JSON.stringify({
+    title: p.title,
+    region: p.region,
+    lodgingPerNight: p.lodgingPerNight,
+    tips: p.tips,
+    days: p.days.map((d) => ({
+      label: d.label,
+      start: d.start,
+      stops: d.stops.map(({ name, lat, lng, kind, stayMin, cost, modeIn, open, close, note }) => ({ name, lat, lng, kind, stayMin, cost, modeIn, open, close, note })),
+    })),
+  });
+}
+
+export function revisePrompt(p: TripPlan, r: PlanRequest, feedback: string): string {
+  return [
+    '아래 여행 일정을 사용자의 요청대로 고쳐 주세요. 요청과 관계없는 부분은 그대로 두세요.',
+    '고친 일정 전체를 같은 JSON 모양으로 다시 답하세요.',
+    '',
+    '[원래 요청]',
+    planPrompt(r),
+    '',
+    '[지금 일정]',
+    planForPrompt(p),
+    '',
+    `[고칠 점] ${feedback.trim()}`,
+  ].join('\n');
+}
 
 const nullableString = { anyOf: [{ type: 'string' }, { type: 'null' }] };
 
