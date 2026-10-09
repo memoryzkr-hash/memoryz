@@ -137,7 +137,7 @@ describe('GitHub backend', () => {
     const m = await createGitHubBackend('o/r', 't', f, 0).load();
     expect(m.config.brand.name).toBe('단백한끼');
     expect(m.brandDoc).toBe('# 단백한끼');
-    expect(m.accounts).toEqual({ threads: false, instagram: true, wordpress: false, claude: true });
+    expect(m.accounts).toEqual({ threads: false, instagram: true, wordpress: false, claude: true, media: true });
     expect(m.hasData).toBe(true);
   });
 

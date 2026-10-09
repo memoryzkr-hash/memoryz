@@ -22,6 +22,8 @@ export interface Accounts {
   instagram: boolean;
   wordpress: boolean;
   claude: boolean;
+  /** A public place for card images (Instagram fetches them by URL). */
+  media: boolean;
 }
 
 export interface Model {

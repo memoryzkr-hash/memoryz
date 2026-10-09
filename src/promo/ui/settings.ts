@@ -1,4 +1,4 @@
-/** 설정: my brand (what every post is written from), the Claude key, and the GitHub connection. */
+/** 설정: my brand (what every post is written from), a link to 계정 연결, and where the agent runs. */
 import type { App } from './app';
 import { LIVE_URL, PREVIEW_ONLY } from './app';
 import { h, icon, toast } from './kit';
@@ -30,28 +30,30 @@ function brandSection(app: App): HTMLElement {
   return form;
 }
 
-function claudeSection(app: App): HTMLElement | null {
-  if (app.backend.kind !== 'github') return null;
+function accountsLink(app: App): HTMLElement {
   const m = app.m!;
-  const key = h('input', { class: 'input', id: 'claude-key', type: 'password', autocomplete: 'off', placeholder: 'sk-ant-…' });
-  const form = h(
-    'form',
-    { class: 'section' },
-    h('div', { class: 'section-head' }, h('h2', null, '글 쓰는 AI (Claude)'), h('span', { class: `chip ${m.accounts.claude ? 'ok' : 'warn'}` }, m.accounts.claude ? '등록됨' : '등록 필요')),
-    h('p', { class: 'help' }, 'console.anthropic.com에서 API 키를 만들고, 월 사용 한도를 꼭 걸어 두세요.'),
-    h('div', { class: 'field' }, h('label', { htmlFor: 'claude-key' }, 'Anthropic API 키'), key),
-    h('div', { class: 'row end' }, h('button', { class: 'btn primary', type: 'submit' }, m.accounts.claude ? '바꾸기' : '등록')),
+  const n = [m.accounts.threads, m.accounts.instagram, m.blogKind !== 'wordpress' || m.accounts.wordpress].filter(Boolean).length;
+  return h(
+    'button',
+    { class: 'alert-row', type: 'button', onClick: () => app.go('accounts') },
+    h('span', { class: `dot ${m.accounts.claude && n === 3 ? 'ok' : ''}` }),
+    h('span', { style: 'flex:1' }, `계정 연결 · 플랫폼 ${n}/3${app.backend.kind === 'preview' ? '' : ` · Claude ${m.accounts.claude ? '등록됨' : '등록 필요'}`}`),
+    h('span', null, '›'),
   );
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    if (!key.value.trim().startsWith('sk-')) return toast('sk-로 시작하는 키를 넣어 주세요');
-    await app.act(() => app.backend.registerAccount(m, 'claude', { token: key.value.trim() }), 'Claude 키를 등록했어요');
-    app.render();
-  });
-  return form;
+}
+
+function localSection(): HTMLElement {
+  return h(
+    'section',
+    { class: 'section' },
+    h('div', { class: 'section-head' }, h('h2', null, '실행 방식'), h('span', { class: 'chip ok' }, '이 컴퓨터')),
+    h('p', { class: 'help' }, '지금은 npm run promo:app으로 이 컴퓨터에서 실행 중이에요. 계정은 프로젝트 폴더의 .env 파일에, 글과 기록은 .promo-data 폴더에 저장돼요.'),
+    h('p', { class: 'help' }, '자동화는 이 앱(터미널)을 켜 둔 동안 15분마다 확인해서 올려요. 컴퓨터를 꺼도 올리려면 GitHub Actions로 옮기세요 (docs/promo/SETUP.md).'),
+  );
 }
 
 function githubSection(app: App): HTMLElement {
+  if (app.backend.kind === 'local') return localSection();
   if (PREVIEW_ONLY) {
     return h(
       'section',
@@ -91,7 +93,7 @@ export function settingsView(app: App): HTMLElement {
     { class: 'wrap' },
     h('div', { class: 'bar' }, h('button', { class: 'iconbtn', type: 'button', 'aria-label': '처음으로', onClick: () => app.go('home') }, icon('back')), h('span', { class: 'bar-title' }, '설정'), h('span')),
     brandSection(app),
-    claudeSection(app),
+    accountsLink(app),
     githubSection(app),
   );
 }

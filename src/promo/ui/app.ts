@@ -3,9 +3,10 @@ import { createGitHubBackend, repoFromLocation, BackendError, type Backend } fro
 import { h, replaceChildren, store, toast } from './kit';
 import type { Model, UiPlatform } from './model';
 import { UI_PLATFORMS } from './model';
+import { createLocalBackend, localAvailable } from './local';
 import { createPreviewBackend } from './preview';
 
-export type Route = 'home' | UiPlatform | 'settings';
+export type Route = 'home' | UiPlatform | 'settings' | 'accounts';
 
 export interface App {
   backend: Backend;
@@ -32,7 +33,7 @@ export const LIVE_URL = 'https://memoryzkr-hash.github.io/memoryz/promo.html';
 
 type View = (app: App) => HTMLElement;
 
-export function createApp(root: HTMLElement, views: Record<'home' | 'platform' | 'settings', View>): App {
+export function createApp(root: HTMLElement, views: Record<'home' | 'platform' | 'settings' | 'accounts', View>): App {
   const repo = store.get(KEY_REPO);
   const token = store.get(KEY_TOKEN);
   const app: App = {
@@ -61,12 +62,14 @@ export function createApp(root: HTMLElement, views: Record<'home' | 'platform' |
           h('div', { class: 'row' }, h('button', { class: 'btn primary', type: 'button', onClick: () => app.reload() }, '다시 불러오기'), h('button', { class: 'btn', type: 'button', onClick: () => app.go('settings') }, '연결 설정'), h('button', { class: 'btn ghost', type: 'button', onClick: () => app.usePreview() }, '미리보기로 보기')),
         );
       } else if (!app.m) body = h('div', { class: 'wrap' }, h('div', { class: 'skeleton' }), h('div', { class: 'skeleton' }), h('div', { class: 'skeleton' }));
-      else body = app.route === 'home' ? views.home(app) : app.route === 'settings' ? views.settings(app) : views.platform(app);
+      else body = app.route === 'home' ? views.home(app) : app.route === 'settings' ? views.settings(app) : app.route === 'accounts' ? views.accounts(app) : views.platform(app);
       replaceChildren(root, body);
     },
 
     async reload() {
       app.error = null;
+      // Opened from `npm run promo:app`: everything runs on this computer.
+      if (!PREVIEW_ONLY && app.backend.kind === 'preview' && !app.m && (await localAvailable())) app.backend = createLocalBackend();
       app.render();
       try {
         app.m = await app.backend.load();
@@ -118,7 +121,7 @@ export function createApp(root: HTMLElement, views: Record<'home' | 'platform' |
 
   const fromHash = () => {
     const t = location.hash.slice(1);
-    if (t === 'home' || t === 'settings' || (UI_PLATFORMS as string[]).includes(t)) app.route = t as Route;
+    if (t === 'home' || t === 'settings' || t === 'accounts' || (UI_PLATFORMS as string[]).includes(t)) app.route = t as Route;
   };
   fromHash();
   window.addEventListener('hashchange', () => {

@@ -292,7 +292,7 @@ export function createPreviewBackend(now = new Date()): Backend {
         drafts: [...mine, ...demo.map((d) => ({ path: `drafts/${d.id}.md`, sha: null, draft: d, error: null }))],
         state: demoState(now, demo),
         inboxDone: [],
-        accounts: saved.accounts ?? { threads: true, instagram: true, wordpress: false, claude: true },
+        accounts: saved.accounts ?? { threads: true, instagram: true, wordpress: false, claude: true, media: true },
         hasData: true,
         references: [...(saved.myRefs ?? []), ...DEMO_REFERENCES],
       };

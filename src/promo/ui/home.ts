@@ -81,9 +81,26 @@ function card(app: App, ui: UiPlatform): HTMLElement {
       'div',
       { class: 'pcard-foot' },
       h('button', { class: 'btn primary', type: 'button', onClick: () => app.go(ui, 'make') }, '글 만들기'),
-      h('button', { class: 'btn', type: 'button', onClick: () => app.go(ui) }, account ? '관리' : '계정 등록'),
+      h('button', { class: 'btn', type: 'button', onClick: () => (account ? app.go(ui) : app.go('accounts', `account-${ui}`)) }, account ? '관리' : '계정 등록'),
     ),
   );
+}
+
+/** Three account pills under the title; each opens 계정 연결. */
+function accountsStrip(app: App): HTMLElement {
+  const m = app.m!;
+  const pill = (ui: UiPlatform) => {
+    const ok = hasAccount(m, ui);
+    const state = ui === 'blog' && m.blogKind !== 'wordpress' ? '붙여넣기' : ok ? '연결됨' : '등록 필요';
+    return h(
+      'button',
+      { class: `acct ${ui}`, type: 'button', onClick: () => app.go('accounts', `account-${ui}`) },
+      h('span', { class: 'pmark', 'aria-hidden': 'true' }, MARK[ui]),
+      UI_NAME[ui],
+      h('span', { class: `st ${ok ? 'ok' : 'warn'}` }, state),
+    );
+  };
+  return h('div', { class: 'accounts-strip' }, ...UI_PLATFORMS.map(pill), h('button', { class: 'btn small ghost', type: 'button', onClick: () => app.go('accounts') }, '계정 연결 ›'));
 }
 
 export function homeView(app: App): HTMLElement {
@@ -106,7 +123,12 @@ export function homeView(app: App): HTMLElement {
       h('h1', null, '홍보 자동화'),
       h('p', null, on.length ? `자동화 ${on.length}개 켜짐${first ? ` · 다음 게시는 ${UI_NAME[first.ui]} ${inFuture(first.n!.minutes)}` : ''}` : '플랫폼마다 계정을 등록하고 자동화를 켜 보세요'),
     ),
+    accountsStrip(app),
+    app.backend.kind !== 'preview' && !m.accounts.claude
+      ? h('button', { class: 'alert-row', type: 'button', onClick: () => app.go('accounts') }, h('span', { class: 'dot' }), h('span', { style: 'flex:1' }, '글을 쓰려면 Claude API 키가 필요해요. 계정 연결에서 등록해 주세요'), h('span', null, '›'))
+      : null,
     app.backend.kind === 'preview' ? h('div', { class: 'note-preview' }, PREVIEW_ONLY ? '미리보기 · 글 만들기는 실제로 되고, 게시는 연결된 앱에서 돼요' : '미리보기 · 설정에서 GitHub을 연결하면 실제로 올라가요') : null,
+    app.backend.kind === 'local' ? h('div', { class: 'note-preview' }, '이 컴퓨터에서 실행 중 · 앱을 켜 둔 동안 정한 주기마다 자동으로 올려요') : null,
     !m.config.brand.name || !m.brandDoc.trim()
       ? h('button', { class: 'alert-row', type: 'button', onClick: () => app.go('settings') }, h('span', { class: 'dot' }), h('span', { style: 'flex:1' }, '내 브랜드 소개를 먼저 적어 주세요. 글은 이 내용을 바탕으로 만들어져요'), h('span', null, '›'))
       : null,

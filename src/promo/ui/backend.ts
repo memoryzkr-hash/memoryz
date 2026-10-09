@@ -6,7 +6,7 @@
  *   글 만들기   → the promo workflow (preview), then the new draft from promo-data
  *   지금 올리기 → the draft marked approved, then the workflow (run)
  */
-import { parseDocument } from 'yaml';
+import { setAutomation, setBlogKind, setBrand, setWordPressUrl } from '../core/config-edit';
 import { parseConfig } from '../core/config';
 import { parseDraft, serializeDraft } from '../core/draft';
 import { parseState } from '../core/state';
@@ -14,7 +14,7 @@ import { cleanReference } from '../core/references';
 import type { Draft, Reference, ReferenceSet } from '../core/types';
 import { blogKindOf, platformsOf, slotOf, type Automation, type BlogKind, type DraftFile, type Model, type UiPlatform } from './model';
 
-export type AccountKey = 'threads' | 'instagram' | 'wordpress' | 'claude';
+export type AccountKey = 'threads' | 'instagram' | 'wordpress' | 'claude' | 'media';
 
 export interface BrandForm {
   name: string;
@@ -24,13 +24,14 @@ export interface BrandForm {
 }
 
 export interface Backend {
-  kind: 'preview' | 'github';
+  kind: 'preview' | 'github' | 'local';
   label: string;
   load(): Promise<Model>;
   saveAutomation(m: Model, ui: UiPlatform, a: Automation): Promise<void>;
   setBlogKind(m: Model, kind: BlogKind): Promise<void>;
   saveBrand(m: Model, b: BrandForm): Promise<void>;
-  registerAccount(m: Model, key: AccountKey, fields: Record<string, string>): Promise<void>;
+  /** Saves a credential; resolves with the connected account's name when the backend can tell. */
+  registerAccount(m: Model, key: AccountKey, fields: Record<string, string>): Promise<string | void>;
   /** Generates one post for one platform, following the picked references first. */
   generate(m: Model, ui: UiPlatform, topic: string, progress: (msg: string) => void, signal: AbortSignal, chosen?: Reference[]): Promise<DraftFile>;
   /** Searches for popular posts on a topic and adds them to m.references. Returns the new ones. */
@@ -46,7 +47,7 @@ export interface Backend {
 export class BackendError extends Error {}
 
 const DATA = 'promo-data';
-const SECRETS: Record<Exclude<AccountKey, 'wordpress'>, string> = { threads: 'THREADS_ACCESS_TOKEN', instagram: 'INSTAGRAM_ACCESS_TOKEN', claude: 'ANTHROPIC_API_KEY' };
+const SECRETS: Record<Exclude<AccountKey, 'wordpress' | 'media'>, string> = { threads: 'THREADS_ACCESS_TOKEN', instagram: 'INSTAGRAM_ACCESS_TOKEN', claude: 'ANTHROPIC_API_KEY' };
 
 const decode = (b64: string) => new TextDecoder().decode(Uint8Array.from(atob(b64.replace(/\s/g, '')), (c) => c.charCodeAt(0)));
 const encode = (text: string) => {
@@ -119,12 +120,10 @@ export function createGitHubBackend(repo: string, token: string, f: typeof fetch
     return r.content.sha;
   }
 
-  async function editConfig(m: Model, message: string, edit: (doc: ReturnType<typeof parseDocument>) => void) {
+  async function editConfig(m: Model, message: string, edit: (text: string) => string) {
     const ref = await branch();
     const cur = await read('promo/config.yml', ref);
-    const doc = parseDocument(cur?.text ?? '');
-    edit(doc);
-    const text = doc.toString();
+    const text = edit(cur?.text ?? '');
     await write('promo/config.yml', text, cur?.sha ?? null, ref, message);
     const parsed = parseConfig(text);
     m.config = parsed.config;
@@ -275,6 +274,8 @@ export function createGitHubBackend(repo: string, token: string, f: typeof fetch
           instagram: names.has('INSTAGRAM_ACCESS_TOKEN'),
           wordpress: names.has('WORDPRESS_USER') && names.has('WORDPRESS_APP_PASSWORD'),
           claude: names.has('ANTHROPIC_API_KEY'),
+          // GitHub Actions brings its own token, and the repository's images are public when the repo is.
+          media: true,
         },
         hasData,
         references: hasData ? await loadReferences() : [],
@@ -283,34 +284,17 @@ export function createGitHubBackend(repo: string, token: string, f: typeof fetch
 
     async saveAutomation(m, ui, a) {
       const [p] = platformsOf(ui, m.blogKind);
-      await editConfig(m, `dashboard: ${ui} automation ${a.on ? 'on' : 'off'}`, (doc) => {
-        doc.setIn(['platforms', p, 'enabled'], a.on);
-        doc.setIn(['platforms', p, 'schedule'], doc.createNode(slotOf(a), { flow: true }));
-        if (ui === 'blog') doc.setIn(['platforms', p === 'wordpress' ? 'naver' : 'wordpress', 'enabled'], false);
-      });
+      await editConfig(m, `dashboard: ${ui} automation ${a.on ? 'on' : 'off'}`, (t) => setAutomation(t, p, a.on, slotOf(a)));
       if (a.on) await switchOn();
     },
 
     async setBlogKind(m, kind) {
-      await editConfig(m, `dashboard: blog is ${kind}`, (doc) => {
-        if (kind !== 'wordpress') {
-          doc.setIn(['platforms', 'naver', 'kind'], kind);
-          doc.setIn(['platforms', 'wordpress', 'url'], '');
-          if (doc.getIn(['platforms', 'wordpress', 'enabled'])) {
-            doc.setIn(['platforms', 'wordpress', 'enabled'], false);
-            doc.setIn(['platforms', 'naver', 'enabled'], true);
-          }
-        }
-      });
+      await editConfig(m, `dashboard: blog is ${kind}`, (t) => setBlogKind(t, kind));
     },
 
     async saveBrand(m, b) {
       const ref = await branch();
-      await editConfig(m, 'dashboard: brand', (doc) => {
-        doc.setIn(['brand', 'name'], b.name);
-        doc.setIn(['brand', 'handle'], b.handle);
-        doc.setIn(['mode'], b.review ? 'review' : 'auto');
-      });
+      await editConfig(m, 'dashboard: brand', (t) => setBrand(t, b));
       const cur = await read('promo/brand.md', ref);
       await write('promo/brand.md', b.doc.endsWith('\n') ? b.doc : `${b.doc}\n`, cur?.sha ?? null, ref, 'dashboard: brand description');
       m.brandDoc = b.doc;
@@ -320,10 +304,11 @@ export function createGitHubBackend(repo: string, token: string, f: typeof fetch
       if (key === 'wordpress') {
         await putSecret('WORDPRESS_USER', fields.user);
         await putSecret('WORDPRESS_APP_PASSWORD', fields.password);
-        await editConfig(m, 'dashboard: wordpress address', (doc) => doc.setIn(['platforms', 'wordpress', 'url'], fields.url.replace(/\/+$/, '')));
+        await editConfig(m, 'dashboard: wordpress address', (t) => setWordPressUrl(t, fields.url));
         m.accounts.wordpress = true;
         return;
       }
+      if (key === 'media') return;
       await putSecret(SECRETS[key], fields.token);
       if (key === 'threads' || key === 'instagram') {
         // The key that lets the agent renew 60-day Meta tokens by itself.

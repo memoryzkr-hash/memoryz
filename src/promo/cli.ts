@@ -6,7 +6,8 @@ import Anthropic from '@anthropic-ai/sdk';
 import { appendFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { Agent, downloadTo, imagesStale } from './agent';
-import { createPromoAi, MODEL, type PromoAi } from './ai/claude';
+import { MODEL } from './ai/claude';
+import { lazyAi } from './runtime';
 import { parseDraft } from './core/draft';
 import { DataDir } from './core/store';
 import { PLATFORM_LABELS, type PlatformId } from './core/types';
@@ -33,22 +34,6 @@ function parseArgs(argv: string[]) {
   }
   if (args.command === 'preview') args.dryRun = true;
   return args;
-}
-
-/** Claude is only constructed when a command needs it, so `check` works before the key is added. */
-function lazyAi(key: string | undefined): PromoAi {
-  let ai: PromoAi | null = null;
-  const get = () => {
-    if (!key) throw new Error('ANTHROPIC_API_KEY가 없어요');
-    return (ai ??= createPromoAi(key));
-  };
-  return {
-    planTopic: (a) => get().planTopic(a),
-    research: (a) => get().research(a),
-    write: (a) => get().write(a),
-    review: (a) => get().review(a),
-    triageComments: (a) => get().triageComments(a),
-  };
 }
 
 async function main() {

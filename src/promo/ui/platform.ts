@@ -21,14 +21,13 @@ import {
   scopedFor,
   UI_NAME,
   type Automation,
-  type BlogKind,
   type DraftFile,
   type UiPlatform,
 } from './model';
 import { blogPreview, instagramPreview, threadsPreview } from './previews';
 import { pickedRefs, refsSection, topics, unpick } from './refs';
+import { accountSection } from './accounts';
 
-const GUIDE = 'https://github.com/memoryzkr-hash/memoryz/blob/main/docs/promo/SETUP.md';
 
 interface MakeState {
   running: boolean;
@@ -300,84 +299,6 @@ function autoSection(app: App, ui: UiPlatform): HTMLElement {
     m.config.mode === 'review' ? h('p', { class: 'help' }, '자동으로 만든 글은 확인 대기로 남고, 아래 "최근 글"에서 확인하고 올리면 돼요. ', h('a', { href: '#settings' }, '바로 올리기로 바꾸기')) : null,
     dirty ? h('div', { class: 'row end' }, h('button', { class: 'btn ghost', type: 'button', onClick: () => (delete pendingAuto[ui], app.render()) }, '되돌리기'), h('button', { class: 'btn primary', type: 'button', onClick: save }, '주기 저장')) : null,
   );
-}
-
-// ---------------- 계정 ----------------
-
-function tokenForm(app: App, ui: 'threads' | 'instagram', steps: string[], anchor: string): HTMLElement {
-  const input = h('input', { class: 'input', id: `token-${ui}`, type: 'password', autocomplete: 'off', placeholder: '토큰을 붙여넣으세요' });
-  const btn = h('button', { class: 'btn primary', type: 'submit' }, '등록');
-  const form = h(
-    'form',
-    { class: 'section', style: 'padding:0;border:0' },
-    h('ol', { class: 'steps' }, ...steps.map((s) => h('li', null, s))),
-    h('p', { class: 'help' }, link(`${GUIDE}#${anchor}`, '화면별 자세한 안내 보기')),
-    h('div', { class: 'field' }, h('label', { htmlFor: `token-${ui}` }, '액세스 토큰'), input),
-    h('p', { class: 'help' }, app.backend.kind === 'github' ? '토큰은 GitHub에 암호화돼 저장되고, 이 화면에서도 다시 볼 수 없어요. 60일마다 자동으로 연장돼요.' : '미리보기에서는 토큰을 저장하지 않아요.'),
-    h('div', { class: 'row end' }, btn),
-  );
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    if (input.value.trim().length < 20) return toast('토큰이 너무 짧아요. 전체를 붙여넣었는지 확인해 주세요');
-    btn.setAttribute('disabled', '');
-    await app.act(() => app.backend.registerAccount(app.m!, ui, { token: input.value.trim() }), `${UI_NAME[ui]} 계정을 등록했어요`);
-    app.render();
-  });
-  return form;
-}
-
-function blogAccount(app: App): HTMLElement {
-  const m = app.m!;
-  const kinds: BlogKind[] = ['naver', 'tistory', 'wordpress'];
-  const pick = h(
-    'div',
-    { class: 'field' },
-    h('span', { class: 'label' }, '어떤 블로그인가요?'),
-    h('div', { class: 'choices', role: 'group' }, ...kinds.map((k) => h('button', { class: 'choice', type: 'button', 'aria-pressed': String(m.blogKind === k), onClick: () => app.act(() => app.backend.setBlogKind(m, k)).then(() => app.render()) }, BLOG_KIND_NAME[k]))),
-  );
-  if (m.blogKind !== 'wordpress') {
-    return h(
-      'div',
-      { class: 'section', style: 'padding:0;border:0' },
-      pick,
-      h('div', { class: 'notice' }, h('b', null, '계정 등록이 필요 없어요'), h('span', null, `${BLOG_KIND_NAME[m.blogKind]}는 자동 글쓰기 기능을 닫아 두어서, 완성된 글을 만들어 두면 "제목·본문·태그 복사"로 붙여넣고 발행하면 돼요. 자동화를 켜면 정한 주기마다 글이 준비되고 알려 드려요.`)),
-    );
-  }
-  const url = h('input', { class: 'input', id: 'wp-url', placeholder: 'https://blog.example.com', value: m.config.platforms.wordpress.url });
-  const user = h('input', { class: 'input', id: 'wp-user', autocomplete: 'off' });
-  const pw = h('input', { class: 'input', id: 'wp-pw', type: 'password', autocomplete: 'off', placeholder: 'abcd efgh ijkl mnop qrst uvwx' });
-  const form = h(
-    'form',
-    { class: 'section', style: 'padding:0;border:0' },
-    pick,
-    h('div', { class: 'field' }, h('label', { htmlFor: 'wp-url' }, '블로그 주소'), url),
-    h('div', { class: 'field' }, h('label', { htmlFor: 'wp-user' }, '로그인 아이디'), user),
-    h('div', { class: 'field' }, h('label', { htmlFor: 'wp-pw' }, '애플리케이션 비밀번호'), pw, h('span', { class: 'help' }, '워드프레스 관리자 → 사용자 → 프로필 → 애플리케이션 비밀번호에서 새로 만들어요. 로그인 비밀번호가 아니에요.')),
-    h('div', { class: 'row end' }, h('button', { class: 'btn primary', type: 'submit' }, '등록')),
-  );
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    if (!/^https?:\/\/\S+$/.test(url.value.trim()) || !user.value.trim() || !pw.value.trim()) return toast('주소, 아이디, 애플리케이션 비밀번호를 모두 넣어 주세요');
-    await app.act(() => app.backend.registerAccount(m, 'wordpress', { url: url.value.trim(), user: user.value.trim(), password: pw.value.trim() }), '워드프레스를 등록했어요');
-    app.render();
-  });
-  return form;
-}
-
-let changingAccount: UiPlatform | null = null;
-
-function accountSection(app: App, ui: UiPlatform): HTMLElement {
-  const m = app.m!;
-  const ok = hasAccount(m, ui);
-  const head = h('div', { class: 'section-head' }, h('h2', null, '계정'), ok ? h('span', { class: 'chip ok' }, ui === 'blog' && m.blogKind !== 'wordpress' ? '준비됨' : '등록됨') : h('span', { class: 'chip warn' }, '등록 필요'));
-  let body: HTMLElement;
-  if (ui === 'blog') body = blogAccount(app);
-  else if (ok && changingAccount !== ui) body = h('div', { class: 'row' }, h('span', { class: 'help', style: 'flex:1' }, `${UI_NAME[ui]} 계정이 연결돼 있어요.`), h('button', { class: 'btn small', type: 'button', onClick: () => ((changingAccount = ui), app.render()) }, '토큰 바꾸기'));
-  else if (ui === 'threads')
-    body = tokenForm(app, 'threads', ['developers.facebook.com에서 앱을 만들고 "Threads API 액세스"를 고릅니다', '권한 threads_basic, threads_content_publish, threads_read_replies, threads_manage_replies를 추가합니다', '내 쓰레드 계정을 테스터로 추가하고 쓰레드 앱에서 초대를 수락합니다', '"사용자 토큰 생성기"에서 만든 토큰을 아래에 붙여넣습니다'], '3-쓰레드-토큰');
-  else
-    body = tokenForm(app, 'instagram', ['인스타그램을 프로페셔널 계정(비즈니스·크리에이터)으로 바꿉니다', '같은 메타 앱에 Instagram을 추가하고 "Instagram 로그인을 통한 API 설정"을 엽니다', '권한 instagram_business_basic, _content_publish, _manage_comments를 추가하고 내 계정을 테스터로 등록합니다', '"액세스 토큰 생성"에서 만든 토큰을 아래에 붙여넣습니다'], '4-인스타그램-토큰');
-  return h('section', { class: 'section', id: 'account' }, head, body);
 }
 
 // ---------------- 최근 글 / 댓글 ----------------

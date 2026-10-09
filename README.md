@@ -149,7 +149,7 @@ tests/assistant/      166개: 경계 값, 저장소 오류, .ics, 지어낸 출�
 ## 📣 홍보 에이전트 (`promo/`, `src/promo/`)
 
 블로그 · 인스타그램 · 쓰레드에 **알아서 글을 올리고 댓글을 관리하는** 에이전트. GitHub Actions에서 매시간 돌아서 서버가 필요 없습니다.
-기획서: [docs/promo/PLAN.md](docs/promo/PLAN.md) · 계정 연결: [docs/promo/SETUP.md](docs/promo/SETUP.md)
+기획서: [docs/promo/PLAN.md](docs/promo/PLAN.md) · **내 컴퓨터에서 쓰기: [docs/promo/LOCAL.md](docs/promo/LOCAL.md)** (`npm run promo:app` → http://localhost:4321) · GitHub에서 상시 실행: [docs/promo/SETUP.md](docs/promo/SETUP.md)
 
 | 글 만들기 (정해진 요일·시간) | 댓글 관리 (매시간) |
 | --- | --- |
