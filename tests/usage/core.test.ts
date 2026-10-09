@@ -180,3 +180,29 @@ describe('formatDuration', () => {
     expect(formatDuration(1000)).toBe('1분 미만');
   });
 });
+
+describe('schedule helpers', () => {
+  it('finds the next weekday occurrence after now', async () => {
+    const { nextWeekly } = await import('../../src/usage/core');
+    // 2026-10-08 is a Thursday (4).
+    expect(nextWeekly(6, 9, 0, now).toString()).toBe(new Date('2026-10-10T09:00:00').toString());
+    expect(nextWeekly(4, 15, 0, now).toString()).toBe(new Date('2026-10-08T15:00:00').toString());
+    expect(nextWeekly(4, 9, 0, now).toString()).toBe(new Date('2026-10-15T09:00:00').toString());
+  });
+
+  it('lists seven midnights and places dates on the week axis', async () => {
+    const { midnightsAhead, weekPos } = await import('../../src/usage/core');
+    expect(midnightsAhead(now)).toHaveLength(7);
+    expect(weekPos(new Date(now.getTime() + 3.5 * DAY), now)).toBeCloseTo(0.5);
+    expect(weekPos(new Date(now.getTime() - DAY), now)).toBe(0);
+  });
+
+  it('flags accounts that need a look', async () => {
+    const { needsAttention } = await import('../../src/usage/core');
+    const list = [account('fresh', 20, 3 * DAY), account('old', 20, 3 * DAY, 20 * HOUR), account('fast', 50, 0.75 * WEEK)];
+    expect(needsAttention(list, now).map((a) => [a.account.name, a.why])).toEqual([
+      ['old', '20시간 전 값'],
+      ['fast', '과속 · 예상 200%'],
+    ]);
+  });
+});

@@ -356,3 +356,48 @@ export function formatAgo(iso: string, now: Date): string {
 export function toLocalInput(d: Date): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${formatClock(d)}`;
 }
+
+// ---------- schedule helpers ----------
+
+/** Next `dow` (0 = 일요일) at hh:mm local time, strictly after `now`. Weekly resets repeat on a fixed weekday. */
+export function nextWeekly(dow: number, hh: number, mm: number, now: Date): Date {
+  const d = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hh, mm);
+  d.setDate(d.getDate() + ((dow - d.getDay() + 7) % 7));
+  if (d.getTime() <= now.getTime()) d.setDate(d.getDate() + 7);
+  return d;
+}
+
+/** Position of `at` on a 7-day axis starting at `now`, 0–1. */
+export function weekPos(at: Date, now: Date): number {
+  return Math.min(1, Math.max(0, (at.getTime() - now.getTime()) / WEEK));
+}
+
+/** Local midnights strictly inside the next 7 days, for axis ticks. */
+export function midnightsAhead(now: Date): Date[] {
+  const out: Date[] = [];
+  for (let i = 1; i <= 7; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i);
+    if (d.getTime() - now.getTime() < WEEK) out.push(d);
+  }
+  return out;
+}
+
+export interface Attention {
+  account: Account;
+  why: string;
+}
+
+/** Accounts whose numbers need a look: no data, rolled over, stale, out, or on pace to run out. */
+export function needsAttention(accounts: Account[], now: Date): Attention[] {
+  const out: Attention[] = [];
+  for (const account of accounts) {
+    const w = weeklyStatus(account.weekly, now);
+    const stale = !!account.weekly.updatedAt && now.getTime() - new Date(account.weekly.updatedAt).getTime() > STALE_AFTER;
+    if (w.level === 'unknown') out.push({ account, why: '입력 필요' });
+    else if (w.level === 'stale-reset') out.push({ account, why: '초기화됨 · 새 값 필요' });
+    else if (w.level === 'exhausted') out.push({ account, why: '소진' });
+    else if (w.level === 'fast') out.push({ account, why: `과속 · 예상 ${w.projected}%` });
+    else if (stale) out.push({ account, why: `${formatAgo(account.weekly.updatedAt!, now)} 값` });
+  }
+  return out;
+}
