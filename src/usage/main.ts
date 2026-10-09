@@ -87,11 +87,12 @@ const app = document.getElementById('app')!;
 const subtitle = h('p', { class: 'sub' }, '불러오는 중…');
 const recEl = h('section', { class: 'rec', 'aria-live': 'polite' });
 const listEl = h('div', { class: 'list' });
+const autoSub = h('span', null, '명령 한 줄로 모든 계정의 사용량을 가져와요');
 const autoRow = h(
   'button',
   { type: 'button', class: 'row-link', onClick: () => openSetup() },
   h('span', { class: 'row-icon', 'aria-hidden': 'true' }, '⌘'),
-  h('span', { class: 'row-text' }, h('strong', null, '맥에서 자동으로 불러오기'), h('span', null, '명령 한 줄로 모든 계정의 사용량을 가져와요')),
+  h('span', { class: 'row-text' }, h('strong', null, '맥에서 자동으로 불러오기'), autoSub),
   h('span', { class: 'chev', 'aria-hidden': 'true' }, '›'),
 );
 
@@ -115,7 +116,7 @@ const cta = h(
     'div',
     { class: 'cta-inner' },
     h('button', { type: 'button', class: 'btn big secondary', onClick: () => openEdit(null) }, '계정 추가'),
-    h('button', { type: 'button', class: 'btn big primary', onClick: () => openPaste() }, '사용량 불러오기'),
+    h('button', { type: 'button', class: 'btn big primary', onClick: () => (LOCAL ? loadLocalData(true) : openPaste()) }, '사용량 불러오기'),
   ),
 );
 document.body.appendChild(cta);
@@ -131,7 +132,12 @@ function render(): void {
     return;
   }
   const latest = accounts.map((a) => a.weekly.updatedAt).filter(Boolean).sort().pop();
-  subtitle.textContent = accounts.length === 0 ? '계정을 추가해 주세요' : `계정 ${accounts.length}개${latest ? ` · ${formatAgo(latest, now)} 업데이트` : ''}${store?.kind === 'cloud' ? ' · 클라우드 저장' : ''}`;
+  subtitle.textContent = accounts.length === 0 ? '계정을 추가해 주세요' : `계정 ${accounts.length}개${latest ? ` · ${formatAgo(latest, now)} 업데이트` : ''}${store?.kind === 'cloud' ? ' · 클라우드 저장' : LOCAL ? ' · 이 맥에 저장' : ''}`;
+
+  if (LOCAL) {
+    autoSub.textContent =
+      localState === 'missing' ? '아직 조회 결과가 없어요 · 터미널에서 claude-usage 를 실행하세요' : '터미널에서 claude-usage 를 실행하면 이 페이지에 자동으로 반영돼요';
+  }
 
   if (accounts.length === 0) {
     recEl.hidden = true;
@@ -479,6 +485,22 @@ function importPlan(batch: ImportBatch): { label: string; detail: string; target
   });
 }
 
+/** Saves every account in the batch, creating unknown names. Readings are stamped with the fetch time. */
+async function applyBatch(batch: ImportBatch): Promise<number | null> {
+  const at = batch.fetchedAt ? new Date(batch.fetchedAt) : new Date();
+  let n = 0;
+  for (const p of importPlan(batch)) {
+    let base = p.target;
+    if (!base) {
+      base = newAccount(newId(), new Date(Date.now() + n));
+      base.name = p.label;
+    }
+    if (!(await save(applyImport(base, p.item, at)))) return null;
+    n++;
+  }
+  return n;
+}
+
 function openPaste(initial = ''): void {
   pasteSheet?.close();
   const sheet = openSheet('사용량 불러오기');
@@ -520,17 +542,8 @@ function openPaste(initial = ''): void {
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     if (!batch) return;
-    const now = new Date();
-    let n = 0;
-    for (const p of importPlan(batch)) {
-      let base = p.target;
-      if (!base) {
-        base = newAccount(newId(), new Date(now.getTime() + n));
-        base.name = p.label;
-      }
-      if (!(await save(applyImport(base, p.item, now)))) return;
-      n++;
-    }
+    const n = await applyBatch(batch);
+    if (n === null) return;
     sheet.close();
     toast(`${n}개 계정에 반영했어요`);
   });
@@ -611,14 +624,18 @@ function openSetup(): void {
     h(
       'ol',
       { class: 'steps' },
-      step(1, '설치하기', h('p', null, '터미널 앱을 열고 아래 명령을 붙여 넣으세요.'), cmd('설치 명령 (한 줄)', installCommand())),
+      LOCAL
+        ? step(1, '설치하기', h('p', null, '이 폴더(index.html이 있는 곳)를 터미널에서 열고 아래를 실행하세요. 폴더를 옮기면 다시 실행해요.'), cmd('zsh install.sh', 'zsh install.sh'))
+        : step(1, '설치하기', h('p', null, '터미널 앱을 열고 아래 명령을 붙여 넣으세요.'), cmd('설치 명령 (한 줄)', installCommand())),
       step(
         2,
         '계정 연결하기',
         h('p', null, '계정마다 한 번씩 실행해요. 브라우저가 열리면 그 계정으로 로그인하고, 나온 토큰을 붙여 넣으면 끝이에요.'),
         ...(names.length ? names : ['계정이름']).map((n) => cmd(`claude-usage add ${n}`, `claude-usage add ${n}`)),
       ),
-      step(3, '불러오기', h('p', null, '실행하면 결과가 복사돼요. 이 페이지에서 Cmd+V 하면 바로 반영돼요.'), cmd('claude-usage', 'claude-usage')),
+      LOCAL
+        ? step(3, '불러오기', h('p', null, '실행하면 이 페이지가 1분 안에 저절로 최신 값으로 바뀌어요. claude-usage open 은 조회하고 이 페이지를 열어 줘요.'), cmd('claude-usage open', 'claude-usage open'))
+        : step(3, '불러오기', h('p', null, '실행하면 결과가 복사돼요. 이 페이지에서 Cmd+V 하면 바로 반영돼요.'), cmd('claude-usage', 'claude-usage')),
       step(4, '자동 조회 (선택)', h('p', null, '1시간마다 알아서 조회하고, 곧 초기화되는데 많이 남은 계정이 있으면 알림을 보내요.'), cmd('claude-usage schedule on', 'claude-usage schedule on')),
     ),
     h(
@@ -665,6 +682,57 @@ async function addExamples(): Promise<void> {
   toast('예시 계정 2개를 넣었어요');
 }
 
+// ---------- local mode (index.html opened from the Mac folder) ----------
+
+/** Opened as a file from the folder claude-usage writes usage-data.js into. */
+const LOCAL = location.protocol === 'file:';
+const LAST_APPLIED = 'claude-usage/last-applied';
+let localState: 'unknown' | 'missing' | 'ok' = 'unknown';
+
+function readPref(key: string): string | null {
+  try {
+    return window.localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+/** Called by usage-data.js, which `claude-usage` rewrites on every run. */
+(window as unknown as { claudeUsageLoaded: (data: unknown) => void }).claudeUsageLoaded = (data) => {
+  localState = 'ok';
+  const batch = parseUsageBatch(JSON.stringify(data));
+  if (!batch || !loaded) return;
+  const stamp = batch.fetchedAt ?? '';
+  if (stamp && readPref(LAST_APPLIED) === stamp && !forceLocal) return;
+  forceLocal = false;
+  void applyBatch(batch).then((n) => {
+    if (n === null) return;
+    try {
+      window.localStorage.setItem(LAST_APPLIED, stamp);
+    } catch {
+      // re-applying the same numbers next time is harmless
+    }
+    const failed = batch.failed.length ? ` · ${batch.failed.map((f) => f.name).join(', ')} 실패` : '';
+    toast(`${n}개 계정 사용량을 불러왔어요${failed}`);
+  });
+};
+
+let forceLocal = false;
+function loadLocalData(userAsked = false): void {
+  if (!LOCAL) return;
+  forceLocal = userAsked;
+  const tag = document.createElement('script');
+  tag.src = `usage-data.js?t=${Date.now()}`;
+  tag.onload = () => tag.remove();
+  tag.onerror = () => {
+    tag.remove();
+    localState = 'missing';
+    render();
+    if (userAsked) toast('아직 조회 결과가 없어요. 터미널에서 claude-usage 를 실행하세요.');
+  };
+  document.head.appendChild(tag);
+}
+
 // ---------- boot ----------
 
 render();
@@ -672,19 +740,25 @@ openStore().then((s) => {
   store = s;
   s.subscribe(
     (list) => {
+      const first = !loaded;
       accounts = list;
       loaded = true;
       if (quickId && !list.some((a) => a.id === quickId)) quickId = null;
       render();
+      if (first) loadLocalData();
     },
     (message) => toast(message),
   );
 });
+// The script may run while the page is open (by hand or every hour).
+if (LOCAL) setInterval(() => document.visibilityState === 'visible' && loadLocalData(), 60_000);
 
 // Countdowns move on their own; skip while a quick edit is open so typed values survive.
 setInterval(() => {
   if (!quickId) render();
 }, 30_000);
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible' && !quickId) render();
+  if (document.visibilityState !== 'visible') return;
+  if (!quickId) render();
+  loadLocalData();
 });

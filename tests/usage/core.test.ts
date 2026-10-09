@@ -217,8 +217,9 @@ describe('parseUsageBatch', () => {
   it('reads the Mac script batch, keeping failures apart', async () => {
     const { parseUsageBatch } = await import('../../src/usage/core');
     const r = parseUsageBatch(
-      JSON.stringify({ source: 'claude-usage', accounts: [{ name: 'quaternary2026', usage }, { name: 'memoryz.kr', error: '토큰이 만료됐어요' }] }),
+      JSON.stringify({ source: 'claude-usage', fetchedAt: '2026-10-08T03:00:00Z', accounts: [{ name: 'quaternary2026', usage }, { name: 'memoryz.kr', error: '토큰이 만료됐어요' }] }),
     );
+    expect(r?.fetchedAt).toBe('2026-10-08T03:00:00.000Z');
     expect(r?.items).toHaveLength(1);
     expect(r?.items[0].name).toBe('quaternary2026');
     expect(r?.items[0].weekly).toEqual({ used: 40.5, resetAt: '2026-10-11T00:00:00.000Z' });

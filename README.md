@@ -214,17 +214,26 @@ tests/        core 단위 테스트
 
 ## 📊 클로드 사용량 (`usage.html`)
 
-클로드 계정을 여러 개 등록해 두고 **계정마다 주간 한도 초기화 시각과 그때까지 쓴 %**를 한 화면에서 보는 관리 페이지. 기획서: [docs/USAGE_PLAN.md](docs/USAGE_PLAN.md)
+클로드 계정을 여러 개 등록해 두고 **계정마다 주간 한도·5시간 세션 사용량과 초기화까지의 기간**을 게이지로 보는 관리 페이지. 기획서: [docs/USAGE_PLAN.md](docs/USAGE_PLAN.md)
 
-- **초기화 일정** 타임라인으로 앞으로 7일 동안 어느 계정이 언제 초기화되는지 한눈에 봅니다.
-- 주간 초기화 시각은 "매주 토요일 10:23"처럼 한 번만 넣으면 자동으로 넘어가고, 지난 기록은 "초기화됨 · 업데이트 필요"로 표시됩니다.
-- 계정마다 다이얼 게이지: 호는 쓴 %, 바늘은 이번 주에 흐른 시간입니다. 호가 바늘보다 길면 빨리 쓰는 중이고, 지금 속도로 초기화 때 몇 %가 될지 예상치를 보여 줍니다.
-- **지금 쓸 계정**: 남은 % ÷ 초기화까지 남은 시간이 가장 큰 계정을 추천합니다(곧 초기화되는데 많이 남은 계정이 먼저 나옵니다). 세션 한도에 걸렸거나 소진된 계정은 빠집니다.
-- 5시간 세션 사용량, 결제 갱신일(D-day), 메모도 함께 관리합니다.
-- **맥에서 자동으로 불러오기**: [`tools/claude-usage`](tools/claude-usage/README.md) 스크립트로 계정마다 한 번 연결해 두면, `claude-usage` 한 줄로 모든 계정 사용량을 가져와 페이지에 Cmd+V로 반영합니다. 로그인 정보는 받지 않고 토큰은 맥 키체인에만 저장합니다. (맥이 아니면 북마클릿, 실험적)
-- 저장: claude.ai 아티팩트로 열면 클라우드(본인만), 그 밖에서는 이 브라우저(localStorage).
+**맥에서 로컬로 쓰기 → [`local/claude-usage/`](local/claude-usage/README.md)** 폴더 하나만 받으면 됩니다(서버·Node 불필요).
+`zsh install.sh` → `claude-usage add <계정이름>`(계정마다 한 번) → `claude-usage open`. 조회할 때마다 같은 폴더의 `index.html`이 자동으로 최신 값이 됩니다.
+
+- 계정 카드: `계정 1 · quaternary2026`, 주간 한도·5시간 세션 게이지, 기간(시작 ~ 초기화)과 남은 시간, 기간 중 지금 위치.
+- **지금 쓰기 좋은 계정**: 남은 % ÷ 초기화까지 남은 시간이 가장 큰 계정을 추천합니다.
+- 로그인 정보(아이디·비밀번호)는 받지 않습니다. 토큰은 `claude setup-token`으로 만들어 맥 키체인(또는 클라우드 세션의 비밀 값 `CLAUDE_USAGE_TOKEN_<이름>`)에만 둡니다.
+- 사용량은 Claude Code `/usage`가 쓰는 공개되지 않은 주소에서 읽습니다. 바뀌면 스크립트를 고쳐야 할 수 있습니다.
+
+| 경로 | 내용 |
+| --- | --- |
+| `src/usage/` | 페이지 (계산 `core.ts`, 저장 `store.ts`, 화면 `main.ts`) |
+| `tools/claude-usage/` | 맥 조회 스크립트 `claude-usage`, `install.sh`, 로컬 사용 안내 README |
+| `local/claude-usage/` | 맥에 그대로 복사해 쓰는 완성 폴더 (`npm run build:usage`로 생성) |
+| `scripts/build-usage-artifact.mjs` | 한 파일 HTML 만들기: 아티팩트용 / `--local` 폴더용 |
+| `scripts/fetch-claude-usage.mjs` | 환경 변수 토큰으로 조회 (클라우드 세션용) |
+| `tests/usage/` | 계산·가져오기 단위 테스트 |
 
 ```bash
-npm run dev                                 # http://localhost:5173/usage.html
-node scripts/build-usage-artifact.mjs       # dist-artifact/usage.html 한 파일로 묶기 (아티팩트용)
+npm run build:usage    # local/claude-usage/ 다시 만들기
+npm run dev            # http://localhost:5173/usage.html (개발용)
 ```

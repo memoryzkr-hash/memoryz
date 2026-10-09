@@ -299,6 +299,8 @@ export function parseUsageJson(text: string): ImportedUsage | null {
 }
 
 export interface ImportBatch {
+  /** When the script read the numbers (ISO); readings are stamped with it. */
+  fetchedAt: string | null;
   items: ImportedUsage[];
   /** Accounts the script could not read, with its message. */
   failed: { name: string; error: string }[];
@@ -316,7 +318,8 @@ export function parseUsageBatch(text: string): ImportBatch | null {
     return null;
   }
   if (data && typeof data === 'object' && Array.isArray((data as Record<string, unknown>).accounts)) {
-    const batch: ImportBatch = { items: [], failed: [] };
+    const at = (data as Record<string, unknown>).fetchedAt;
+    const batch: ImportBatch = { fetchedAt: typeof at === 'string' && !Number.isNaN(Date.parse(at)) ? new Date(at).toISOString() : null, items: [], failed: [] };
     for (const entry of (data as { accounts: unknown[] }).accounts) {
       if (!entry || typeof entry !== 'object') continue;
       const e = entry as Record<string, unknown>;
@@ -328,7 +331,7 @@ export function parseUsageBatch(text: string): ImportBatch | null {
     return batch.items.length || batch.failed.length ? batch : null;
   }
   const one = parseUsageJson(text);
-  return one ? { items: [one], failed: [] } : null;
+  return one ? { fetchedAt: null, items: [one], failed: [] } : null;
 }
 
 /**
