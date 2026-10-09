@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="메아리 바운스" />
-    <meta name="description" content="음악이 부른 멜로디를 따라 치면, 친 음표가 발판이 되는 리듬 게임" />
+    <meta name="description" content="직접 작곡한 곡의 멜로디를 따라 치면, 친 음표가 발판이 되는 리듬 게임. 곡마다 난이도 3가지" />
     <title>메아리 바운스</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -29,20 +29,22 @@
           <span class="en" aria-hidden="true">ECHO BOUNCE</span>
         </h1>
         <p class="tag">들은 대로 치면, 그 음표가 길이 된다</p>
+        <p class="credit">수록곡 4곡 모두 이 게임이 직접 작곡한 오리지널 곡</p>
       </header>
       <div class="deck">
+        <div id="diffs" class="diffs" role="radiogroup" aria-label="난이도"></div>
         <div class="deck-head" aria-hidden="true"><span>트랙</span><span>BPM</span><span>길이</span><span>기록</span></div>
         <ol id="tracks" class="tracks"></ol>
         <div class="chips">
           <label class="chip"><input type="checkbox" id="opt-guide" /><span>메아리 그림자</span></label>
-          <label class="chip"><input type="checkbox" id="opt-practice" /><span>무한 하트</span></label>
+          <label class="chip"><input type="checkbox" id="opt-practice" /><span>무한 목숨</span></label>
           <button id="open-sync" class="chip" type="button">싱크 <b id="sync-value">0ms</b></button>
           <button id="mute" class="chip" type="button" aria-pressed="false">소리 켬</button>
         </div>
       </div>
       <p class="hint">
-        <span class="keys-hint">"잘 들어" 마디의 멜로디를 "따라 쳐!" 마디에 <kbd>Space</kbd>로 · 3번 트랙은 <kbd>↓</kbd> 낮은 음 <kbd>↑</kbd> 높은 음 · <kbd>Enter</kbd> 시작</span>
-        <span class="touch-hint">들은 멜로디를 다음 마디에 탭으로 따라 치기 · 3번 트랙은 왼쪽 낮은 음, 오른쪽 높은 음</span>
+        <span class="keys-hint"><kbd>Space</kbd> 따라 치기 · 어려움은 <kbd>↓</kbd> 낮은 음 <kbd>↑</kbd> 높은 음 · 너무 어긋나면 음표가 깨져 목숨 −1 · <kbd>←</kbd><kbd>→</kbd> 난이도 · <kbd>Enter</kbd> 시작</span>
+        <span class="touch-hint">들은 멜로디를 다음 마디에 탭으로 따라 치기 · 어려움은 왼쪽 낮은 음, 오른쪽 높은 음 · 너무 어긋나면 목숨 −1</span>
       </p>
     </section>
 

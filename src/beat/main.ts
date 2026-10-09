@@ -5,17 +5,21 @@ import {
   accuracy, advance, ballAt, heightOf, idealTaps, keyOf, newEcho, progress, rank, tap, xAt, type EchoSong, type EchoState, type Key,
 } from './core/echo';
 import { timingSummary, type Grade } from './core/judge';
-import { midiOf, songFor, STAGES, type StageDef } from './core/levels';
+import { DIFFICULTIES, difficultyOf, type Difficulty } from './core/charts';
+import type { ComposedSong } from './core/compose';
+import { chartOf, songOf, TRACKS, type TrackDef } from './core/levels';
 import {
-  loadRecords, loadSettings, mergeRecord, saveRecords, saveSettings, syncOffset, type StageRecord,
+  loadRecords, loadSettings, mergeRecord, recordKey, saveRecords, saveSettings, syncOffset, type StageRecord,
 } from './core/records';
 import { Renderer, type EndCard } from './render/draw';
-import { $, fillResult, nextTrack, renderTracks, show } from './ui/screens';
+import { $, fillResult, nextTrack, renderDifficulties, renderTracks, show } from './ui/screens';
 
 type Mode = 'title' | 'play' | 'paused' | 'result' | 'sync';
 
 interface Session {
-  stage: StageDef;
+  stage: TrackDef;
+  difficulty: Difficulty;
+  composed: ComposedSong;
   song: EchoSong;
   state: EchoState;
   player: SongPlayer;
@@ -57,10 +61,10 @@ engine.setMuted(settings.muted);
 
 /** Track 1 echoed perfectly behind the title screen, on the page clock, silently. */
 const demo = {
-  stage: STAGES[0],
-  song: songFor(STAGES[0]),
-  state: newEcho(songFor(STAGES[0])),
-  taps: idealTaps(songFor(STAGES[0])),
+  stage: TRACKS[0],
+  song: chartOf(TRACKS[0], 'normal'),
+  state: newEcho(chartOf(TRACKS[0], 'normal')),
+  taps: idealTaps(chartOf(TRACKS[0], 'normal')),
   next: 0,
   t0: 0,
 };
@@ -73,12 +77,12 @@ function resetDemo(now: number): void {
 }
 
 function demoFrame(now: number, dt: number): void {
-  const beat = START_BEAT + ((now - demo.t0) / 1000) * (demo.stage.bpm / 60);
+  const beat = START_BEAT + ((now - demo.t0) / 1000) * (demo.stage.style.bpm / 60);
   const { state, song } = demo;
   while (demo.next < demo.taps.length && demo.taps[demo.next].beat <= beat) {
     const p = demo.taps[demo.next++];
     advance(state, song, p.beat);
-    tap(state, song, p.beat, p.key, demo.stage.bpm);
+    tap(state, song, p.beat, p.key, demo.stage.style.bpm);
   }
   advance(state, song, beat);
   for (const e of state.events) {
@@ -96,12 +100,14 @@ function demoFrame(now: number, dt: number): void {
 
 // ---------------------------------------------------------------- sessions
 
-function startStage(stage: StageDef): void {
+function startStage(stage: TrackDef): void {
   engine.unlock();
-  const song = songFor(stage);
+  const difficulty = settings.difficulty;
+  const composed = songOf(stage);
+  const song = chartOf(stage, difficulty);
   session?.player.stop();
   session = {
-    stage, song, state: newEcho(song, settings.practice), player: new SongPlayer(engine, stage, song), attempt: 0,
+    stage, difficulty, composed, song, state: newEcho(song, settings.practice), player: new SongPlayer(engine, composed), attempt: 0,
     practice: settings.practice, overAt: null, finishedAt: null, beat: START_BEAT, recent: [], card: null,
   };
   document.documentElement.style.setProperty('--accent', stage.palette.accent);
@@ -112,7 +118,7 @@ function startStage(stage: StageDef): void {
 function beginAttempt(): void {
   const s = session!;
   s.player.stop();
-  s.player = new SongPlayer(engine, s.stage, s.song);
+  s.player = new SongPlayer(engine, s.composed);
   s.attempt++;
   s.state = newEcho(s.song, s.practice);
   s.overAt = null;
@@ -145,7 +151,7 @@ function onPress(time: number, key: Key): void {
   if (b < -WARMUP_BEATS) return;
   const at = Math.max(b, s.state.t);
   advance(s.state, s.song, at);
-  tap(s.state, s.song, at, key, s.stage.bpm);
+  tap(s.state, s.song, at, key, s.stage.style.bpm);
   handleEvents(s, performance.now());
 }
 
@@ -163,8 +169,8 @@ function playFrame(now: number, dt: number): void {
   renderer.render({
     stage: s.stage, song: s.song, state: st, beat: beatNow, hint: settings.guide,
     hud: {
-      hearts: st.hearts, combo: st.combo, accuracy: accuracy(st), progress: progress(s.song, Math.max(0, beatNow)),
-      best: s.practice ? 0 : s.card ? s.card.best : records[s.stage.id]?.bestPct ?? 0, practice: s.practice,
+      hearts: st.hearts, maxHearts: s.song.hearts, combo: st.combo, accuracy: accuracy(st), progress: progress(s.song, Math.max(0, beatNow)),
+      best: s.practice ? 0 : s.card ? s.card.best : records[recordKey(s.stage.id, s.difficulty)]?.bestPct ?? 0, practice: s.practice,
       restored: st.restored, phrases: s.song.phrases, recent: s.recent,
     },
     countIn: beatNow < 0 ? beatNow : null, overFor: s.overAt === null ? -1 : (now - s.overAt) / 1000, card: s.card,
@@ -183,8 +189,13 @@ function handleEvents(s: Session, now: number): void {
     } else if (e.type === 'tap') {
       const n = song.notes[e.note];
       const pitch = e.wrong ? (keyOf(n.pitch) === 'high' ? 1 : 4) : n.pitch;
-      s.player.playNote(midiOf(s.stage.song, pitch));
-      if (e.wrong) renderer.popup('MISS', '다른 음', GRADE_COLOR.miss, heightOf(pitch));
+      if (e.cracked) {
+        s.player.crack();
+        renderer.popup('BAD', `${e.deltaMs < 0 ? '너무 빨라!' : '너무 늦어!'}${s.practice ? '' : ' ♥−1'}`, GRADE_COLOR.miss, heightOf(pitch));
+        continue;
+      }
+      s.player.playNote(e.wrong ? n.midi + (keyOf(n.pitch) === 'high' ? -7 : 7) : n.midi);
+      if (e.wrong) renderer.popup('MISS', `다른 음${s.practice ? '' : ' ♥−1'}`, GRADE_COLOR.miss, heightOf(pitch));
       else {
         s.recent.push(e.deltaMs);
         if (s.recent.length > 12) s.recent.shift();
@@ -200,7 +211,9 @@ function handleEvents(s: Session, now: number): void {
       } catch {
         // Not allowed here; the sound is enough.
       }
-      if (!s.practice) renderer.popup('♥ -1', '', '#ff8a8a', heightOf(song.notes[e.note].pitch));
+      // A cracked or wrong note already said so when it was pressed.
+      const head = s.state.heads[s.state.answer[e.note]];
+      if (!s.practice && !head) renderer.popup('♥ −1', '놓쳤어요', '#ff8a8a', heightOf(song.notes[e.note].pitch));
     } else if (e.type === 'phrase' && e.perfect) {
       const y = ballAt(s.state, song, e.t).y;
       renderer.burst(xAt(e.t), y + 0.4, [p.accent, p.staff, '#ffe14a']);
@@ -209,9 +222,9 @@ function handleEvents(s: Session, now: number): void {
       s.overAt = now;
       s.player.stop(0.3);
       const pct = progress(song, e.t);
-      const before = records[s.stage.id]?.bestPct ?? 0;
-      const merged = mergeRecord(records[s.stage.id], { cleared: false, pct });
-      records[s.stage.id] = merged.record;
+      const before = records[recordKey(s.stage.id, s.difficulty)]?.bestPct ?? 0;
+      const merged = mergeRecord(records[recordKey(s.stage.id, s.difficulty)], { cleared: false, pct });
+      records[recordKey(s.stage.id, s.difficulty)] = merged.record;
       saveRecords(records);
       s.card = { pct, best: Math.max(before, pct), newBest: merged.improved };
     } else if (e.type === 'finish') {
@@ -228,18 +241,19 @@ function showResult(s: Session): void {
   const acc = accuracy(st);
   let improved = false;
   if (!s.practice) {
-    const merged = mergeRecord(records[s.stage.id], { cleared: true, rank: r, accuracy: acc });
-    records[s.stage.id] = merged.record;
+    const merged = mergeRecord(records[recordKey(s.stage.id, s.difficulty)], { cleared: true, rank: r, accuracy: acc });
+    records[recordKey(s.stage.id, s.difficulty)] = merged.record;
     improved = merged.improved;
     saveRecords(records);
   }
-  const idx = STAGES.indexOf(s.stage);
+  const idx = TRACKS.indexOf(s.stage);
   fillResult({
     stage: s.stage, rank: r, accuracy: acc, counts: st.counts, maxCombo: st.maxCombo, restored: st.restored,
-    phrases: s.song.phrases, practice: s.practice, noHint: !settings.guide, improved, hasNext: idx < STAGES.length - 1,
+    phrases: s.song.phrases, practice: s.practice, noHint: !settings.guide, improved, hasNext: idx < TRACKS.length - 1,
+    difficulty: difficultyOf(s.difficulty).label,
     timing: timingSummary(st.judged),
   });
-  engine.fanfare(s.stage.song.root);
+  engine.fanfare(s.stage.style.root);
   show('result');
   $('next').hidden ? $('again').focus() : $('next').focus();
 }
@@ -261,7 +275,7 @@ function pause(): void {
   void engine.suspend();
   const pct = Math.floor(progress(session.song, Math.max(0, session.beat)) * 100);
   const hearts = session.practice ? '연습' : `하트 ${session.state.hearts}`;
-  $('pause-info').textContent = `${session.stage.name} · ${pct}% · ${hearts} · 구절 ${session.state.restored}/${session.song.phrases}`;
+  $('pause-info').textContent = `${session.stage.name} · ${difficultyOf(session.difficulty).label} · ${pct}% · ${hearts} · 구절 ${session.state.restored}/${session.song.phrases}`;
   show('pause');
   $('resume').focus();
 }
@@ -345,7 +359,16 @@ function closeSync(): void {
 let trackButtons: HTMLButtonElement[] = [];
 
 function renderTitle(): void {
-  trackButtons = renderTracks(STAGES, STAGES.map((st) => songFor(st).endBeat / 4), records, startStage);
+  const d = settings.difficulty;
+  trackButtons = renderTracks(
+    TRACKS, TRACKS.map((t) => ({ beats: songOf(t).endBeat, notes: chartOf(t, d).notes.length / 2 })), records, d, startStage,
+  );
+  renderDifficulties(d, (next) => {
+    settings.difficulty = next;
+    saveSettings(settings);
+    renderTitle();
+    $(`diff-${next}`).focus();
+  });
   $<HTMLInputElement>('opt-guide').checked = settings.guide;
   $<HTMLInputElement>('opt-practice').checked = settings.practice;
   $('sync-value').textContent = `${settings.offsetMs > 0 ? '+' : ''}${settings.offsetMs}ms`;
@@ -354,7 +377,7 @@ function renderTitle(): void {
 }
 
 function focusNextTrack(): void {
-  trackButtons[nextTrack(STAGES, records)]?.focus({ preventScroll: true });
+  trackButtons[nextTrack(TRACKS, records, settings.difficulty)]?.focus({ preventScroll: true });
 }
 
 $<HTMLInputElement>('opt-guide').addEventListener('change', (e) => {
@@ -385,8 +408,8 @@ $('restart').addEventListener('click', () => {
 $('quit').addEventListener('click', toTitle);
 $('again').addEventListener('click', () => session && startStage(session.stage));
 $('next').addEventListener('click', () => {
-  const i = session ? STAGES.indexOf(session.stage) : -1;
-  if (i >= 0 && i < STAGES.length - 1) startStage(STAGES[i + 1]);
+  const i = session ? TRACKS.indexOf(session.stage) : -1;
+  if (i >= 0 && i < TRACKS.length - 1) startStage(TRACKS[i + 1]);
 });
 $('to-title').addEventListener('click', toTitle);
 $('res-sync').addEventListener('click', openSync);
@@ -401,11 +424,23 @@ function keyFor(code: string): Key | null {
 }
 
 addEventListener('keydown', (e) => {
+  if (mode === 'title' && (e.code === 'ArrowLeft' || e.code === 'ArrowRight') && !(document.activeElement instanceof HTMLInputElement)) {
+    // ← → change the difficulty without leaving the tracklist.
+    e.preventDefault();
+    const i = DIFFICULTIES.findIndex((d) => d.id === settings.difficulty);
+    const n = DIFFICULTIES.length;
+    const focused = trackButtons.indexOf(document.activeElement as HTMLButtonElement);
+    settings.difficulty = DIFFICULTIES[(i + (e.code === 'ArrowRight' ? 1 : n - 1)) % n].id;
+    saveSettings(settings);
+    renderTitle();
+    trackButtons[focused >= 0 ? focused : nextTrack(TRACKS, records, settings.difficulty)]?.focus();
+    return;
+  }
   if (mode === 'title' && (e.code === 'ArrowDown' || e.code === 'ArrowUp')) {
     e.preventDefault();
     const i = trackButtons.indexOf(document.activeElement as HTMLButtonElement);
     const n = trackButtons.length;
-    const next = i < 0 ? nextTrack(STAGES, records) : (i + (e.code === 'ArrowDown' ? 1 : n - 1)) % n;
+    const next = i < 0 ? nextTrack(TRACKS, records, settings.difficulty) : (i + (e.code === 'ArrowDown' ? 1 : n - 1)) % n;
     trackButtons[next].focus();
     return;
   }

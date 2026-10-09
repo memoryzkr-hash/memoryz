@@ -1,23 +1,12 @@
-import { parseEcho, type EchoSong } from './echo';
+import { chart, type Difficulty } from './charts';
+import { compose, type ComposedSong, type StyleSheet } from './compose';
+import type { EchoSong } from './echo';
 
-/** The band behind a song. Notes are MIDI numbers; patterns are 16 sixteenth-note steps per bar. */
-export interface SongDef {
-  /** Key root (MIDI). */
-  root: number;
-  /** Semitone offsets of the seven scale degrees. */
-  scale: number[];
-  /** Scale degree of each bar's chord; one chord per phrase (call + response share it). */
-  progression: number[];
-  /** 'x' hit, '.' rest. */
-  kick: string;
-  snare: string;
-  /** 'x' closed hat, 'o' open hat. */
-  hat: string;
-  /** 'x' root, 'o' octave up, 'f' fifth. */
-  bass: string;
-  /** The voice that sings the call (and that the player's presses play back). */
-  lead: OscillatorType;
-}
+/**
+ * The tracklist. Every song is written by the songwriter in compose.ts from the style sheet
+ * below — no samples, no recordings — so the music belongs to this project and can be used
+ * anywhere, commercially included.
+ */
 
 export interface Palette {
   skyTop: string;
@@ -31,129 +20,120 @@ export interface Palette {
   ball: string;
 }
 
-export interface StageDef {
+export interface TrackDef {
   id: string;
   name: string;
+  /** Genre and feel, a few words. */
   tagline: string;
-  bpm: number;
-  /** 1-3 */
-  difficulty: number;
   palette: Palette;
-  song: SongDef;
-  twoKeys: boolean;
-  /** Calls only; each is answered by a response bar of the same rhythm. */
-  chart: string;
+  style: StyleSheet;
 }
 
 const MAJOR = [0, 2, 4, 5, 7, 9, 11];
 const MINOR = [0, 2, 3, 5, 7, 8, 10];
 const DORIAN = [0, 2, 3, 5, 7, 9, 10];
 
-/** Staff line 1..5 sings scale degrees do, re, mi, sol, high do. */
-const LINE_DEGREES = [0, 1, 2, 4, 7];
+/** Drums and bass by energy 0-3. */
+const POP = {
+  kick: ['x.......x.......', 'x.......x.......', 'x...x...x...x...', 'x...x...x...x.x.'],
+  snare: ['................', '....x.......x...', '....x.......x...', '....x.......x..x'],
+  hat: ['................', '..x...x...x...x.', 'x.x.x.x.x.x.x.x.', 'x.xox.xox.xox.xo'],
+  bass: ['x...............', 'x.......x.......', 'x.o.x.o.x.o.x.o.', 'x.xox.xox.xox.xo'],
+};
+const FUNK = {
+  kick: ['x.......x.......', 'x.....x...x.....', 'x.....x...x..x..', 'x.x...x...x..x..'],
+  snare: ['................', '....x.......x...', '....x..x....x...', '....x..x.x..x..x'],
+  hat: ['..x...x...x...x.', 'xxo.xxo.xxo.xxo.', 'xxoxxxoxxxoxxxox', 'xxoxxxoxxxoxxxox'],
+  bass: ['x...............', 'x..x..x...x..f..', 'x..x..x.o.x..f..', 'x.xx..x.o.x.xf.o'],
+};
+const CHIP = {
+  kick: ['x.......x.......', 'x...x...x...x...', 'x...x...x...x...', 'x..xx...x..xx...'],
+  snare: ['................', '....x.......x...', '....x.......x.x.', '....x..x....x.xx'],
+  hat: ['x...x...x...x...', 'x.x.x.x.x.x.x.x.', 'xxxxxxxxxxxxxxxx', 'xxxxxxxxxxxxxxxx'],
+  bass: ['x.......x.......', 'x.x.x.x.x.x.x.x.', 'xoxoxoxoxoxoxoxo', 'xoxoxoxoxofoxoxo'],
+};
+const EDM = {
+  kick: ['................', 'x...x...x...x...', 'x...x...x...x...', 'x...x...x...x...'],
+  snare: ['................', '........x.......', '....x.......x...', '....x.......x...'],
+  hat: ['................', '..x...x...x...x.', '..o...o...o...o.', 'x.o.x.o.x.o.x.o.'],
+  bass: ['x...............', 'x.......x.......', '..x...x...x...x.', '.xo..xo..xo..xo.'],
+};
 
-/** MIDI note a staff line sings in this song. */
-export function midiOf(song: SongDef, pitch: number): number {
-  const d = LINE_DEGREES[Math.max(1, Math.min(5, pitch)) - 1];
-  return song.root + 12 + song.scale[d % 7] + 12 * Math.floor(d / 7);
-}
-
-export const STAGES: StageDef[] = [
+export const TRACKS: TrackDef[] = [
   {
-    id: 'echo',
-    name: '메아리',
-    tagline: '네 박자 따라 치기',
-    bpm: 96,
-    difficulty: 1,
-    twoKeys: false,
+    id: 'sunset-hop',
+    name: '노을 점프',
+    tagline: '팝 · 느긋한 4분음표',
     palette: { skyTop: '#ff7a3d', skyBottom: '#ffc46b', staff: '#fff3dc', ink: '#1d1846', accent: '#ff2e7e', ball: '#fffaf2' },
-    song: {
-      root: 53, scale: MAJOR, progression: [0, 4, 5, 3],
-      kick: 'x.......x.......', snare: '....x.......x...', hat: '..x...x...x...x.', bass: 'x.......x...o...', lead: 'triangle',
+    style: {
+      seed: 11, bpm: 96, root: 53, scale: MAJOR, range: [65, 81], lead: 'triangle',
+      chords: { verse: [0, 4, 5, 3], chorus: [3, 4, 0, 5], bridge: [5, 3, 4, 4] },
+      form: [['intro', 2], ['verse', 4], ['chorus', 4], ['verse', 4], ['chorus', 4], ['outro', 2]],
+      energy: { intro: 1, verse: 1, chorus: 2, bridge: 1, outro: 1 },
+      ...POP,
     },
-    chart: `
-      1 1.2. 3...
-      1 3.2. 1...
-      2 1.3. 5...
-      2 5.3. 1...
-      2 1.1. 3.3.
-      2 5... 3...
-      3 1.2. 3.5.
-      3 5.4. 3.1.
-      3 3.3. 5...
-      3 1.3. 5.3.
-      2 5.3. 2.1.
-      1 1... 5...
-    `,
   },
   {
-    id: 'round',
-    name: '돌림노래',
-    tagline: '8분음표 · 엇박',
-    bpm: 112,
-    difficulty: 2,
-    twoKeys: false,
+    id: 'stair-city',
+    name: '계단 도시',
+    tagline: '펑크 · 엇박 베이스',
     palette: { skyTop: '#0f9e93', skyBottom: '#7fe0c6', staff: '#f2fff9', ink: '#22092f', accent: '#ffd23f', ball: '#fffdf5' },
-    song: {
-      root: 50, scale: DORIAN, progression: [0, 3, 6, 4],
-      kick: 'x.....x...x.....', snare: '....x.......x...', hat: 'xxo.xxo.xxo.xxo.', bass: 'x..x..x...x..f..', lead: 'square',
+    style: {
+      seed: 27, bpm: 112, root: 50, scale: DORIAN, range: [62, 79], lead: 'square',
+      chords: { verse: [0, 3, 0, 3], chorus: [6, 3, 0, 4], bridge: [3, 4, 5, 4] },
+      form: [['intro', 2], ['verse', 4], ['chorus', 4], ['verse', 4], ['chorus', 4], ['bridge', 2], ['chorus', 4], ['outro', 2]],
+      energy: { intro: 1, verse: 2, chorus: 3, bridge: 1, outro: 1 },
+      ...FUNK,
     },
-    chart: `
-      1 1.2. 33..
-      1 3.2. 11..
-      2 1..3 ..5.
-      2 5..3 ..1.
-      2 13.5 .3..
-      2 5.31 .1..
-      3 1.1. 3.35
-      3 5.53 .1..
-      3 1..2 ..34
-      3 5.4. 3.21
-      3 33.5 5.1.
-      3 1.3. 5.53
-      2 5..3 ..1.
-      2 1... 5.5.
-    `,
   },
   {
-    id: 'two-voices',
-    name: '높은음 낮은음',
-    tagline: '두 키로 높낮이까지',
-    bpm: 120,
-    difficulty: 3,
-    twoKeys: true,
+    id: 'midnight-arcade',
+    name: '한밤 오락실',
+    tagline: '칩튠 · 쉴 틈 없는 8분음표',
     palette: { skyTop: '#a8122d', skyBottom: '#ff6a4d', staff: '#ffe7e0', ink: '#1b0d24', accent: '#ffe14a', ball: '#fff8f0' },
-    song: {
-      root: 52, scale: MINOR, progression: [0, 5, 2, 6],
-      kick: 'x...x...x...x.x.', snare: '....x.......x..x', hat: 'x.xox.xox.xox.xo', bass: 'x.xox.xox.xox.xf', lead: 'sawtooth',
+    style: {
+      seed: 45, bpm: 128, root: 52, scale: MINOR, range: [64, 83], lead: 'square',
+      chords: { verse: [0, 5, 2, 6], chorus: [5, 6, 0, 0], bridge: [3, 4, 5, 6] },
+      form: [['intro', 2], ['verse', 4], ['chorus', 4], ['bridge', 2], ['chorus', 4], ['outro', 2]],
+      energy: { intro: 1, verse: 2, chorus: 3, bridge: 2, outro: 1 },
+      ...CHIP,
     },
-    chart: `
-      1 1.4. 1.4.
-      1 4.1. 4.1.
-      2 1.1. 4...
-      2 4.4. 1...
-      2 1.4. 4.1.
-      2 4..1 ..4.
-      3 1.4. 1.44
-      3 4.1. 4.11
-      3 1..4 ..1.
-      3 4..1 ..44
-      3 14.1 .4..
-      3 41.4 .1..
-      2 1.4. 1.4.
-      2 4... 1...
-    `,
+  },
+  {
+    id: 'drop-line',
+    name: '드롭 라인',
+    tagline: 'EDM · 빌드업과 드롭',
+    palette: { skyTop: '#1d2b7a', skyBottom: '#4a7bd6', staff: '#e8f0ff', ink: '#0b1238', accent: '#ff9f1c', ball: '#fffaf0' },
+    style: {
+      seed: 63, bpm: 140, root: 57, scale: MINOR, range: [64, 84], lead: 'sawtooth',
+      chords: { verse: [0, 5, 3, 4], chorus: [5, 6, 0, 4], bridge: [3, 3, 4, 4] },
+      form: [['intro', 4], ['verse', 4], ['chorus', 4], ['bridge', 2], ['chorus', 4], ['outro', 2]],
+      energy: { intro: 1, verse: 2, chorus: 3, bridge: 0, outro: 1 },
+      ...EDM,
+    },
   },
 ];
 
-const built = new Map<string, EchoSong>();
+const songs = new Map<string, ComposedSong>();
+const charts = new Map<string, EchoSong>();
 
-/** Parses a stage's chart once and caches it. */
-export function songFor(stage: StageDef): EchoSong {
-  let song = built.get(stage.id);
-  if (!song) {
-    song = parseEcho(stage.chart, stage.twoKeys);
-    built.set(stage.id, song);
+/** The track's song, written once and cached. */
+export function songOf(track: TrackDef): ComposedSong {
+  let s = songs.get(track.id);
+  if (!s) {
+    s = compose(track.style);
+    songs.set(track.id, s);
   }
-  return song;
+  return s;
+}
+
+/** The track's chart at a difficulty, cached. */
+export function chartOf(track: TrackDef, d: Difficulty): EchoSong {
+  const key = `${track.id}:${d}`;
+  let c = charts.get(key);
+  if (!c) {
+    c = chart(songOf(track), d);
+    charts.set(key, c);
+  }
+  return c;
 }

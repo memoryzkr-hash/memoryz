@@ -1,6 +1,7 @@
 import {
   FALL_GRAVITY, HEAD_W, MAX_HEARTS, PITCH_STEP, RESPAWN_HEIGHT, RESPAWN_LEAD, SPEED, START_BEAT, WINDOW_BEATS,
 } from './constants';
+import type { BarRole } from './compose';
 import { GRADE_POINTS, gradeFor, rankFor, type Grade, type Judgement, type Rank } from './judge';
 
 /**
@@ -10,7 +11,8 @@ import { GRADE_POINTS, gradeFor, rankFor, type Grade, type Judgement, type Rank 
  * by themselves. The response bar is empty air: the player plays the phrase back, and every press
  * puts a note head under the ball. A missing or mistimed head and the ball falls through.
  *
- * Charts list only the calls, one bar per line: an energy digit (0-3, how much of the band plays)
+ * Songs from the songwriter (compose.ts) are charted in charts.ts. For tests and hand-made songs,
+ * a chart can also list only the calls, one bar per line: an energy digit (0-3, how much of the band plays)
  * and eight eighth-note cells, '.' for a rest or a pitch 1-5 (the staff line the head sits on).
  *
  *   2 1.3. 5...    do, mi, sol on beats 1, 2 and 3
@@ -25,17 +27,29 @@ export interface EchoNote {
   pitch: number;
   role: Role;
   phrase: number;
+  /** The note it sounds (a response note sounds when the player presses). */
+  midi: number;
 }
 
 export interface EchoSong {
   notes: EchoNote[];
-  /** Energy of every bar (calls and responses), for the band. */
+  /** What each bar is for. */
+  barRoles: BarRole[];
+  /** Phrase of each bar, -1 outside phrases. */
+  barPhrase: number[];
+  /** Energy of every bar, for the band. */
   energy: number[];
   phrases: number;
   /** Two-key songs: low notes (pitch 1-2) and high notes (4-5) need their own key. */
   twoKeys: boolean;
-  /** The song is over here: one bar after the last response. */
+  /** The song is over here. */
   endBeat: number;
+  /** A press further than this from its note (beats) cracks the head: the ball falls through. */
+  catchBeats: number;
+  /** Lives at the start, and the most a clean echo can heal back to. */
+  hearts: number;
+  /** Melody notes the call sings that this chart leaves out (drawn as small dots). */
+  decor: { beat: number; pitch: number }[];
 }
 
 export class EchoChartError extends Error {}
@@ -46,6 +60,8 @@ const CELLS = /^[.1-5]{8}$/;
 export function parseEcho(text: string, twoKeys = false): EchoSong {
   const notes: EchoNote[] = [];
   const energy: number[] = [];
+  const barRoles: BarRole[] = [];
+  const barPhrase: number[] = [];
   let phrase = 0;
   text.split('\n').forEach((raw, i) => {
     const line = raw.replace(/#.*/, '').trim();
@@ -59,15 +75,22 @@ export function parseEcho(text: string, twoKeys = false): EchoSong {
     for (const role of ['call', 'response'] as const) {
       const bar = callBar + (role === 'call' ? 0 : 1);
       [...cells].forEach((c, k) => {
-        if (c !== '.') notes.push({ beat: bar * 4 + k / 2, pitch: Number(c), role, phrase });
+        if (c !== '.') notes.push({ beat: bar * 4 + k / 2, pitch: Number(c), role, phrase, midi: 59 + Number(c) * 2 });
       });
+      barRoles.push(role);
+      barPhrase.push(phrase);
     }
     energy.push(Number(m[1]), Number(m[1]));
     phrase++;
   });
   if (!phrase) throw new EchoChartError('the chart has no calls');
   energy.push(1);
-  return { notes, energy, phrases: phrase, twoKeys, endBeat: (phrase * 2 + 1) * 4 };
+  barRoles.push('outro');
+  barPhrase.push(-1);
+  return {
+    notes, barRoles, barPhrase, energy, phrases: phrase, twoKeys, endBeat: (phrase * 2 + 1) * 4,
+    catchBeats: WINDOW_BEATS, hearts: MAX_HEARTS, decor: [],
+  };
 }
 
 export const heightOf = (pitch: number): number => (pitch - 1) * PITCH_STEP;
@@ -85,11 +108,13 @@ export interface Head {
   grade: Grade | null;
   /** Played with the wrong key: sits on the wrong line. */
   wrong: boolean;
+  /** Played far too early: the head cracks under the ball. */
+  cracked: boolean;
 }
 
 export type EchoEvent =
   | { type: 'bounce'; t: number; note: number; role: Role }
-  | { type: 'tap'; t: number; note: number; grade: Grade; deltaMs: number; wrong: boolean }
+  | { type: 'tap'; t: number; note: number; grade: Grade; deltaMs: number; wrong: boolean; cracked: boolean }
   | { type: 'stray'; t: number }
   | { type: 'fall'; t: number; note: number; hearts: number }
   | { type: 'respawn'; t: number }
@@ -130,9 +155,9 @@ export interface EchoState {
 export function newEcho(song: EchoSong, practice = false): EchoState {
   const first = song.notes[0];
   return {
-    t: START_BEAT, hearts: MAX_HEARTS, practice,
-    // The ball drops onto the first call note from above.
-    from: { t: first.beat - RESPAWN_LEAD * 2, y: heightOf(first.pitch) + RESPAWN_HEIGHT },
+    t: START_BEAT, hearts: song.hearts, practice,
+    // The ball waits on the starting pad and jumps to the first call note one beat before it.
+    from: { t: first.beat - 1, y: 0 },
     next: 0, falling: null, over: false, finished: false, heads: [],
     answer: new Array(song.notes.length).fill(-1), judged: new Array(song.notes.length).fill(null),
     strays: 0, phraseStrays: new Array(song.phrases).fill(0), restored: 0,
@@ -158,7 +183,11 @@ export function arcY(from: { t: number; y: number }, t1: number, y1: number, t: 
 /** Where the ball is at beat t (bottom of the ball). */
 export function ballAt(s: EchoState, song: EchoSong, t: number): { x: number; y: number } {
   const x = xAt(t);
-  if (t < s.from.t) return { x, y: s.from.y };
+  if (t < s.from.t) {
+    // Before the first jump: hopping on the starting pad, one hop per beat.
+    const f = t - Math.floor(t);
+    return { x, y: s.from.y + 0.5 * 4 * f * (1 - f) };
+  }
   if (s.falling) {
     const d = t - s.falling.t;
     return { x, y: s.falling.y + s.falling.vy * d - 0.5 * FALL_GRAVITY * d * d };
@@ -198,7 +227,7 @@ function phraseDone(s: EchoState, song: EchoSong, i: number, t: number): void {
   const clean = grades.every((g) => g !== 'miss');
   const perfect = clean && grades.every((g) => g === 'perfect' || g === 'great') && s.phraseStrays[n.phrase] === 0;
   if (clean) s.restored++;
-  const healed = perfect && s.hearts < MAX_HEARTS && !s.falling;
+  const healed = perfect && s.hearts < song.hearts && !s.falling;
   if (healed) s.hearts++;
   s.events.push({ type: 'phrase', t, phrase: n.phrase, perfect, healed });
 }
@@ -228,7 +257,7 @@ export function advance(s: EchoState, song: EchoSong, t: number): void {
   while (!s.over && !s.finished) {
     if (s.falling) {
       // Response notes that go by while the ball is gone are misses (no extra heart).
-      while (s.next < song.notes.length && song.notes[s.next].role === 'response' && song.notes[s.next].beat + WINDOW_BEATS <= t) {
+      while (s.next < song.notes.length && song.notes[s.next].role === 'response' && song.notes[s.next].beat + song.catchBeats <= t) {
         if (!s.judged[s.next]) record(s, s.next, 'miss', 0);
         phraseDone(s, song, s.next, song.notes[s.next].beat);
         s.next++;
@@ -272,20 +301,24 @@ export function advance(s: EchoState, song: EchoSong, t: number): void {
     if (h >= 0) {
       // Answered early: the head is already there when the ball comes down.
       if (n.beat > t) break;
-      if (s.heads[h].wrong) fall(s, song, i, n.beat);
+      if (s.heads[h].wrong || s.heads[h].cracked) fall(s, song, i, n.beat);
       else bounce(s, song, i, n.beat);
       continue;
     }
-    if (n.beat + WINDOW_BEATS > t) break;
+    if (n.beat + song.catchBeats > t) break;
     record(s, i, 'miss', 0);
-    fall(s, song, i, n.beat + WINDOW_BEATS);
+    fall(s, song, i, n.beat + song.catchBeats);
   }
   s.t = Math.max(s.t, t);
 }
 
+/** A press this close to an open response note is aimed at it (beyond the catch window it cracks). */
+export const AIM_BEATS = 0.4;
+
 /**
  * A press at beat t with a key ('any' on one-key songs). Call `advance(s, song, t)` first.
- * Matches the nearest open response note within the window; anything else is a stray press.
+ * Aimed at the nearest open response note: within the song's catch window it holds the ball,
+ * further off it cracks (the ball falls, a life is lost). Anything else is a stray press.
  */
 export function tap(s: EchoState, song: EchoSong, t: number, key: Key, bpm: number): void {
   if (s.over || s.finished) return;
@@ -295,7 +328,7 @@ export function tap(s: EchoState, song: EchoSong, t: number, key: Key, bpm: numb
   song.notes.forEach((n, i) => {
     if (n.role !== 'response' || s.answer[i] >= 0 || s.judged[i]) return;
     const d = Math.abs(t - n.beat);
-    if (d <= WINDOW_BEATS && d < bestD) {
+    if (d <= AIM_BEATS && d < bestD) {
       best = i;
       bestD = d;
     }
@@ -303,9 +336,10 @@ export function tap(s: EchoState, song: EchoSong, t: number, key: Key, bpm: numb
   if (best < 0 || s.falling) {
     if (!s.falling) {
       s.strays++;
-      s.phraseStrays[Math.min(song.phrases - 1, Math.max(0, Math.floor(t / 8)))]++;
+      const phrase = song.barPhrase[Math.floor(t / 4)] ?? -1;
+      if (phrase >= 0) s.phraseStrays[phrase]++;
       s.combo = 0;
-      s.heads.push({ x: xAt(t), y: Math.max(0, ball.y - 0.4), t, note: -1, grade: null, wrong: false });
+      s.heads.push({ x: xAt(t), y: Math.max(0, ball.y - 0.4), t, note: -1, grade: null, wrong: false, cracked: false });
       s.events.push({ type: 'stray', t });
     }
     return;
@@ -313,15 +347,16 @@ export function tap(s: EchoState, song: EchoSong, t: number, key: Key, bpm: numb
   const n = song.notes[best];
   const wrong = song.twoKeys && key !== keyOf(n.pitch);
   const deltaMs = ((t - n.beat) * 60000) / bpm;
-  const grade: Grade = wrong ? 'miss' : gradeFor(deltaMs);
+  const cracked = !wrong && bestD > song.catchBeats;
+  const grade: Grade = wrong || cracked ? 'miss' : gradeFor(deltaMs);
   record(s, best, grade, wrong ? 0 : deltaMs);
   const y = wrong ? heightOf(key === 'high' ? 4 : 1) : heightOf(n.pitch);
   s.answer[best] = s.heads.length;
-  s.heads.push({ x: xAt(t), y, t, note: best, grade, wrong });
-  s.events.push({ type: 'tap', t, note: best, grade, deltaMs, wrong });
+  s.heads.push({ x: xAt(t), y, t, note: best, grade, wrong, cracked });
+  s.events.push({ type: 'tap', t, note: best, grade, deltaMs, wrong, cracked });
   // Late (or dead on): the ball is already waiting at this note, so the new head catches it now.
   if (t >= n.beat && s.next === best) {
-    if (wrong) fall(s, song, best, t);
+    if (wrong || cracked) fall(s, song, best, t);
     else bounce(s, song, best, t);
   }
 }

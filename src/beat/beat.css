@@ -200,6 +200,28 @@ h2 { margin: 0; font: 34px var(--display); letter-spacing: 0.02em; }
 .track .best .badge[data-rank='S'] { background: #fff; }
 .track .best b { color: #fff; font-weight: 600; }
 
+.credit { margin: 6px 0 0; font-size: 13px; color: #fff; opacity: 0.85; text-shadow: 0 1px 4px rgba(20, 17, 43, 0.6); }
+.diffs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.diff { position: relative; cursor: pointer; display: flex; }
+.diff input { position: absolute; opacity: 0; pointer-events: none; }
+.diff span {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.05);
+  text-align: center;
+}
+.diff b { font: 17px var(--display); font-weight: 400; color: #fff; }
+.diff small { font-size: 11px; color: var(--muted); line-height: 1.3; }
+.diff input:checked + span { border-color: var(--sun); background: rgba(255, 201, 63, 0.14); }
+.diff input:checked + span b { color: var(--sun); }
+.diff input:focus-visible + span { outline: 3px solid var(--sun); outline-offset: 2px; }
+@media (max-width: 480px) { .diff small { display: none; } }
+@media (max-height: 520px) and (orientation: landscape) { .diff small { display: none; } .diff span { padding: 6px; } }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; padding-top: 4px; border-top: 1px solid var(--line); }
 .chips > * { flex: 1 1 auto; }
 .chip { position: relative; display: inline-flex; cursor: pointer; font-size: 13.5px; }

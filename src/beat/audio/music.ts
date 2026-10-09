@@ -1,5 +1,4 @@
-import type { EchoSong } from '../core/echo';
-import { midiOf, type SongDef, type StageDef } from '../core/levels';
+import type { ComposedSong, MelodyNote, StyleSheet } from '../core/compose';
 
 const midiHz = (m: number) => 440 * 2 ** ((m - 69) / 12);
 
@@ -149,8 +148,9 @@ export class AudioEngine {
 const LOOKAHEAD = 0.14;
 
 /**
- * Plays one attempt of a stage's song from any beat. The band follows each bar's energy; the lead
- * sings every call, and stays silent in response bars, where the player's presses play it instead.
+ * Plays one attempt of a written song from any beat. The band follows each bar's chord, energy
+ * and fills; the lead sings the whole melody in call bars and stays silent in response bars,
+ * where the player's presses play it instead.
  */
 export class SongPlayer {
   private bus: GainNode;
@@ -161,14 +161,14 @@ export class SongPlayer {
   private nextStep = 0;
   private stopped = true;
   private readonly spb: number;
-  private readonly song: SongDef;
-  /** MIDI notes the call sings, by sixteenth-step index. */
-  private readonly calls = new Map<number, number[]>();
+  private readonly style: StyleSheet;
+  /** Melody notes the call sings, by sixteenth-step index. */
+  private readonly calls = new Map<number, MelodyNote[]>();
 
-  constructor(private readonly engine: AudioEngine, stage: StageDef, private readonly level: EchoSong) {
+  constructor(private readonly engine: AudioEngine, private readonly song: ComposedSong) {
     const ctx = engine.ctx!;
-    this.spb = 60 / stage.bpm;
-    this.song = stage.song;
+    this.style = song.style;
+    this.spb = 60 / song.style.bpm;
     this.bus = ctx.createGain();
     this.bus.connect(engine.master);
     const delay = ctx.createDelay(2);
@@ -181,10 +181,9 @@ export class SongPlayer {
     this.delaySend.gain.value = 0.28;
     this.delaySend.connect(delay).connect(lp).connect(fb).connect(delay);
     lp.connect(this.bus);
-    for (const n of level.notes) {
-      if (n.role !== 'call') continue;
+    for (const n of song.melody) {
       const k = Math.round(n.beat * 4);
-      this.calls.set(k, [...(this.calls.get(k) ?? []), midiOf(this.song, n.pitch)]);
+      this.calls.set(k, [...(this.calls.get(k) ?? []), n]);
     }
   }
 
@@ -202,6 +201,19 @@ export class SongPlayer {
     g.connect(this.bus);
     const o = this.osc('triangle', 140, at, 0.1, g);
     o.frequency.exponentialRampToValueAtTime(70, at + 0.08);
+  }
+
+  /** A cracked note: a short glassy snap. */
+  crack(): void {
+    if (this.stopped) return;
+    const ctx = this.engine.ctx!;
+    const at = ctx.currentTime;
+    const hp = ctx.createBiquadFilter();
+    hp.type = 'highpass';
+    hp.frequency.value = 3000;
+    const g = this.env(at, 0.35, 0.12);
+    hp.connect(g).connect(this.bus);
+    this.noise(at, 0.14, hp);
   }
 
   /** Starts so that `fromBeat` sounds `leadIn` seconds from now; beats before `countInUntil` are only clicks. */
@@ -242,7 +254,7 @@ export class SongPlayer {
     if (this.stopped) return;
     const ctx = this.engine.ctx!;
     const horizon = ctx.currentTime + LOOKAHEAD;
-    const last = (this.level.endBeat + 4) * 4;
+    const last = (this.song.endBeat + 4) * 4;
     while (!this.stopped && this.timeOf(this.nextStep / 4) < horizon) {
       const k = this.nextStep++;
       if (k > last) {
@@ -254,66 +266,58 @@ export class SongPlayer {
     }
   }
 
-  /** A call and its response share one chord. */
-  private chordAt(bar: number): number[] {
-    const { scale, progression, root } = this.song;
-    const phrase = Math.floor(bar / 2);
-    const deg = progression[((phrase % progression.length) + progression.length) % progression.length];
-    return [0, 2, 4].map((i) => {
-      const d = deg + i;
-      return root + scale[d % 7] + 12 * Math.floor(d / 7);
-    });
-  }
-
   private scheduleStep(k: number, at: number): void {
     const beat = k / 4;
     if (beat < this.countInUntil) {
       if (k % 4 === 0) this.engine.tick(at, Math.round(beat - this.countInUntil) === -4, this.bus);
       return;
     }
-    const endStep = this.level.endBeat * 4;
+    const bars = this.song.bars;
+    const endStep = this.song.endBeat * 4;
     if (k >= endStep) {
       if (k === endStep) {
+        const home = bars[0].chord;
         this.crash(at);
         this.kick(at, 1);
-        this.pad(at, this.chordAt(0), this.spb * 4, 0.05);
-        this.bass(at, this.chordAt(0)[0] - 12, this.spb * 3);
+        this.pad(at, home, this.spb * 4, 0.05);
+        this.bass(at, home[0] - 12, this.spb * 3);
       }
       return;
     }
     const bar = Math.floor(beat / 4);
-    const energy = this.level.energy[bar] ?? 1;
+    const b = bars[bar];
+    if (!b) return;
+    const st = this.style;
+    const e = b.energy;
     const s = ((k % 16) + 16) % 16;
-    const chord = this.chordAt(bar);
-    const song = this.song;
-    const fill = energy >= 2 && bar % 4 === 3 && s >= 12;
+    const chord = b.chord;
+    const fill = b.fill && s >= 12;
+    const newSection = bar > 0 && bars[bar - 1].section !== b.section;
 
     if (s === 0) {
-      this.pad(at, chord, this.spb * 4, energy === 0 ? 0.03 : 0.022);
+      this.pad(at, chord, this.spb * 4, e === 0 ? 0.035 : 0.022);
       // "Your turn": a little rising chirp as each response bar starts.
-      if (bar % 2 === 1) this.chirp(at, chord[0] + 24);
-      if (bar % 4 === 0 && energy >= 2) this.crash(at, 0.12);
+      if (b.role === 'response') this.chirp(at, chord[0] + 24);
+      if (newSection && e >= 2) this.crash(at, 0.14);
     }
-    if (energy === 0 ? s === 0 || s === 8 : song.kick[s] === 'x') this.kick(at, energy === 0 ? 0.6 : 0.95);
-    if (energy >= 2 && (song.snare[s] === 'x' || (fill && s % 2 === 0) || (fill && s === 15))) this.snare(at, fill ? 0.3 : 0.45);
-    if (energy >= 1) {
-      const h = song.hat[s];
-      if (h === 'x') this.hat(at, false);
-      else if (h === 'o' && energy >= 3) this.hat(at, true);
-      else if (h === 'o') this.hat(at, false);
-    }
-    if (energy >= 2) {
-      const b = song.bass[s];
-      const len = this.spb / 2;
-      if (b === 'x') this.bass(at, chord[0] - 24, len);
-      else if (b === 'o') this.bass(at, chord[0] - 12, len);
-      else if (b === 'f') this.bass(at, chord[2] - 24, len);
-    }
-    if (energy >= 3 && s % 2 === 1) {
+    if (st.kick[e][s] === 'x') this.kick(at, e === 0 ? 0.6 : 0.95);
+    // Fills: a snare roll into the next section (a build-up when the band was quiet).
+    if (fill) {
+      if (s % (e === 0 ? 1 : 2) === 0 || s === 15) this.snare(at, 0.18 + (s - 12) * 0.06);
+    } else if (st.snare[e][s] === 'x') this.snare(at, 0.45);
+    const h = st.hat[e][s];
+    if (h === 'x') this.hat(at, false);
+    else if (h === 'o') this.hat(at, e >= 3);
+    const bs = st.bass[e][s];
+    const len = this.spb / 2;
+    if (bs === 'x') this.bass(at, chord[0] - 12, len);
+    else if (bs === 'o') this.bass(at, chord[0], len);
+    else if (bs === 'f') this.bass(at, chord[2] - 12, len);
+    if (e >= 3 && s % 2 === 1) {
       const order = [0, 1, 2, 1];
       this.arp(at, chord[order[(s >> 1) % 4]] + 12);
     }
-    for (const midi of this.calls.get(k) ?? []) this.pluck(at, midi);
+    for (const n of this.calls.get(k) ?? []) this.pluck(at, n.midi, 0.17, Math.min(0.6, n.len * this.spb));
   }
 
   // ---------- instruments ----------
@@ -415,8 +419,8 @@ export class SongPlayer {
     });
   }
 
-  private pluck(at: number, midi: number, vol = 0.17): void {
-    const g = this.env(at, vol, 0.3);
+  private pluck(at: number, midi: number, vol = 0.17, decay = 0.3): void {
+    const g = this.env(at, vol, decay);
     g.connect(this.bus);
     g.connect(this.delaySend);
     const ctx = this.engine.ctx!;
@@ -424,7 +428,7 @@ export class SongPlayer {
     lp.frequency.setValueAtTime(5000, at);
     lp.frequency.exponentialRampToValueAtTime(900, at + 0.25);
     lp.connect(g);
-    this.osc(this.song.lead, midiHz(midi), at, 0.32, lp);
+    this.osc(this.style.lead, midiHz(midi), at, decay + 0.02, lp);
   }
 
   private arp(at: number, midi: number): void {

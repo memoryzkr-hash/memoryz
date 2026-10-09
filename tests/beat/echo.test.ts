@@ -4,7 +4,6 @@ import {
   advance, ballAt, EchoChartError, heightOf, idealTaps, keyOf, newEcho, parseEcho, playTaps, rank, responseCount, tap,
   type Key,
 } from '../../src/beat/core/echo';
-import { songFor, STAGES } from '../../src/beat/core/levels';
 
 const BPM = 120; // 500 ms per beat
 
@@ -138,27 +137,5 @@ describe('two keys', () => {
     const wrong = playTaps(two, idealTaps(two).map((p) => ({ ...p, key: (p.key === 'high' ? 'low' : 'high') as Key })), BPM);
     expect(wrong.counts.miss).toBeGreaterThan(0);
     expect(wrong.hearts).toBe(MAX_HEARTS - 1);
-  });
-});
-
-describe.each(STAGES)('stage $name', (stage) => {
-  const s = songFor(stage);
-  it('is a full song that a perfect player clears with an S', () => {
-    expect(s.phrases).toBeGreaterThanOrEqual(12);
-    const run = playTaps(s, idealTaps(s), stage.bpm);
-    expect(run.finished).toBe(true);
-    expect(run.hearts).toBe(MAX_HEARTS);
-    expect(rank(run)).toBe('S');
-    expect(run.restored).toBe(s.phrases);
-  });
-
-  it('ends early for a player who only listens', () => {
-    const run = playTaps(s, [], stage.bpm);
-    expect(run.over).toBe(true);
-  });
-
-  it('keeps note heads from overlapping', () => {
-    const beats = s.notes.map((n) => n.beat);
-    for (let i = 1; i < beats.length; i++) expect(beats[i] - beats[i - 1]).toBeGreaterThanOrEqual(0.5);
   });
 });

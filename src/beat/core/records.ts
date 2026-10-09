@@ -1,3 +1,4 @@
+import type { Difficulty } from './charts';
 import type { Rank } from './judge';
 
 export interface StageRecord {
@@ -15,9 +16,10 @@ export interface Settings {
   guide: boolean;
   practice: boolean;
   muted: boolean;
+  difficulty: Difficulty;
 }
 
-export const DEFAULT_SETTINGS: Settings = { offsetMs: 0, guide: true, practice: false, muted: false };
+export const DEFAULT_SETTINGS: Settings = { offsetMs: 0, guide: true, practice: false, muted: false, difficulty: 'normal' };
 
 const RANK_ORDER: Record<Rank, number> = { S: 4, A: 3, B: 2, C: 1 };
 
@@ -44,7 +46,10 @@ export function mergeRecord(prev: StageRecord | undefined, r: AttemptResult): { 
   return { record: rec, improved: better };
 }
 
-const RECORDS_KEY = 'beat-bounce.records';
+/** Records are kept per track and difficulty: `${trackId}:${difficulty}`. */
+export const recordKey = (trackId: string, d: Difficulty): string => `${trackId}:${d}`;
+
+const RECORDS_KEY = 'echo-bounce.records';
 const SETTINGS_KEY = 'beat-bounce.settings';
 
 function read<T>(key: string): T | null {

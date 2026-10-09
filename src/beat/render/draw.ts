@@ -1,10 +1,12 @@
-import { BALL_R, HEAD_W, MAX_HEARTS, WINDOW_BEATS } from '../core/constants';
+import { BALL_R, HEAD_W, WINDOW_BEATS } from '../core/constants';
 import { ballAt, heightOf, xAt, type EchoSong, type EchoState, type Key } from '../core/echo';
 import type { Grade } from '../core/judge';
-import type { Palette, StageDef } from '../core/levels';
+import type { Palette, TrackDef } from '../core/levels';
 
 export interface Hud {
   hearts: number;
+  /** Lives this chart starts with. */
+  maxHearts: number;
   combo: number;
   accuracy: number;
   progress: number;
@@ -20,7 +22,7 @@ export interface Hud {
 export interface EndCard { pct: number; best: number; newBest: boolean }
 
 export interface View {
-  stage: StageDef;
+  stage: TrackDef;
   song: EchoSong;
   state: EchoState;
   /** Song beat being heard right now. */
@@ -39,7 +41,7 @@ export interface View {
 
 interface Particle { x: number; y: number; vx: number; vy: number; life: number; max: number; size: number; color: string }
 /** Judgement text; x follows the ball, y is the world height it popped at. */
-interface Popup { text: string; sub: string; color: string; age: number; y: number }
+interface Popup { text: string; sub: string; color: string; age: number; y: number; stack: number }
 
 const DISPLAY = "'Bungee', 'Black Han Sans', system-ui, sans-serif";
 const KOREAN = "'Black Han Sans', 'Bungee', system-ui, sans-serif";
@@ -129,7 +131,9 @@ export class Renderer {
   }
 
   popup(text: string, sub: string, color: string, y: number): void {
-    this.popups.push({ text, sub, color, age: 0, y: y + 1.6 });
+    // Popups that arrive together stack upwards instead of covering each other.
+    const stack = this.popups.filter((q) => q.age < 0.35).length;
+    this.popups.push({ text, sub, color, age: 0, y: y + 1.6, stack });
     if (this.popups.length > 4) this.popups.shift();
   }
 
@@ -190,18 +194,18 @@ export class Renderer {
     for (let b = Math.max(0, Math.floor(left / xAt(4))); b * 4 < song.endBeat && xAt(b * 4) < right; b++) {
       const x0 = sx(xAt(b * 4));
       const x1 = sx(xAt(b * 4 + 4));
-      const mine = b % 2 === 1 && b < song.phrases * 2;
+      const role = song.barRoles[b];
+      if (role !== 'call' && role !== 'response') continue;
+      const mine = role === 'response';
       g.fillStyle = mine ? alpha(p.accent, b === bar ? 0.2 : 0.12) : alpha(p.ink, b === bar ? 0.12 : 0.07);
       g.beginPath();
       g.roundRect(x0 + 3, top, x1 - x0 - 6, bottom - top, 14);
       g.fill();
-      if (b < song.phrases * 2) {
-        g.font = `${Math.max(12, 0.3 * T)}px ${KOREAN}`;
-        g.textAlign = 'left';
-        g.textBaseline = 'top';
-        g.fillStyle = mine ? alpha(p.accent, 1) : alpha(p.staff, 0.85);
-        g.fillText(mine ? '따라 치기' : '듣기', x0 + 14, top + 10);
-      }
+      g.font = `${Math.max(12, 0.3 * T)}px ${KOREAN}`;
+      g.textAlign = 'left';
+      g.textBaseline = 'top';
+      g.fillStyle = mine ? alpha(p.accent, 1) : alpha(p.staff, 0.85);
+      g.fillText(mine ? '따라 치기' : '듣기', x0 + 14, top + 10);
     }
 
     // The staff: five lines through the note heads, bar lines at every bar.
@@ -233,6 +237,24 @@ export class Renderer {
       g.setLineDash([]);
     }
 
+    // The starting pad the ball hops on before its first jump.
+    const firstJump = xAt(song.notes[0].beat - 1);
+    if (left < firstJump + 1) {
+      g.fillStyle = p.staff;
+      g.beginPath();
+      g.roundRect(sx(Math.min(left, firstJump - 30)), sy(0) - 2, (firstJump + 0.8 - Math.min(left, firstJump - 30)) * T, 8, 4);
+      g.fill();
+    }
+
+    // Melody notes this chart leaves out: small dots, so you still see the whole tune go by.
+    for (const d of song.decor) {
+      if (xAt(d.beat) < left || xAt(d.beat) > right || beat < d.beat - 0.15) continue;
+      g.fillStyle = alpha(p.staff, 0.7);
+      g.beginPath();
+      g.arc(sx(xAt(d.beat)), sy(heightOf(d.pitch) - HEAD_RY), Math.max(3, 0.1 * T), 0, Math.PI * 2);
+      g.fill();
+    }
+
     // Stems (and beams) hang under the heads, so the path reads as real notation.
     const stems = new Map<number, { x: number; y: number; ink: string }>();
 
@@ -242,7 +264,7 @@ export class Renderer {
       const grow = Math.min(1, Math.max(0, (beat - (n.beat - 0.6)) / 0.18));
       if (grow <= 0) return;
       const squash = this.squash(i, beat);
-      this.head(sx(xAt(n.beat)), sy(heightOf(n.pitch)), grow * (1 + squash), p.staff, p.ink, Math.max(2, 0.06 * T), squash);
+      this.head(sx(xAt(n.beat)), sy(heightOf(n.pitch)), (0.4 + 0.6 * grow) * (1 + squash), p.staff, p.ink, Math.max(2, 0.06 * T), squash);
       if (grow >= 1) stems.set(i, { x: sx(xAt(n.beat)), y: sy(heightOf(n.pitch)), ink: p.ink });
     });
 
@@ -259,6 +281,16 @@ export class Renderer {
         continue;
       }
       const squash = this.squash(hd.note, beat);
+      if (hd.cracked) {
+        // Pressed far too early: the head splits in two and drops away once the ball arrives.
+        const gone = Math.max(0, beat - song.notes[hd.note].beat);
+        g.globalAlpha = Math.max(0, 1 - gone);
+        for (const side of [-1, 1]) {
+          this.head(sx(hd.x) + side * (4 + gone * 30), sy(hd.y - gone * gone * 6), 0.55, GRADE_FILL.miss, p.ink, 2, 0, side * (0.3 + gone * 2));
+        }
+        g.globalAlpha = 1;
+        continue;
+      }
       const fill = hd.wrong ? GRADE_FILL.miss : hd.grade === 'perfect' ? p.accent : GRADE_FILL[hd.grade ?? 'good'];
       this.head(sx(hd.x), sy(hd.y), pop * (1 + squash), fill, p.ink, Math.max(2, 0.06 * T), squash);
       if (!hd.wrong && pop >= 1) stems.set(hd.note, { x: sx(hd.x), y: sy(hd.y), ink: p.ink });
@@ -279,11 +311,12 @@ export class Renderer {
     this.drawStems(song, stems);
 
     // Finish line after the last response: a long bar to come home to.
-    const endX = xAt(song.endBeat - 4);
+    const lastNote = song.notes[song.notes.length - 1];
+    const endX = xAt(lastNote.beat) + 1;
     if (endX < right) {
       g.fillStyle = p.staff;
       g.beginPath();
-      g.roundRect(sx(endX + 1.5), sy(heightOf(1)) - 2, 8 * T, 8, 4);
+      g.roundRect(sx(endX + 1.5), sy(heightOf(1)) - 2, (xAt(song.endBeat + 8) - endX) * T, 8, 4);
       g.fill();
     }
 
@@ -339,7 +372,7 @@ export class Renderer {
       const a = pop.age < 0.45 ? 1 : 1 - (pop.age - 0.45) / 0.25;
       const rise = (1 - (1 - pop.age / 0.7) ** 3) * 0.8;
       const x = sx(ball.x);
-      const y = sy(Math.max(pop.y, ball.y + BALL_R * 2 + 0.75) + rise);
+      const y = sy(Math.max(pop.y, ball.y + BALL_R * 2 + 0.75) + rise + pop.stack * 0.95);
       const grow = pop.age < 0.08 ? 1 + (0.08 - pop.age) * 4 : 1;
       g.globalAlpha = a;
       g.textAlign = 'center';
@@ -483,12 +516,13 @@ export class Renderer {
     const { g, w } = this;
     if (beat < 0) return;
     const bar = Math.floor(beat / 4);
-    if (bar >= song.phrases * 2) return;
-    const mine = bar % 2 === 1;
+    const role = song.barRoles[bar];
+    if (role !== 'call' && role !== 'response' && role !== 'intro') return;
+    const mine = role === 'response';
     const inBar = beat - bar * 4;
-    const soon = !mine && inBar >= 3;
+    const soon = (role === 'call' && inBar >= 3) || (role === 'intro' && song.barRoles[bar + 1] === 'call' && inBar >= 3);
     const y = (w < 520 ? 100 : 72) + this.safeTop;
-    const text = mine ? '따라 쳐!' : soon ? '곧 네 차례' : '잘 들어';
+    const text = mine ? '따라 쳐!' : role === 'intro' ? (soon ? '곧 시작' : '인트로') : soon ? '곧 네 차례' : '잘 들어';
     const size = Math.min(40, w * 0.08) * (soon && !this.calm.matches ? 1 + 0.08 * (1 - frac(beat)) : 1);
     g.font = `${size}px ${KOREAN}`;
     g.textAlign = 'center';
@@ -570,7 +604,7 @@ export class Renderer {
     }
 
     // Hearts.
-    for (let i = 0; i < MAX_HEARTS; i++) {
+    for (let i = 0; i < hud.maxHearts; i++) {
       const full = hud.practice || i < hud.hearts;
       this.heart(x0 + 11 + i * 26, top + 32, 10, full ? p.accent : alpha(p.ink, 0.45), p.ink);
     }
@@ -578,7 +612,7 @@ export class Renderer {
     g.textAlign = 'left';
     g.font = `600 13px ${BODY}`;
     g.fillStyle = alpha('#ffffff', 0.9);
-    g.fillText(hud.practice ? '연습 · 무한' : `구절 ${hud.restored}/${hud.phrases}`, x0 + MAX_HEARTS * 26 + 8, top + 32);
+    g.fillText(hud.practice ? '연습 · 무한' : `구절 ${hud.restored}/${hud.phrases}`, x0 + hud.maxHearts * 26 + 8, top + 32);
 
     g.textAlign = 'right';
     g.textBaseline = 'top';
