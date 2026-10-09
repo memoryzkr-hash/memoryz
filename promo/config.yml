@@ -1,0 +1,63 @@
+# 홍보 에이전트 설정 — 자세한 설명은 docs/promo/SETUP.md
+# 지금 값은 예시예요. brand 부분과 platforms의 enabled만 바꿔도 돌아갑니다.
+
+timeZone: Asia/Seoul
+mode: auto            # auto: 검수 통과하면 바로 발행 / review: 초안만 만들고, 초안 파일에서 승인하면 발행
+
+brand:
+  name: 단백한끼                      # ← 브랜드 이름
+  handle: "@danbaek.meal"            # ← 카드 이미지 아래에 들어갈 계정
+  colors:                            # 카드 이미지 색 (#RRGGBB)
+    background: "#FFF8F0"
+    text: "#1F1A17"
+    accent: "#FF6B35"
+  disclosure: ""                     # 협찬·광고 글이면 "#광고"처럼 적기 — 모든 글 맨 앞에 자동으로 들어가요
+  links:                             # 글·답글에 넣어도 되는 링크. 여기 없는 링크는 절대 넣지 않아요
+    - { label: 구독 신청, url: "https://example.com/subscribe" }
+
+schedule:
+  slots:                             # 플랫폼에 schedule이 없을 때 쓰는 기본 주기
+    - { days: [월, 수, 금], time: "09:00" }
+  catchUpHours: 6                    # 이 시간 넘게 늦어진 차례는 건너뜀
+
+content:
+  pillars:                           # 콘텐츠 기둥 — 돌아가며 주제를 고릅니다
+    - 직장인 점심 식단 팁
+    - 단백질·영양 상식 (근거 있는 것만)
+    - 구독 고객 후기와 활용법
+    - 신메뉴·이벤트 소식
+  topics: []                         # 먼저 쓸 주제가 있으면 위에서부터 하나씩 씀. 예: ["단백질 간식 5가지"]
+  bannedWords: [최고, 1위, 완벽, 무조건, 완치, 다이어트 보장]
+  hashtags:
+    fixed: ["#단백한끼"]              # 인스타그램에 항상 넣을 해시태그
+    max: 8
+  research:
+    searches: 5                      # 글 1편당 레퍼런스 웹 검색 횟수 (0~10)
+    fetches: 5                       # references.md 주소 등 직접 열어 볼 페이지 수 (0~10)
+
+# 플랫폼마다 따로: enabled = 자동화 켜짐, schedule = 올리는 주기 (홍보 자동화 화면에서 켜고 끄면 여기가 바뀌어요)
+platforms:
+  threads:   { enabled: false, schedule: { days: daily, time: "08:00" }, attachImage: false, maxPosts: 4 }
+  instagram: { enabled: false, schedule: { days: [월, 수, 금], time: "19:00" }, maxCards: 7 }
+  wordpress: { enabled: false, schedule: { days: [화, 목], time: "10:00" }, url: "", status: publish }   # url을 적으면 블로그가 워드프레스로
+  naver:     { enabled: false, schedule: { days: [화, 목], time: "10:00" }, kind: naver }              # kind: naver 또는 tistory (붙여넣기용 글 준비)
+
+comments:
+  enabled: true
+  scope: all                         # all: 계정의 최근 게시물 전체 / agent: 에이전트가 올린 글만
+  lookbackDays: 7
+  maxRepliesPerRun: 15
+  replyMaxChars: 200
+  actions:                           # reply(답글) / hide(숨김) / escalate(사람에게) / ignore(무시)
+    praise: reply                    # 칭찬·감사
+    question: reply                  # 질문 — faq.md로 답할 수 있을 때만 답하고, 아니면 사람에게
+    purchase: reply                  # 구매 문의
+    complaint: escalate              # 불만·환불·배송 문제
+    sensitive: escalate              # 건강·법률 상담, 개인정보, 언론·제휴
+    spam: hide
+    abuse: hide
+    other: ignore
+
+media:
+  repo: ""                           # 카드 이미지를 올릴 "공개" 저장소 (비우면 이 저장소). 이 저장소가 비공개면 꼭 적기
+  branch: promo-media

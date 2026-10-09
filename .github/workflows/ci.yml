@@ -2,6 +2,8 @@ name: CI
 
 on:
   push:
+    # Data branches written by the promo agent have no app to build.
+    branches-ignore: [promo-data, promo-media]
   pull_request:
   workflow_dispatch:
 

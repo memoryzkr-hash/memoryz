@@ -5,7 +5,8 @@ import { LIMITS } from '../core/rules';
 import { UndoSlot, type Removed } from '../core/store';
 import { charCount, cleanSingleLine } from '../core/text';
 import type { Briefing, BriefingItem, Topic } from '../core/types';
-import type { App, Screen } from './app';
+import { PASTE_LIMIT } from '../prompts';
+import { KEY_VERSION_URL, type App, type Screen } from './app';
 import { counter, h, openSheet, replaceChildren, toast } from './dom';
 
 const EXAMPLES = ['AI 도구', '주식', '게임 업데이트'];
@@ -80,15 +81,41 @@ export function newsScreen(app: App): Screen {
 
     // Briefing button + last time
     if (!viewing) {
-      const label = run ? `검색 중… (${run.done}/${run.total})` : briefing ? '🔍 다시 받기' : '🔍 브리핑 받기';
+      const paste = app.mode === 'claude';
+      const label = run
+        ? paste
+          ? '정리 중…'
+          : `검색 중… (${run.done}/${run.total})`
+        : paste
+          ? '📋 기사 붙여 넣고 정리'
+          : briefing
+            ? '🔍 다시 받기'
+            : '🔍 브리핑 받기';
       parts.push(
         h(
           'div',
           { class: 'row', style: 'margin-top:16px' },
-          h('button', { type: 'button', class: 'btn primary', id: 'brief', textContent: label, disabled: !!run || topics.length === 0, onClick: () => startBriefing() }),
+          h('button', {
+            type: 'button',
+            class: 'btn primary',
+            id: 'brief',
+            textContent: label,
+            disabled: !!run || topics.length === 0,
+            onClick: () => (paste ? openPaste() : startBriefing()),
+          }),
           run && h('button', { type: 'button', class: 'btn', textContent: '취소', onClick: () => run?.abort.abort() }),
         ),
       );
+      if (paste) {
+        parts.push(
+          h(
+            'p',
+            { class: 'small muted' },
+            '이 버전은 API 키 없이 쓰는 대신 웹 검색을 못 해요. 읽을 기사를 붙여 넣으면 내 주제별로 정리해 드려요. 최신 소식을 자동으로 찾으려면 ',
+            h('a', { href: KEY_VERSION_URL, target: '_blank', rel: 'noopener' }, 'API 키 버전 ↗'),
+          ),
+        );
+      }
     }
     const history = app.store.briefings();
     parts.push(
@@ -115,7 +142,7 @@ export function newsScreen(app: App): Screen {
         ),
       );
     } else if (!viewing) {
-      parts.push(h('div', { class: 'empty' }, '🔍 브리핑 받기를 눌러 오늘 소식을 모아 보세요'));
+      parts.push(h('div', { class: 'empty' }, app.mode === 'claude' ? '📋 읽을 기사를 붙여 넣으면 주제별로 정리해 드려요' : '🔍 브리핑 받기를 눌러 오늘 소식을 모아 보세요'));
     }
 
     replaceChildren(el, ...parts);
@@ -128,19 +155,19 @@ export function newsScreen(app: App): Screen {
       return card;
     }
     if (item.status === 'empty') {
-      card.append(h('p', { class: 'muted' }, '최근 소식을 찾지 못했어요'));
+      card.append(h('p', { class: 'muted' }, app.mode === 'claude' ? '붙여 넣은 글에 이 주제 소식이 없어요' : '최근 소식을 찾지 못했어요'));
     } else if (item.status === 'error') {
       card.append(
         h(
           'div',
           { class: 'row' },
           h('span', { class: 'muted spacer' }, item.error ?? '이 주제는 불러오지 못했어요'),
-          canRetry && !run && h('button', { type: 'button', class: 'btn small', textContent: '다시 시도', onClick: () => retry(item) }),
+          canRetry && !run && app.mode === 'key' && h('button', { type: 'button', class: 'btn small', textContent: '다시 시도', onClick: () => retry(item) }),
         ),
       );
     } else {
       card.append(h('ul', null, ...item.bullets.map((b) => h('li', null, b))));
-      card.append(
+      if (item.sources.length) card.append(
         h(
           'div',
           { class: 'sources' },
@@ -254,6 +281,54 @@ export function newsScreen(app: App): Screen {
     } else {
       toast('취소했어요');
     }
+    rerender();
+  }
+
+  /** No-key mode: the viewer pastes articles and Claude sorts them into the topics. */
+  function openPaste(): void {
+    const sheet = openSheet('기사 붙여 넣기');
+    const area = h('textarea', { class: 'textarea', id: 'paste-text', style: 'min-height:220px', placeholder: '기사 본문이나 뉴스레터를 붙여 넣으세요. 주소(https://…)가 같이 있으면 출처로 붙여 드려요.' });
+    const count = counter();
+    const go = h('button', { type: 'submit', class: 'btn primary', textContent: '주제별로 정리', disabled: true });
+    const update = () => {
+      const n = area.value.trim().length;
+      count.set(n, PASTE_LIMIT);
+      go.disabled = n === 0 || n > PASTE_LIMIT;
+    };
+    area.addEventListener('input', update);
+    update();
+    const form = h('form', null, h('label', { class: 'field' }, area, h('div', { class: 'hint' }, h('span', null, `주제: ${app.store.topics().map((t) => t.name).join(', ')}`), count.el)), go);
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const text = area.value.trim();
+      sheet.close();
+      void summarizePasted(text);
+    });
+    sheet.body.append(form);
+    area.focus();
+  }
+
+  async function summarizePasted(text: string): Promise<void> {
+    const ai = app.ai();
+    const topics = app.store.topics();
+    if (!ai?.briefFromText || topics.length === 0 || run) return;
+    banner = null;
+    const current: Run = { abort: new AbortController(), total: topics.length, done: 0, items: new Map() };
+    run = current;
+    rerender();
+    try {
+      const results = await ai.briefFromText(text, topics.map((t) => t.name), app.today(), app.timeZone(), current.abort.signal);
+      const items: BriefingItem[] = topics.map((t) => {
+        const r = results.find((x) => x.topic === t.name)?.result ?? { status: 'empty' as const, bullets: [], sources: [] };
+        return { topicId: t.id, topicName: t.name, ...r };
+      });
+      if (!app.store.saveBriefing(app.store.newBriefing(app.today(), items))) toast('저장하지 못했어요. 브라우저 저장 공간을 확인해 주세요');
+    } catch (e) {
+      const err = toAiError(e);
+      if (err.kind === 'aborted') toast('취소했어요');
+      else banner = { kind: 'error', text: err.message };
+    }
+    run = null;
     rerender();
   }
 
