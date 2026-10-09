@@ -9,6 +9,7 @@ import type { PlannerAi } from '../ai';
 import { forget, nextStep, progress, summary, toRequest, type Answers, type Choice, type Step } from '../chat/flow';
 import { formatKrw, formatMoney } from '../core/regions';
 import { scheduleTrip } from '../core/schedule';
+import type { RoadLookup } from '../core/roads';
 import type { PlanRequest } from '../core/store';
 import { formatDuration } from '../core/time';
 import { cheaperTransport, optimizeTrip, type TweakResult } from '../core/tweaks';
@@ -23,6 +24,8 @@ export interface ChatHost {
   saveKey(key: string): boolean;
   forgetKey(): void;
   current(): { plan: TripPlan; req: PlanRequest | null } | null;
+  /** Real road distances known so far, so the chat's numbers match the map's. */
+  roads?: RoadLookup;
   /** A new or changed plan; the map and timetable follow. */
   usePlan(plan: TripPlan, req: PlanRequest | null): void;
   showTrip(): void;
@@ -257,7 +260,7 @@ export class Chat {
   // ---------- after a plan exists ----------
 
   private planCard(plan: TripPlan, title: string): HTMLElement {
-    const s = scheduleTrip(plan);
+    const s = scheduleTrip(plan, this.host.roads);
     const r = s.region;
     const budget =
       plan.budgetKrw === null ? null : s.overBudget ? h('span', { class: 'pill bad' }, `예산보다 ${formatKrw(s.totalKrw - plan.budgetKrw)} 많아요`) : h('span', { class: 'pill good' }, `예산 안이에요 · ${formatKrw(plan.budgetKrw - s.totalKrw)} 남아요`);
@@ -311,7 +314,7 @@ export class Chat {
         },
         label,
       );
-    const region = scheduleTrip(cur.plan).region;
+    const region = scheduleTrip(cur.plan, this.host.roads).region;
     const ask = (text: string) => this.revise(text);
     const quick = (label: string, text: string) => h('button', { type: 'button', class: 'chip', onClick: () => ask(text || label) }, label);
     this.composeFree(

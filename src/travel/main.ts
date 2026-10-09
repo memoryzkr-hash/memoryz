@@ -11,6 +11,7 @@ import { LIMITS } from './core/validate';
 import { SAMPLES, samplePlan } from './samples';
 import { Chat } from './ui/chat';
 import { openAddStopSheet } from './ui/create';
+import { RoadBook } from './ui/roadbook';
 import { TripMap } from './ui/map';
 import { renderPanel, type PanelActions, type PanelView } from './ui/panel';
 import { Player } from './ui/player';
@@ -26,7 +27,9 @@ function safeStorage(): Storage {
   }
 }
 
-const store = new TravelStore(safeStorage());
+const storage = safeStorage();
+const store = new TravelStore(storage);
+const roads = new RoadBook(storage);
 let sample: SampleFn | null = null;
 let keyPlanner: { key: string; ai: PlannerAi } | null = null;
 
@@ -39,7 +42,7 @@ let request: PlanRequest | null = (() => {
   const r = store.request();
   return saved && r.destination && r.destination === saved.destination ? r : null;
 })();
-let sched: TripSchedule = scheduleTrip(plan);
+let sched: TripSchedule = scheduleTrip(plan, roads.lookup);
 const view: PanelView = { day: 0, tab: 'plan', editing: false, openLeg: null };
 
 // ---------- layout ----------
@@ -48,13 +51,16 @@ const app = document.getElementById('app')!;
 const mapEl = h('div', { class: 'map', role: 'application', 'aria-label': '여행 지도. 누르면 장소를 추가해요' });
 const panelEl = h('div', { class: 'panel' });
 const planNote = h('div', { class: 'plan-note', hidden: true }, '지도 이미지 없이 경로만 보여 줘요');
-const player = new Player(
-  (s, tl) => {
-    map.update(s, tl);
-    highlight(s.visit, s.kind);
-  },
-  (on) => (map.follow = on),
-);
+const player = new Player((s, tl) => {
+  map.update(s, tl);
+  highlight(s.visit, s.kind);
+});
+/** The follow camera turns on when play is pressed, unless the person chose the overview. */
+let wantsOverview = false;
+player.onPlay = () => {
+  // Chasing the traveller only helps when there is a street map to look at.
+  if (!wantsOverview && map.streetMap) map.setCamera('follow');
+};
 const stage = h('div', { class: 'stage' }, mapEl, planNote, player.hud, player.startCta, player.controls);
 const trip = h(
   'section',
@@ -78,6 +84,7 @@ const chat = new Chat({
     return keyPlanner.ai;
   },
   canTakeKey: () => !sample,
+  roads: roads.lookup,
   saveKey: (key) => store.setApiKey(key),
   forgetKey: () => void store.setApiKey(null),
   current: () => (hasOwnPlan ? { plan, req: request } : null),
@@ -117,6 +124,9 @@ map.insets = () => {
   const lowest = Math.min(ctl.top, cta?.top ?? Infinity);
   return { top: Math.max(20, hud.bottom - m.top + 20), bottom: Math.max(20, m.bottom - lowest + 20) };
 };
+map.onCameraChange = (mode) => {
+  wantsOverview = mode === 'overview' && player.started;
+};
 map.onTilesChange = (ok) => {
   planNote.hidden = ok;
   stage.classList.toggle('no-tiles', !ok);
@@ -152,15 +162,22 @@ function edit(change: (p: TripPlan) => void): void {
 
 function setPlan(next: TripPlan, opts: { keepTime: boolean; fit: boolean }): void {
   plan = next;
-  sched = scheduleTrip(plan);
+  sched = scheduleTrip(plan, roads.lookup);
+  void roads.load(plan, refreshRoads);
   view.day = Math.min(view.day, plan.days.length - 1);
   if (!store.savePlan(plan)) toast('이 브라우저에는 저장되지 않아요');
   draw(opts);
 }
 
+/** New road routes arrived: same plan, truer distances and paths. */
+function refreshRoads(): void {
+  sched = scheduleTrip(plan, roads.lookup);
+  draw({ keepTime: true, fit: false });
+}
+
 function drawPanel(): void {
   const scroll = panelEl.scrollTop;
-  renderPanel(panelEl, plan, sched, view, actions);
+  renderPanel(panelEl, plan, sched, view, actions, roads.lookup);
   panelEl.scrollTop = scroll;
   lastHighlight = -1;
 }
@@ -255,6 +272,7 @@ document.addEventListener('keydown', (e) => {
 
 app.dataset.screen = 'chat';
 draw({ keepTime: false, fit: true });
+void roads.load(plan, refreshRoads);
 window.addEventListener('resize', () => map.invalidate());
 wide.addEventListener('change', () => requestAnimationFrame(() => map.invalidate()));
 // On claude.ai the page can ask Claude on the viewer's account; until then it may need a key.

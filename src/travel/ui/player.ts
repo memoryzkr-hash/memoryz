@@ -50,7 +50,6 @@ export class Player {
     { class: 'speed', id: 'speed', 'aria-label': '재생 속도 (1초에 흐르는 시간)' },
     ...SPEEDS.map((s) => h('option', { value: String(s.value), selected: s.value === 10 }, s.label)),
   );
-  private followBox = h('input', { type: 'checkbox', id: 'follow' });
   readonly startCta = h('button', { type: 'button', class: 'start-cta', onClick: () => this.play() }, h('span', { class: 'tri', 'aria-hidden': 'true' }), '하루 이동 재생');
   readonly controls = h(
     'div',
@@ -63,17 +62,18 @@ export class Player {
       h('button', { type: 'button', class: 'ghost', 'aria-label': '다음 장소 (→)', onClick: () => this.step(1) }, '⏭'),
       this.clockEl,
       h('span', { class: 'spacer' }),
-      h('label', { class: 'follow', for: 'follow', title: '여행자를 따라 지도 이동' }, this.followBox, '따라가기'),
       this.speedSel,
     ),
     h('div', { class: 'strip-wrap' }, this.strip, this.ticks),
   );
 
-  constructor(private readonly onState: (s: SimState, tl: Timeline) => void, private readonly onFollow: (on: boolean) => void) {
+  /** Called when playback starts (the map switches to its follow camera). */
+  onPlay: () => void = () => {};
+
+  constructor(private readonly onState: (s: SimState, tl: Timeline) => void) {
     this.setPlayIcon();
     this.playBtn.addEventListener('click', () => (this.playing ? this.pause() : this.play()));
     this.speedSel.addEventListener('change', () => (this.speed = Number(this.speedSel.value)));
-    this.followBox.addEventListener('change', () => this.onFollow(this.followBox.checked));
     document.addEventListener('visibilitychange', () => document.hidden && this.pause());
 
     const seekAt = (clientX: number) => {
@@ -133,6 +133,7 @@ export class Player {
     if (!this.tl) return;
     if (this.t >= this.tl.end) this.seek(this.tl.start);
     this.playing = true;
+    this.onPlay();
     if (!this.started) {
       this.started = true;
       this.startCta.hidden = true;

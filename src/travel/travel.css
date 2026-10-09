@@ -786,58 +786,92 @@ h3 {
   z-index: 0;
 }
 
-.map.leaflet-container {
+/* Beats MapLibre's own `.maplibregl-map { position: relative }`. */
+.stage .map.maplibregl-map {
+  position: absolute;
+  inset: 0;
   font: inherit;
   background: var(--fill-2);
 }
 
-.leaflet-control-attribution {
-  background: color-mix(in srgb, var(--bg) 80%, transparent) !important;
-  color: var(--muted) !important;
-  font-size: 10px !important;
-}
-
-.leaflet-control-attribution a {
-  color: var(--muted) !important;
-}
-
-.leaflet-bar {
+.maplibregl-ctrl-group {
   overflow: hidden;
-  border: 0 !important;
   border-radius: 12px !important;
+  background: var(--bg) !important;
   box-shadow: var(--shadow) !important;
 }
 
-.leaflet-bar a {
-  background: var(--bg) !important;
-  color: var(--text) !important;
-  border-color: var(--line) !important;
+.maplibregl-ctrl-group button {
+  width: 36px !important;
+  height: 36px !important;
 }
 
-.leaflet-tooltip {
+.maplibregl-ctrl-group button + button {
+  border-top-color: var(--line) !important;
+}
+
+/* Keep the map credits visible above the floating player on wide screens. */
+@media (min-width: 1100px) {
+  .stage .maplibregl-ctrl-bottom-right {
+    bottom: 150px;
+  }
+}
+
+.maplibregl-ctrl-attrib {
+  background: color-mix(in srgb, var(--bg) 85%, transparent) !important;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.maplibregl-ctrl-attrib a {
+  color: var(--muted) !important;
+}
+
+/* Markers are positioned by MapLibre on a zero-size wrapper; our art hangs off its centre. */
+.pin-wrap,
+.traveller-wrap {
+  width: 0;
+  height: 0;
+}
+
+.traveller-wrap .traveller {
+  position: absolute;
+  transform: translate(-50%, -50%);
+}
+
+.pin-wrap {
+  cursor: default;
+}
+
+.cam-toggle {
+  position: absolute;
+  top: 12px;
+  right: 60px;
+  z-index: 5;
+  height: 36px;
+  padding: 0 14px;
   border: 0;
-  border-radius: 8px;
-  background: var(--text);
-  color: var(--bg);
-  font-weight: 600;
+  border-radius: 12px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 700;
   box-shadow: var(--shadow);
 }
 
-.leaflet-tooltip::before {
-  display: none;
+.cam-toggle[aria-pressed='true'] {
+  background: var(--blue);
+  color: var(--on-blue);
 }
 
-.leaflet-pane path.casing {
-  stroke: var(--casing);
-}
-
-.leaflet-pane path.trail {
-  stroke: var(--text);
+.tag.road {
+  background: var(--green-soft);
+  color: var(--green);
 }
 
 .plan-note {
   position: absolute;
-  top: 12px;
+  top: 56px;
   right: 60px;
   z-index: 450;
   padding: 5px 10px;
@@ -1129,15 +1163,6 @@ h3 {
   background: var(--fill);
   font-size: 14px;
   font-weight: 600;
-}
-
-.follow {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--sub);
-  font-size: 14px;
-  white-space: nowrap;
 }
 
 .strip-wrap {
@@ -2072,7 +2097,8 @@ select.field {
     min-height: 440px;
   }
 
-  .map {
+  .stage .map,
+  .stage .map.maplibregl-map {
     position: relative;
     inset: auto;
     flex: 1;
@@ -2090,16 +2116,19 @@ select.field {
     box-shadow: none;
   }
 
-  .follow {
-    display: none;
-  }
-
   .start-cta {
     bottom: 124px;
   }
 
   .plan-note {
     display: none;
+  }
+
+  .cam-toggle {
+    top: auto;
+    right: auto;
+    left: 10px;
+    bottom: 12px;
   }
 
   .row3 {

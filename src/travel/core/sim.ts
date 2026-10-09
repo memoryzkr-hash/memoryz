@@ -51,7 +51,7 @@ export function buildTimeline(day: DaySchedule): Timeline {
         to: leg.arrive,
         leg: i - 1,
         mode: leg.mode,
-        path: curvedPath(a, b, MODES[leg.mode].bend),
+        path: leg.path ?? curvedPath(a, b, MODES[leg.mode].bend),
         km: leg.routeKm,
         cost: leg.cost,
       });

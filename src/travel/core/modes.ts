@@ -1,6 +1,7 @@
 /** How fast each way of travelling is and what it costs. docs/TRAVEL_PLAN.md §3.2–3.3. */
 import { haversineKm, type LatLng } from './geo';
 import { roundFare, roundMoney, type Region } from './regions';
+import { ROAD_PROFILE, type RoadLookup } from './roads';
 import type { Mode, ModeChoice } from './types';
 
 export interface ModeInfo {
@@ -90,6 +91,8 @@ export interface LegEstimate {
   vehicles: number;
   rush: boolean;
   night: boolean;
+  /** The real road route, when one was looked up; distance then comes from it. */
+  path?: LatLng[];
 }
 
 function fare(f: { base: number; baseKm: number; perKm: number }, km: number): number {
@@ -133,11 +136,13 @@ export function legCost(mode: Mode, routeKm: number, departMin: number, region: 
   return { cost: roundMoney(region, roundFare(region, each) * people), vehicles: 0 };
 }
 
-export function estimateLeg(from: LatLng, to: LatLng, choice: ModeChoice, departMin: number, region: Region, travelers: number): LegEstimate {
+export function estimateLeg(from: LatLng, to: LatLng, choice: ModeChoice, departMin: number, region: Region, travelers: number, roads?: RoadLookup): LegEstimate {
   const straightKm = haversineKm(from, to);
   const mode = choice === 'auto' ? autoMode(straightKm, region) : choice;
   const info = MODES[mode];
-  const routeKm = straightKm * info.detour;
+  const profile = ROAD_PROFILE[mode];
+  const road = profile && straightKm >= 0.02 ? roads?.(from, to, profile) : undefined;
+  const routeKm = road ? road.km : straightKm * info.detour;
   const rush = info.road && isRush(departMin);
   const moveMin = straightKm < 0.02 ? 0 : (routeKm / speedKmh(mode, routeKm)) * 60 * (rush ? RUSH_FACTOR : 1);
   const overheadMin = straightKm < 0.02 ? 0 : info.overheadMin;
@@ -154,6 +159,7 @@ export function estimateLeg(from: LatLng, to: LatLng, choice: ModeChoice, depart
     vehicles,
     rush,
     night: mode === 'taxi' && isNight(departMin) && region.taxi.night !== 1,
+    path: road?.path,
   };
 }
 
@@ -171,8 +177,8 @@ export function sensibleModes(straightKm: number): Mode[] {
 }
 
 /** Sensible modes for one leg, for the comparison table, fastest first. */
-export function compareModes(from: LatLng, to: LatLng, departMin: number, region: Region, travelers: number): LegEstimate[] {
+export function compareModes(from: LatLng, to: LatLng, departMin: number, region: Region, travelers: number, roads?: RoadLookup): LegEstimate[] {
   return sensibleModes(haversineKm(from, to))
-    .map((m) => estimateLeg(from, to, m, departMin, region, travelers))
+    .map((m) => estimateLeg(from, to, m, departMin, region, travelers, roads))
     .sort((a, b) => a.minutes - b.minutes);
 }

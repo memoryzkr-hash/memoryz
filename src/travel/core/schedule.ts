@@ -1,6 +1,7 @@
 /** Turns a plan into a timetable with costs and warnings. docs/TRAVEL_PLAN.md §3.4. */
 import { estimateLeg, MODES, type LegEstimate } from './modes';
 import { REGIONS, formatMoney, roundMoney, toKrw, type Region } from './regions';
+import type { RoadLookup } from './roads';
 import { formatClock, formatDuration, parseClock } from './time';
 import type { DayPlan, Stop, TripPlan } from './types';
 
@@ -74,7 +75,7 @@ function isClosed(at: number, open: number | null, close: number): boolean {
   return at >= 1440 + close;
 }
 
-export function scheduleDay(plan: DayPlan, dayIndex: number, region: Region, travelers: number): DaySchedule {
+export function scheduleDay(plan: DayPlan, dayIndex: number, region: Region, travelers: number, roads?: RoadLookup): DaySchedule {
   const people = Math.max(1, travelers);
   const start = parseClock(plan.start) ?? DEFAULT_START;
   const visits: Visit[] = [];
@@ -85,7 +86,7 @@ export function scheduleDay(plan: DayPlan, dayIndex: number, region: Region, tra
   plan.stops.forEach((stop, i) => {
     if (i > 0) {
       const prev = plan.stops[i - 1];
-      const est = estimateLeg([prev.lat, prev.lng], [stop.lat, stop.lng], stop.modeIn, t, region, people);
+      const est = estimateLeg([prev.lat, prev.lng], [stop.lat, stop.lng], stop.modeIn, t, region, people, roads);
       legs.push({ ...est, to: i, depart: t, arrive: t + est.minutes });
       if (est.mode === 'walk' && est.minutes > LONG_WALK_MIN) {
         warnings.push({ day: dayIndex, kind: 'long-walk', stopId: stop.id, message: `${stop.name}까지 ${formatDuration(est.minutes)} 걸어야 해요` });
@@ -131,10 +132,11 @@ export function scheduleDay(plan: DayPlan, dayIndex: number, region: Region, tra
   };
 }
 
-export function scheduleTrip(plan: TripPlan): TripSchedule {
+/** `roads` swaps in real road distances where they are known; without it every leg is estimated. */
+export function scheduleTrip(plan: TripPlan, roads?: RoadLookup): TripSchedule {
   const region = REGIONS[plan.region] ?? REGIONS.OTHER;
   const people = Math.max(1, plan.travelers);
-  const days = plan.days.map((d, i) => scheduleDay(d, i, region, people));
+  const days = plan.days.map((d, i) => scheduleDay(d, i, region, people, roads));
   const nights = Math.max(0, plan.days.length - 1);
   const rooms = Math.ceil(people / 2);
   const transport = days.reduce((s, d) => s + d.transport, 0);

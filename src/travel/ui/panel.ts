@@ -2,6 +2,7 @@
 import { compareModes, MODE_CHOICES, MODES, RUSH_FACTOR, speedKmh } from '../core/modes';
 import { formatKrw, formatMoney, type Region } from '../core/regions';
 import type { DaySchedule, TripSchedule } from '../core/schedule';
+import type { RoadLookup } from '../core/roads';
 import { formatClock, formatDuration } from '../core/time';
 import type { Mode, ModeChoice, TripPlan } from '../core/types';
 import { LIMITS } from '../core/validate';
@@ -34,7 +35,7 @@ export interface PanelActions {
 
 const clock = (min: number) => formatClock(min).replace('다음날 ', '+1 ');
 
-export function renderPanel(root: HTMLElement, plan: TripPlan, sched: TripSchedule, view: PanelView, a: PanelActions): void {
+export function renderPanel(root: HTMLElement, plan: TripPlan, sched: TripSchedule, view: PanelView, a: PanelActions, roads?: RoadLookup): void {
   const region = sched.region;
   const tabs: { id: Tab; label: string }[] = [
     { id: 'plan', label: '일정' },
@@ -68,13 +69,13 @@ export function renderPanel(root: HTMLElement, plan: TripPlan, sched: TripSchedu
     ),
   );
   const body =
-    view.tab === 'plan' ? planTab(plan, sched, view, a) : view.tab === 'cost' ? costTab(plan, sched, a) : infoTab(plan, region);
+    view.tab === 'plan' ? planTab(plan, sched, view, a, roads) : view.tab === 'cost' ? costTab(plan, sched, a) : infoTab(plan, region);
   replaceChildren(root, head, tabBar, h('div', { class: 'tab-body', role: 'tabpanel', 'aria-labelledby': `tab-${view.tab}` }, body));
 }
 
 // ---------- 일정 ----------
 
-function planTab(plan: TripPlan, sched: TripSchedule, view: PanelView, a: PanelActions): HTMLElement {
+function planTab(plan: TripPlan, sched: TripSchedule, view: PanelView, a: PanelActions, roads?: RoadLookup): HTMLElement {
   const day = sched.days[view.day];
   const dayTabs =
     plan.days.length > 1
@@ -130,17 +131,17 @@ function planTab(plan: TripPlan, sched: TripSchedule, view: PanelView, a: PanelA
     warnings,
     toolbar,
     facts,
-    h('ol', { class: `route${view.editing ? ' editing' : ''}` }, ...routeRows(day, sched, plan.travelers, view, a)),
+    h('ol', { class: `route${view.editing ? ' editing' : ''}` }, ...routeRows(day, sched, plan.travelers, view, a, roads)),
     h('p', { class: 'hint' }, view.editing ? '지도를 누르면 그 자리에 장소를 넣을 수 있어요.' : '시각을 누르면 그 순간으로 이동해요. 이동 수단을 누르면 다른 수단과 비교할 수 있어요.'),
   );
 }
 
-function routeRows(day: DaySchedule, sched: TripSchedule, travelers: number, view: PanelView, a: PanelActions): HTMLElement[] {
+function routeRows(day: DaySchedule, sched: TripSchedule, travelers: number, view: PanelView, a: PanelActions, roads?: RoadLookup): HTMLElement[] {
   const region = sched.region;
   const rows: HTMLElement[] = [];
   const last = day.visits.length - 1;
   day.visits.forEach((v, i) => {
-    if (i > 0) rows.push(legRow(day, i, region, travelers, view, a));
+    if (i > 0) rows.push(legRow(day, i, region, travelers, view, a, roads));
     const warn = day.warnings.find((w) => w.stopId === v.stop.id && w.kind === 'closed');
     const time = i === 0 ? day.start : v.arrive;
     rows.push(
@@ -188,7 +189,7 @@ function routeRows(day: DaySchedule, sched: TripSchedule, travelers: number, vie
   return rows;
 }
 
-function legRow(day: DaySchedule, i: number, region: Region, travelers: number, view: PanelView, a: PanelActions): HTMLElement {
+function legRow(day: DaySchedule, i: number, region: Region, travelers: number, view: PanelView, a: PanelActions, roads?: RoadLookup): HTMLElement {
   const leg = day.legs[i - 1];
   const stop = day.visits[i].stop;
   const prev = day.visits[i - 1].stop;
@@ -198,7 +199,7 @@ function legRow(day: DaySchedule, i: number, region: Region, travelers: number, 
 
   let picker: HTMLElement | null = null;
   if (open) {
-    const options = compareModes([prev.lat, prev.lng], [stop.lat, stop.lng], leg.depart, region, travelers);
+    const options = compareModes([prev.lat, prev.lng], [stop.lat, stop.lng], leg.depart, region, travelers, roads);
     const fastest = Math.min(...options.map((o) => o.minutes));
     const cheapest = Math.min(...options.map((o) => o.cost));
     picker = h(
@@ -239,6 +240,7 @@ function legRow(day: DaySchedule, i: number, region: Region, travelers: number, 
         { type: 'button', class: 'ride', 'aria-expanded': String(open), onClick: () => a.view({ openLeg: open ? null : i }) },
         h('span', { class: 'ride-mode' }, `${m.icon} ${m.label}${leg.auto ? ' · 자동' : ''}`),
         h('span', { class: 'ride-facts' }, `${km} · ${leg.cost ? formatMoney(region, leg.cost) : '무료'}`),
+        leg.path ? h('span', { class: 'tag road', title: '실제 도로 경로로 거리를 계산했어요' }, '실제 도로') : null,
         leg.rush ? h('span', { class: 'tag warn' }, '출퇴근 정체') : null,
         leg.night ? h('span', { class: 'tag' }, '심야 할증') : null,
         h('span', { class: 'caret', 'aria-hidden': 'true' }),
