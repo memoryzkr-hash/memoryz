@@ -1,5 +1,5 @@
 import { resolve } from 'node:path';
-import { defineConfig } from 'vite';
+import { configDefaults, defineConfig } from 'vitest/config';
 
 export default defineConfig({
   base: './',
@@ -17,4 +17,6 @@ export default defineConfig({
       },
     },
   },
+  // Exported copies (npm run export:travel) carry their own tests; don't run them twice.
+  test: { exclude: [...configDefaults.exclude, 'dist-handoff/**', 'dist-artifact/**'] },
 });
