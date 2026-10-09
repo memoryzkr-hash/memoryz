@@ -11,6 +11,7 @@
     "typecheck": "tsc --noEmit",
     "promo": "tsx src/promo/cli.ts",
     "build:artifact": "vite build -c vite.artifact.config.ts && node scripts/build-assistant-artifact.mjs",
+    "build:beat": "npm run build && node scripts/build-beat-standalone.mjs",
     "build:usage": "node scripts/build-usage-artifact.mjs --local local/claude-usage",
     "promo:app": "tsx src/promo/server.ts"
   },

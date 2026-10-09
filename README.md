@@ -72,13 +72,14 @@ tests/ride/        sim / controls 단위 테스트
 ## 🎵 메아리 바운스 (`beat.html`)
 
 음악이 한 마디 동안 멜로디를 **부르면**, 다음 마디(허공)에 들은 리듬을 **따라 쳐서** 음표 발판을 만들고, 공이 그 위를 밟고 건너가는 리듬 게임.
-기획서: [docs/BEAT_PLAN.md](docs/BEAT_PLAN.md)
+기획서: [docs/BEAT_PLAN.md](docs/BEAT_PLAN.md) · **로컬 설치·실행·수정 안내: [docs/BEAT_LOCAL_GUIDE.md](docs/BEAT_LOCAL_GUIDE.md)**
 
 | 곡 목록 (뒤에서 1번 곡 데모) | 플레이 |
 | --- | --- |
 | ![곡 목록](docs/beat-title.jpg) | ![플레이](docs/beat.jpg) |
 
 - `npm run dev` 후 http://localhost:5173/beat.html (배포본은 `/memoryz/beat.html`)
+- `npm run build:beat` → `dist/beat-standalone.html`: 더블클릭으로 바로 실행되는 단일 파일
 - **곡 4개는 모두 작곡기(`src/beat/core/compose.ts`)가 직접 쓴 오리지널 곡**이라 상업적으로 써도 됩니다: 노을 점프(팝 96) · 계단 도시(펑크 112) · 한밤 오락실(칩튠 128) · 드롭 라인(EDM 140).
 - **난이도 3개 = 같은 곡, 다른 악보**: 쉬움(구절마다 센박 2음, 목숨 5, ±150ms) · 보통(멜로디 전부, 목숨 3, ±120ms) · 어려움(멜로디 전부 + ↓/↑ 높낮이, ±95ms).
 - **내 음악 불러오기**: NCS 곡처럼 갖고 있는 MP3·WAV를 올리면 BPM·마디·리듬을 분석해서 그 곡 그대로 악보를 만듭니다(곡 이름은 ID3 태그). NCS 곡을 게임에 넣어 배포하려면 [NCS 상업 라이선스](https://ncs.io/usage-policy)가 필요해서, 음원은 게임에 넣지 않고 플레이어 파일만 브라우저 안에서 씁니다.
