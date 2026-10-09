@@ -138,6 +138,7 @@ describe('parseUsageJson', () => {
   it('reads the bookmarklet payload', () => {
     const r = parseUsageJson(JSON.stringify({ email: 'me@example.com', usage }));
     expect(r).toEqual({
+      name: null,
       email: 'me@example.com',
       weekly: { used: 61, resetAt: '2026-10-11T00:00:00.000Z' },
       session: { used: 42.5, resetAt: '2026-10-08T14:00:00.000Z' },
@@ -204,5 +205,40 @@ describe('schedule helpers', () => {
       ['old', '20시간 전 값'],
       ['fast', '과속 · 예상 200%'],
     ]);
+  });
+});
+
+describe('parseUsageBatch', () => {
+  const usage = {
+    five_hour: { utilization: 12, resets_at: '2026-10-08T14:00:00+00:00' },
+    seven_day: { utilization: 40.5, resets_at: '2026-10-11T00:00:00+00:00' },
+  };
+
+  it('reads the Mac script batch, keeping failures apart', async () => {
+    const { parseUsageBatch } = await import('../../src/usage/core');
+    const r = parseUsageBatch(
+      JSON.stringify({ source: 'claude-usage', accounts: [{ name: 'quaternary2026', usage }, { name: 'memoryz.kr', error: '토큰이 만료됐어요' }] }),
+    );
+    expect(r?.items).toHaveLength(1);
+    expect(r?.items[0].name).toBe('quaternary2026');
+    expect(r?.items[0].weekly).toEqual({ used: 40.5, resetAt: '2026-10-11T00:00:00.000Z' });
+    expect(r?.failed).toEqual([{ name: 'memoryz.kr', error: '토큰이 만료됐어요' }]);
+  });
+
+  it('wraps a single bookmarklet payload', async () => {
+    const { parseUsageBatch } = await import('../../src/usage/core');
+    expect(parseUsageBatch(JSON.stringify({ email: 'a@b.c', usage }))?.items).toHaveLength(1);
+    expect(parseUsageBatch('nope')).toBeNull();
+  });
+
+  it('matches by name, email, or email local part', async () => {
+    const { matchAccount } = await import('../../src/usage/core');
+    const a = { ...newAccount('1', now), name: 'quaternary2026' };
+    const b = { ...newAccount('2', now), name: '메인', email: 'memoryz.kr@gmail.com' };
+    const imp = (name: string | null, email: string | null) => ({ name, email, weekly: null, session: null });
+    expect(matchAccount([a, b], imp('QUATERNARY2026', null))?.id).toBe('1');
+    expect(matchAccount([a, b], imp('memoryz.kr', null))?.id).toBe('2');
+    expect(matchAccount([a, b], imp(null, 'memoryz.kr@gmail.com'))?.id).toBe('2');
+    expect(matchAccount([a, b], imp('other', null))).toBeUndefined();
   });
 });

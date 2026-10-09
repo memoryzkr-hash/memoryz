@@ -259,6 +259,8 @@ export function rankAccounts(accounts: Account[], now: Date): Ranking {
 // ---------- paste import ----------
 
 export interface ImportedUsage {
+  /** Account name as the Mac script labels it. */
+  name: string | null;
   email: string | null;
   weekly: { used: number; resetAt: string | null } | null;
   session: { used: number; resetAt: string | null } | null;
@@ -292,7 +294,56 @@ export function parseUsageJson(text: string): ImportedUsage | null {
   const session = limit(usage.five_hour);
   if (!weekly && !session) return null;
   const email = typeof root.email === 'string' && root.email.includes('@') ? root.email : null;
-  return { email, weekly, session };
+  const name = typeof root.name === 'string' && root.name.trim() ? root.name.trim() : null;
+  return { name, email, weekly, session };
+}
+
+export interface ImportBatch {
+  items: ImportedUsage[];
+  /** Accounts the script could not read, with its message. */
+  failed: { name: string; error: string }[];
+}
+
+/**
+ * Reads either one account (bookmarklet) or the Mac script's batch:
+ * `{source: "claude-usage", accounts: [{name, usage} | {name, error}]}`.
+ */
+export function parseUsageBatch(text: string): ImportBatch | null {
+  let data: unknown;
+  try {
+    data = JSON.parse(text.trim());
+  } catch {
+    return null;
+  }
+  if (data && typeof data === 'object' && Array.isArray((data as Record<string, unknown>).accounts)) {
+    const batch: ImportBatch = { items: [], failed: [] };
+    for (const entry of (data as { accounts: unknown[] }).accounts) {
+      if (!entry || typeof entry !== 'object') continue;
+      const e = entry as Record<string, unknown>;
+      const name = typeof e.name === 'string' ? e.name : '';
+      const item = parseUsageJson(JSON.stringify(e));
+      if (item) batch.items.push(item);
+      else if (name) batch.failed.push({ name, error: typeof e.error === 'string' ? e.error : '사용량을 읽지 못했어요' });
+    }
+    return batch.items.length || batch.failed.length ? batch : null;
+  }
+  const one = parseUsageJson(text);
+  return one ? { items: [one], failed: [] } : null;
+}
+
+/** The registered account an import belongs to: same name, same email, or a name equal to the email's local part. */
+export function matchAccount(accounts: Account[], imp: ImportedUsage): Account | undefined {
+  const norm = (s: string) => s.trim().toLowerCase();
+  if (imp.name) {
+    const n = norm(imp.name);
+    const hit = accounts.find((a) => norm(a.name) === n || (a.email && norm(a.email.split('@')[0]) === n));
+    if (hit) return hit;
+  }
+  if (imp.email) {
+    const e = norm(imp.email);
+    return accounts.find((a) => norm(a.email) === e || norm(a.name) === e.split('@')[0]);
+  }
+  return undefined;
 }
 
 /** Applies an import to an account, stamping the readings with `now`. */

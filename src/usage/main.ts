@@ -1,4 +1,5 @@
 import './usage.css';
+import macScript from '../../tools/claude-usage/claude-usage?raw';
 import { append, h, openSheet, replaceChildren, toast, type Sheet } from '../assistant/ui/dom';
 import { BOOKMARKLET } from './bookmarklet';
 import {
@@ -10,69 +11,52 @@ import {
   formatClock,
   formatDateTime,
   formatDuration,
-  formatWhen,
   HOUR,
-  midnightsAhead,
-  needsAttention,
+  matchAccount,
   newAccount,
   nextBilling,
   nextWeekly,
-  parseUsageJson,
+  parseUsageBatch,
   PLAN_LABELS,
   rankAccounts,
   round1,
+  SESSION,
   sessionStatus,
   STALE_AFTER,
-  weekPos,
+  WEEK,
   weeklyStatus,
   type Account,
-  type ImportedUsage,
+  type ImportBatch,
   type Plan,
   type WeeklyLevel,
   type WeeklyStatus,
 } from './core';
 import { openStore, type AccountStore } from './store';
 
-type SortMode = 'reset' | 'remaining' | 'name';
-
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
 
 const LEVEL: Record<WeeklyLevel, { label: string; note: (s: WeeklyStatus) => string }> = {
-  unknown: { label: '입력 필요', note: () => '주간 사용량과 초기화 시각을 넣어 주세요' },
-  'stale-reset': { label: '초기화됨', note: () => '지난 기록 뒤로 초기화됐어요. 새 값을 넣어 주세요' },
-  exhausted: { label: '소진', note: (s) => `${formatDuration(s.msLeft!)} 뒤 다시 쓸 수 있어요` },
-  fast: { label: '과속', note: (s) => `이 속도면 초기화 전에 다 써요 · 예상 ${s.projected}%` },
+  unknown: { label: '입력 필요', note: () => '사용량을 불러오면 여기에 보여요' },
+  'stale-reset': { label: '초기화됨', note: () => '초기화됐어요. 새 사용량을 불러와 주세요' },
+  exhausted: { label: '소진', note: (s) => `${formatDuration(s.msLeft!)} 뒤에 다시 쓸 수 있어요` },
+  fast: { label: '빠르게 쓰는 중', note: (s) => `이 속도면 초기화 전에 다 써요 · 예상 ${s.projected}%` },
   'use-it': { label: '곧 초기화', note: (s) => `${round1(s.remaining!)}% 남았는데 하루 안에 초기화돼요` },
-  ok: { label: '적정', note: (s) => (s.projected === null ? '이번 주가 막 시작됐어요' : `이 속도면 초기화 때 약 ${s.projected}%`) },
-  plenty: { label: '여유', note: (s) => `이 속도면 초기화 때 약 ${s.projected}%` },
+  ok: { label: '적당해요', note: (s) => (s.projected === null ? '이번 주가 막 시작됐어요' : `이 속도면 초기화 때 약 ${s.projected}%`) },
+  plenty: { label: '여유 있어요', note: (s) => `이 속도면 초기화 때 약 ${s.projected}%` },
 };
 
 let store: AccountStore | null = null;
 let accounts: Account[] = [];
 let loaded = false;
 let quickId: string | null = null;
-let sortMode: SortMode = readPref('sort', 'reset') as SortMode;
-
-function readPref(key: string, fallback: string): string {
-  try {
-    return window.localStorage.getItem(`claude-usage/${key}`) ?? fallback;
-  } catch {
-    return fallback;
-  }
-}
-function writePref(key: string, value: string): void {
-  try {
-    window.localStorage.setItem(`claude-usage/${key}`, value);
-  } catch {
-    // a remembered sort order is a nicety
-  }
-}
 
 function newId(): string {
   return typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `a${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
 }
 
 const nameOf = (a: Account) => a.name || a.email || '이름 없는 계정';
+/** Registration order is the account number ("계정 1", "계정 2"). */
+const ordered = () => [...accounts].sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id));
 
 async function save(a: Account): Promise<boolean> {
   try {
@@ -84,338 +68,186 @@ async function save(a: Account): Promise<boolean> {
   }
 }
 
-// ---------- small pieces ----------
-
-const SVG = 'http://www.w3.org/2000/svg';
-function svg<K extends keyof SVGElementTagNameMap>(tag: K, attrs: Record<string, string | number>): SVGElementTagNameMap[K] {
-  const el = document.createElementNS(SVG, tag);
-  for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, String(v));
-  return el;
-}
-
-/**
- * Dial gauge: the arc is the share of the weekly limit used, the needle is the share of the week gone.
- * Arc past the needle = spending faster than an even pace.
- */
-function dial(used: number | null, elapsed: number | null, size: 'lg' | 'md'): HTMLElement {
-  const r = 40;
-  const box = svg('svg', { viewBox: '0 0 100 100', 'aria-hidden': 'true' });
-  box.append(
-    svg('circle', { cx: 50, cy: 50, r, class: 'dial-track', fill: 'none', 'stroke-width': 9 }),
-    svg('circle', {
-      cx: 50,
-      cy: 50,
-      r,
-      class: 'dial-arc',
-      fill: 'none',
-      'stroke-width': 9,
-      'stroke-linecap': used ? 'round' : 'butt',
-      pathLength: 100,
-      'stroke-dasharray': `${used ?? 0} 100`,
-      transform: 'rotate(-90 50 50)',
-    }),
-  );
-  if (elapsed !== null) {
-    const a = elapsed * 2 * Math.PI - Math.PI / 2;
-    const p = (rad: number) => [50 + rad * Math.cos(a), 50 + rad * Math.sin(a)];
-    const [x1, y1] = p(r - 9);
-    const [x2, y2] = p(r + 8);
-    box.append(svg('line', { x1, y1, x2, y2, class: 'dial-needle', 'stroke-width': 3, 'stroke-linecap': 'round' }));
+async function copy(text: string, done: string, fallback?: HTMLTextAreaElement): Promise<void> {
+  try {
+    await navigator.clipboard.writeText(text);
+    toast(done);
+  } catch {
+    if (fallback) {
+      fallback.hidden = false;
+      fallback.select();
+      toast('자동 복사가 막혀 있어요. 선택된 내용을 Cmd+C로 복사하세요.');
+    } else toast('복사하지 못했어요.');
   }
-  return h(
-    'div',
-    { class: `dial dial-${size}`, role: 'img', 'aria-label': used === null ? '주간 사용량 미입력' : `주간 ${round1(used)}% 사용, 이번 주 ${Math.round((elapsed ?? 0) * 100)}% 지남` },
-    box,
-    h('div', { class: 'dial-center' }, h('span', { class: 'dial-num' }, used === null ? '–' : String(Math.round(used))), h('span', { class: 'dial-unit' }, used === null ? '' : '% 사용')),
-  );
-}
-
-function pill(level: WeeklyLevel): HTMLElement {
-  return h('span', { class: `pill p-${level}` }, LEVEL[level].label);
 }
 
 // ---------- layout ----------
 
 const app = document.getElementById('app')!;
-const storageBadge = h('span', { class: 'badge' }, '불러오는 중…');
-const heroEl = h('section', { class: 'hero', 'aria-label': '요약' });
-const timelineEl = h('section', { class: 'panel timeline', 'aria-label': '초기화 일정' });
-const countEl = h('span', { class: 'count' });
-const listEl = h('div', { class: 'cards' });
-
-const sortBtns = (['reset', 'remaining', 'name'] as SortMode[]).map((mode) =>
-  h(
-    'button',
-    {
-      type: 'button',
-      class: 'seg',
-      'aria-pressed': String(mode === sortMode),
-      onClick: () => {
-        sortMode = mode;
-        writePref('sort', mode);
-        sortBtns.forEach((b, i) => b.setAttribute('aria-pressed', String(['reset', 'remaining', 'name'][i] === mode)));
-        render();
-      },
-    },
-    { reset: '초기화 임박순', remaining: '남은 양순', name: '이름순' }[mode],
-  ),
+const subtitle = h('p', { class: 'sub' }, '불러오는 중…');
+const recEl = h('section', { class: 'rec', 'aria-live': 'polite' });
+const listEl = h('div', { class: 'list' });
+const autoRow = h(
+  'button',
+  { type: 'button', class: 'row-link', onClick: () => openSetup() },
+  h('span', { class: 'row-icon', 'aria-hidden': 'true' }, '⌘'),
+  h('span', { class: 'row-text' }, h('strong', null, '맥에서 자동으로 불러오기'), h('span', null, '명령 한 줄로 모든 계정의 사용량을 가져와요')),
+  h('span', { class: 'chev', 'aria-hidden': 'true' }, '›'),
 );
 
 append(app, [
   h(
     'header',
     { class: 'top' },
-    h('div', { class: 'brand' }, h('h1', null, '클로드 사용량'), storageBadge),
-    h(
-      'div',
-      { class: 'top-actions' },
-      h('button', { type: 'button', class: 'btn ghost', onClick: () => openPaste(null) }, '붙여넣기'),
-      h('button', { type: 'button', class: 'btn primary', onClick: () => openEdit(null) }, '+ 계정 추가'),
-    ),
+    h('div', null, h('h1', null, '클로드 사용량'), subtitle),
+    h('button', { type: 'button', class: 'text-btn', onClick: () => openEdit(null) }, '계정 추가'),
   ),
-  heroEl,
-  timelineEl,
+  recEl,
+  listEl,
+  autoRow,
+  h('p', { class: 'foot' }, '주간 초기화 시각은 한 번 알면 매주 자동으로 넘어가요. 값은 이 페이지에만 저장되고, 로그인 정보는 받지 않아요.'),
+]);
+
+const cta = h(
+  'div',
+  { class: 'cta' },
   h(
     'div',
-    { class: 'list-head' },
-    h('h2', null, '계정 ', countEl),
-    h('div', { class: 'segs', role: 'group', 'aria-label': '정렬' }, ...sortBtns),
+    { class: 'cta-inner' },
+    h('button', { type: 'button', class: 'btn big secondary', onClick: () => openEdit(null) }, '계정 추가'),
+    h('button', { type: 'button', class: 'btn big primary', onClick: () => openPaste() }, '사용량 불러오기'),
   ),
-  listEl,
-  h(
-    'footer',
-    { class: 'foot' },
-    h('p', null, '값은 claude.ai → 설정 → 사용량에서 확인해 넣어요. 주간 초기화 시각은 한 번만 넣으면 매주 자동으로 넘어갑니다.'),
-  ),
-]);
+);
+document.body.appendChild(cta);
 
 // ---------- render ----------
 
-function sorted(now: Date): Account[] {
-  const list = [...accounts];
-  if (sortMode === 'name') return list.sort((a, b) => nameOf(a).localeCompare(nameOf(b), 'ko'));
-  const key = (a: Account) => {
-    const s = weeklyStatus(a.weekly, now);
-    return sortMode === 'reset' ? (s.msLeft ?? Infinity) : -(s.remaining ?? -1);
-  };
-  return list.sort((a, b) => key(a) - key(b));
-}
-
 function render(): void {
   const now = new Date();
-  storageBadge.textContent = !store ? '불러오는 중…' : store.kind === 'cloud' ? '클라우드 저장됨' : '이 브라우저에 저장';
-  storageBadge.className = `badge ${store?.kind ?? ''}`;
-  storageBadge.title = store?.kind === 'cloud' ? '어느 기기에서 열어도 같은 목록이 보여요. 나만 볼 수 있어요.' : '이 브라우저에만 저장돼요.';
-  countEl.textContent = loaded ? String(accounts.length) : '';
-
-  const ready = loaded && accounts.length > 0;
-  heroEl.hidden = !ready;
-  timelineEl.hidden = !ready;
-  if (ready) {
-    renderHero(now);
-    renderTimeline(now);
-  }
-
   if (!loaded) {
-    replaceChildren(listEl, h('p', { class: 'loading' }, '계정 목록을 불러오는 중이에요…'));
+    subtitle.textContent = '불러오는 중…';
+    recEl.hidden = true;
+    replaceChildren(listEl, h('div', { class: 'card skeleton' }), h('div', { class: 'card skeleton' }));
     return;
   }
+  const latest = accounts.map((a) => a.weekly.updatedAt).filter(Boolean).sort().pop();
+  subtitle.textContent = accounts.length === 0 ? '계정을 추가해 주세요' : `계정 ${accounts.length}개${latest ? ` · ${formatAgo(latest, now)} 업데이트` : ''}${store?.kind === 'cloud' ? ' · 클라우드 저장' : ''}`;
+
   if (accounts.length === 0) {
+    recEl.hidden = true;
     replaceChildren(listEl, emptyState());
     return;
   }
-  replaceChildren(listEl, ...sorted(now).map((a) => card(a, now)));
+  renderRec(now);
+  replaceChildren(listEl, ...ordered().map((a, i) => card(a, i + 1, now)));
 }
 
 function emptyState(): HTMLElement {
-  const step = (n: string, title: string, body: string) => h('li', null, h('span', { class: 'step-n' }, n), h('div', null, h('strong', null, title), h('p', null, body)));
   return h(
     'div',
-    { class: 'empty' },
-    dial(null, null, 'md'),
-    h('h3', null, '첫 계정을 등록해 보세요'),
-    h(
-      'ol',
-      { class: 'steps' },
-      step('1', '계정 추가', '이름과 요금제를 넣어요.'),
-      step('2', '초기화 요일·시각', 'claude.ai 설정 → 사용량에 나온 주간 초기화 시각을 한 번만 넣어요.'),
-      step('3', '사용량 %', '가끔 들어가서 %만 고치면, 언제 어느 계정을 쓸지 알려 드려요.'),
-    ),
+    { class: 'card empty' },
+    h('h2', null, '등록된 계정이 없어요'),
+    h('p', null, '계정 이름만 먼저 추가하고, 사용량은 맥에서 자동으로 불러오거나 직접 넣을 수 있어요.'),
     h(
       'div',
-      { class: 'row center' },
-      h('button', { type: 'button', class: 'btn primary', onClick: () => openEdit(null) }, '+ 계정 추가'),
-      h('button', { type: 'button', class: 'btn', onClick: addExamples }, '예시로 둘러보기'),
+      { class: 'empty-actions' },
+      h('button', { type: 'button', class: 'btn primary', onClick: () => openEdit(null) }, '계정 추가하기'),
+      h('button', { type: 'button', class: 'btn secondary', onClick: addExamples }, '예시로 둘러보기'),
     ),
   );
 }
 
-function renderHero(now: Date): void {
-  const { picks, blocked } = rankAccounts(accounts, now);
+function renderRec(now: Date): void {
+  const { picks } = rankAccounts(accounts, now);
   const top = picks[0];
-  const attention = needsAttention(accounts, now);
-
-  let next: { a: Account; at: Date } | null = null;
-  for (const a of accounts) {
-    const w = weeklyStatus(a.weekly, now);
-    if (w.resetAt && (!next || w.resetAt < next.at)) next = { a, at: w.resetAt };
-  }
-
-  const topStatus = top && weeklyStatus(top.account.weekly, now);
-  const rec = h(
-    'div',
-    { class: 'rec' },
-    h('p', { class: 'eyebrow' }, '지금 쓸 계정'),
-    top
-      ? h(
-          'div',
-          { class: `rec-main lv-${topStatus!.level}` },
-          dial(topStatus!.used, topStatus!.elapsed, 'lg'),
-          h(
-            'div',
-            { class: 'rec-text' },
-            h('h2', null, nameOf(top.account)),
-            h('p', null, top.reason),
-            h('p', { class: 'rec-rate' }, h('strong', null, `시간당 ${round1(top.perHour)}%`), '씩 써도 초기화 전에 다 쓰지 않아요'),
-          ),
-        )
-      : h('div', { class: 'rec-main none' }, h('h2', null, '지금 바로 쓸 수 있는 계정이 없어요'), h('p', null, '아래 대기 사유를 확인하세요.')),
-    (picks.length > 1 || blocked.length > 0) &&
-      h(
-        'ol',
-        { class: 'rec-rest' },
-        ...picks.slice(1).map((p, i) => h('li', null, h('span', { class: 'rank' }, String(i + 2)), h('strong', null, nameOf(p.account)), h('span', { class: 'why' }, p.reason))),
-        ...blocked.map((b) => h('li', { class: 'off' }, h('span', { class: 'rank' }, '대기'), h('strong', null, nameOf(b.account)), h('span', { class: 'why' }, b.reason))),
-      ),
-  );
-
-  const stat = (label: string, value: Node | string, sub: Node | string | null, tone = '') =>
-    h('div', { class: `stat ${tone}` }, h('p', { class: 'stat-label' }, label), h('p', { class: 'stat-value' }, value), sub && h('p', { class: 'stat-sub' }, sub));
-
-  const side = h(
-    'div',
-    { class: 'side' },
-    next
-      ? stat('다음 초기화', formatDuration(next.at.getTime() - now.getTime()) + ' 뒤', `${nameOf(next.a)} · ${formatWhen(next.at, now)}`)
-      : stat('다음 초기화', '–', '초기화 시각을 넣어 주세요'),
-    attention.length
-      ? stat(
-          '확인 필요',
-          `${attention.length}개 계정`,
-          h('span', { class: 'attn' }, ...attention.slice(0, 3).map((x) => h('button', { type: 'button', class: 'chip', onClick: () => openQuick(x.account.id) }, `${nameOf(x.account)} · ${x.why}`))),
-          'warn',
-        )
-      : stat('확인 필요', '없음', '모든 값이 최신이에요', 'good'),
-  );
-  replaceChildren(heroEl, rec, side);
-}
-
-function renderTimeline(now: Date): void {
-  const rows = sorted(now)
-    .map((a) => ({ a, w: weeklyStatus(a.weekly, now) }))
-    .filter((r) => r.w.resetAt)
-    .sort((x, y) => x.w.msLeft! - y.w.msLeft!);
-  if (rows.length === 0) {
-    timelineEl.hidden = true;
+  recEl.hidden = false;
+  if (!top) {
+    replaceChildren(recEl, h('p', { class: 'rec-title' }, '지금 바로 쓸 수 있는 계정이 없어요'), h('p', { class: 'rec-sub' }, '사용량을 불러오거나 초기화를 기다려 주세요.'));
     return;
   }
-  const ticks = midnightsAhead(now);
-  const axis = h(
-    'div',
-    { class: 'tl-axis', 'aria-hidden': 'true' },
-    h('span', { class: 'tl-now', style: 'left:0%' }, '지금'),
-    ...ticks.filter((d) => weekPos(d, now) > 0.07).map((d) => h('span', { class: `tl-day${d.getDay() === 0 ? ' sun' : ''}`, style: `left:${weekPos(d, now) * 100}%` }, `${WEEKDAYS[d.getDay()]} ${d.getDate()}`)),
-  );
-  const grid = () => h('div', { class: 'tl-grid', 'aria-hidden': 'true' }, ...ticks.map((d) => h('i', { style: `left:${weekPos(d, now) * 100}%` })));
   replaceChildren(
-    timelineEl,
-    h('div', { class: 'panel-head' }, h('h2', null, '초기화 일정'), h('p', { class: 'hint' }, '앞으로 7일 · 막대 끝이 초기화 시각')),
-    axis,
-    h(
-      'ul',
-      { class: 'tl-rows' },
-      ...rows.map(({ a, w }) => {
-        const pos = weekPos(w.resetAt!, now) * 100;
-        return h(
-          'li',
-          { class: `tl-row lv-${w.level}` },
-          h(
-            'div',
-            { class: 'tl-label' },
-            h('strong', null, nameOf(a)),
-            h('span', { class: 'tl-left' }, w.remaining === null ? '사용량 미입력' : `${round1(w.remaining)}% 남음`),
-            h('span', { class: 'tl-when' }, `${formatDateTime(w.resetAt!)} · ${formatDuration(w.msLeft!)} 뒤`),
-          ),
-          h(
-            'div',
-            { class: 'tl-track' },
-            grid(),
-            h('div', { class: 'tl-bar', style: `width:${pos}%` }, h('div', { class: 'tl-fill', style: `width:${w.remaining ?? 0}%` })),
-            h('span', { class: 'tl-dot', style: `left:${pos}%` }),
-          ),
-        );
-      }),
-    ),
+    recEl,
+    h('p', { class: 'rec-eyebrow' }, '지금 쓰기 좋은 계정'),
+    h('p', { class: 'rec-title' }, '지금은 ', h('strong', null, nameOf(top.account)), ' 계정이 좋아요'),
+    h('p', { class: 'rec-sub' }, `${top.reason} · 시간당 ${round1(top.perHour)}%까지 써도 돼요`),
   );
 }
 
-function card(a: Account, now: Date): HTMLElement {
+/** One limit: title + percent, a bar, and the window it covers with time left. */
+function gauge(opts: { title: string; used: number | null; level: string; start: Date | null; end: Date | null; now: Date; elapsed: number | null; empty: string; endFormat: (d: Date) => string }): HTMLElement {
+  const { title, used, level, start, end, now, elapsed, empty } = opts;
+  const pct = used === null ? null : Math.round(used);
+  return h(
+    'div',
+    { class: `gauge g-${level}` },
+    h('div', { class: 'gauge-head' }, h('span', { class: 'gauge-title' }, title), h('span', { class: 'gauge-pct' }, pct === null ? '–' : `${pct}%`)),
+    h(
+      'div',
+      { class: 'track', role: 'meter', 'aria-label': `${title} 사용량`, 'aria-valuemin': '0', 'aria-valuemax': '100', 'aria-valuenow': String(pct ?? 0) },
+      h('div', { class: 'fill', style: `width:${pct ?? 0}%` }),
+      elapsed !== null && h('div', { class: 'now-mark', style: `left:${round1(elapsed * 100)}%`, title: '기간 중 지금 위치' }),
+    ),
+    start && end
+      ? h(
+          'div',
+          { class: 'gauge-foot' },
+          h('span', { class: 'period' }, `${opts.endFormat(start)} ~ ${opts.endFormat(end)}`),
+          h('span', { class: 'left' }, `${formatDuration(end.getTime() - now.getTime())} 남음`),
+        )
+      : h('div', { class: 'gauge-foot' }, h('span', { class: 'period' }, empty)),
+  );
+}
+
+function card(a: Account, n: number, now: Date): HTMLElement {
   const w = weeklyStatus(a.weekly, now);
   const s = sessionStatus(a.session, now);
   const stale = !!a.weekly.updatedAt && now.getTime() - new Date(a.weekly.updatedAt).getTime() > STALE_AFTER && w.level !== 'stale-reset';
-
-  const sessionText =
-    s.level === 'unknown'
-      ? '기록 없음'
-      : s.level === 'idle'
-        ? '새 세션 가능'
-        : s.resetAt
-          ? `${round1(s.used ?? 0)}% · ${formatClock(s.resetAt)}에 풀림 (${formatDuration(s.msLeft!)})`
-          : `${round1(s.used ?? 0)}%`;
-
   const billing = a.billingDay !== null ? nextBilling(a.billingDay, now) : null;
   const billDays = billing ? daysUntil(billing, now) : null;
-  const needsUpdate = stale || w.level === 'stale-reset' || w.level === 'unknown';
+
+  const weekly = gauge({
+    title: '주간 한도',
+    used: w.level === 'stale-reset' ? 0 : w.used,
+    level: w.level,
+    start: w.resetAt ? new Date(w.resetAt.getTime() - WEEK) : null,
+    end: w.resetAt,
+    now,
+    elapsed: w.elapsed,
+    empty: '초기화 시각을 모르면 사용량을 불러오거나 편집에서 넣어 주세요',
+    endFormat: formatDateTime,
+  });
+  const sessionLevel = s.level === 'blocked' ? 'exhausted' : s.level === 'active' && (s.used ?? 0) >= 80 ? 'fast' : 'ok';
+  const session = gauge({
+    title: '5시간 세션',
+    used: s.level === 'unknown' ? null : (s.used ?? 0),
+    level: sessionLevel,
+    start: s.resetAt ? new Date(s.resetAt.getTime() - SESSION) : null,
+    end: s.resetAt,
+    now,
+    elapsed: s.msLeft !== null ? 1 - s.msLeft / SESSION : null,
+    empty: s.level === 'idle' ? '진행 중인 세션이 없어요. 지금 새로 시작할 수 있어요' : '세션 정보가 없어요',
+    endFormat: formatClock,
+  });
+
+  const meta = [billing && `결제일 ${billDays === 0 ? '오늘' : `D-${billDays}`}`, a.weekly.updatedAt ? `${formatAgo(a.weekly.updatedAt, now)} 업데이트` : '아직 불러오지 않음'].filter(Boolean).join(' · ');
 
   const el = h(
     'article',
-    { class: `card lv-${w.level}${stale ? ' stale' : ''}${quickId === a.id ? ' editing' : ''}` },
+    { class: `card account lv-${w.level}${stale ? ' stale' : ''}` },
     h(
       'div',
-      { class: 'card-main' },
-      h('button', { type: 'button', class: 'dial-btn', 'aria-label': `${nameOf(a)} 사용량 수정`, onClick: () => toggleQuick(a.id) }, dial(w.level === 'stale-reset' ? 0 : w.used, w.elapsed, 'md')),
-      h(
-        'div',
-        { class: 'card-body' },
-        h('div', { class: 'card-title' }, h('h3', null, nameOf(a)), h('span', { class: 'plan' }, PLAN_LABELS[a.plan])),
-        a.email && a.name && h('p', { class: 'email' }, a.email),
-        h('div', { class: 'status' }, pill(w.level), h('span', { class: 'note' }, LEVEL[w.level].note(w))),
-      ),
-      h(
-        'dl',
-        { class: 'facts' },
-        h('div', null, h('dt', null, '주간 초기화'), h('dd', null, w.resetAt ? h('span', null, h('strong', null, formatDateTime(w.resetAt)), h('span', { class: 'muted' }, ` · ${formatDuration(w.msLeft!)} 뒤`)) : '미입력')),
-        h('div', { class: `s-${s.level}` }, h('dt', null, '5시간 세션'), h('dd', null, h('span', { class: 'mini-bar' }, h('span', { style: `width:${s.used ?? 0}%` })), sessionText)),
-        billing && h('div', null, h('dt', null, '결제 갱신'), h('dd', null, `${billDays === 0 ? '오늘' : `D-${billDays}`} · ${billing.getMonth() + 1}/${billing.getDate()}`)),
-        a.memo && h('div', null, h('dt', null, '메모'), h('dd', { class: 'memo' }, a.memo)),
-      ),
+      { class: 'acc-head' },
+      h('div', { class: 'acc-id' }, h('span', { class: 'acc-n' }, `계정 ${n}`), h('h2', null, nameOf(a)), h('span', { class: 'acc-plan' }, PLAN_LABELS[a.plan])),
+      h('button', { type: 'button', class: 'text-btn small', onClick: () => openEdit(a) }, '편집'),
     ),
+    h('div', { class: 'status' }, h('span', { class: `chip c-${w.level}` }, LEVEL[w.level].label), h('span', { class: 'note' }, LEVEL[w.level].note(w))),
+    weekly,
+    session,
     h(
-      'footer',
-      { class: 'card-foot' },
-      h(
-        'button',
-        { type: 'button', class: `fresh${needsUpdate ? ' warn' : ''}`, onClick: () => toggleQuick(a.id) },
-        a.weekly.updatedAt ? `${formatAgo(a.weekly.updatedAt, now)} 업데이트` : '사용량 기록 없음',
-        needsUpdate && h('strong', null, ' · 지금 업데이트'),
-      ),
-      h(
-        'div',
-        { class: 'row' },
-        h('button', { type: 'button', class: 'btn small ghost', onClick: () => openPaste(a.id) }, '붙여넣기'),
-        h('button', { type: 'button', class: 'btn small ghost', onClick: () => openEdit(a) }, '편집'),
-        h('button', { type: 'button', class: 'btn small primary', 'aria-expanded': String(quickId === a.id), onClick: () => toggleQuick(a.id) }, quickId === a.id ? '닫기' : '사용량 수정'),
-      ),
+      'div',
+      { class: 'acc-foot' },
+      h('span', { class: stale ? 'warn' : '' }, stale ? `${meta} · 오래된 값이에요` : meta),
+      h('button', { type: 'button', class: 'btn small secondary', 'aria-expanded': String(quickId === a.id), onClick: () => toggleQuick(a.id) }, quickId === a.id ? '닫기' : '직접 수정'),
     ),
   );
   if (quickId === a.id) el.appendChild(quickPanel(a, now));
@@ -428,13 +260,7 @@ function toggleQuick(id: string): void {
   if (quickId) document.getElementById(`q-${id}-w`)?.focus({ preventScroll: true });
 }
 
-function openQuick(id: string): void {
-  quickId = id;
-  render();
-  const input = document.getElementById(`q-${id}-w`);
-  input?.closest('.card')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  input?.focus({ preventScroll: true });
-}
+// ---------- form pieces ----------
 
 /** Slider + number + ±5 steppers, kept in sync. */
 function percentField(id: string, label: string, value: number): { el: HTMLElement; get: () => number } {
@@ -447,9 +273,9 @@ function percentField(id: string, label: string, value: number): { el: HTMLEleme
   };
   range.addEventListener('input', () => (num.value = range.value));
   num.addEventListener('input', () => (range.value = num.value));
-  const step = (d: number) => h('button', { type: 'button', class: 'step', 'aria-label': `${label} ${d > 0 ? '+' : ''}${d}`, onClick: () => set(Number(num.value) + d) }, d > 0 ? `+${d}` : `−${-d}`);
+  const step = (d: number) => h('button', { type: 'button', class: 'stepper', 'aria-label': `${label} ${d > 0 ? '+' : ''}${d}`, onClick: () => set(Number(num.value) + d) }, d > 0 ? `+${d}` : `−${-d}`);
   return {
-    el: h('div', { class: 'field pct' }, h('label', { htmlFor: id }, label), h('div', { class: 'pct-row' }, step(-5), range, step(5), h('span', { class: 'num-wrap' }, num, h('span', { class: 'unit' }, '%')))),
+    el: h('div', { class: 'field' }, h('label', { htmlFor: id }, label), h('div', { class: 'pct-row' }, step(-5), range, step(5), h('span', { class: 'num-wrap' }, num, h('span', { class: 'unit' }, '%')))),
     get: () => clampPercent(Number(num.value)),
   };
 }
@@ -472,19 +298,24 @@ function durationFields(id: string, label: string, ms: number | null, withDays: 
   };
 }
 
+function toggle(id: string, label: string, checked: boolean): { el: HTMLElement; input: HTMLInputElement } {
+  const input = h('input', { id, type: 'checkbox', role: 'switch', checked });
+  return { input, el: h('label', { class: 'switch', htmlFor: id }, h('span', null, label), input) };
+}
+
 /** Session inputs behind an "in use" switch, since most of the time no window is running. */
 function sessionFields(prefix: string, s: ReturnType<typeof sessionStatus>): { el: HTMLElement; read: (at: Date) => Account['session'] } {
   const active = s.level === 'active' || s.level === 'blocked';
-  const on = h('input', { id: `${prefix}-on`, type: 'checkbox', checked: active });
+  const on = toggle(`${prefix}-on`, '5시간 세션 사용 중', active);
   const pct = percentField(`${prefix}-pct`, '세션 사용량', s.used ?? 0);
   const left = durationFields(`${prefix}-left`, '풀리기까지', s.msLeft, false);
-  const body = h('div', { class: 'sub-fields' }, pct.el, left.el);
+  const body = h('div', { class: 'stack' }, pct.el, left.el);
   body.hidden = !active;
-  on.addEventListener('change', () => (body.hidden = !on.checked));
+  on.input.addEventListener('change', () => (body.hidden = !on.input.checked));
   return {
-    el: h('div', { class: 'session-fields' }, h('label', { class: 'switch' }, on, h('span', null, '5시간 세션 사용 중')), body),
+    el: h('div', { class: 'stack' }, on.el, body),
     read: (at) => {
-      if (!on.checked) return { used: null, resetAt: null, updatedAt: at.toISOString() };
+      if (!on.input.checked) return { used: null, resetAt: null, updatedAt: at.toISOString() };
       const ms = left.get();
       return { used: pct.get(), resetAt: ms > 0 ? new Date(at.getTime() + ms).toISOString() : null, updatedAt: at.toISOString() };
     },
@@ -493,21 +324,9 @@ function sessionFields(prefix: string, s: ReturnType<typeof sessionStatus>): { e
 
 function quickPanel(a: Account, now: Date): HTMLElement {
   const w = weeklyStatus(a.weekly, now);
-  const s = sessionStatus(a.session, now);
   const weekly = percentField(`q-${a.id}-w`, '주간 사용량', w.level === 'stale-reset' ? 0 : (w.used ?? 0));
-  const session = sessionFields(`q-${a.id}-s`, s);
-  const form = h(
-    'form',
-    { class: 'quick' },
-    weekly.el,
-    session.el,
-    h(
-      'div',
-      { class: 'row end' },
-      h('button', { type: 'button', class: 'btn ghost', onClick: () => ((quickId = null), render()) }, '취소'),
-      h('button', { type: 'submit', class: 'btn primary' }, '저장'),
-    ),
-  );
+  const session = sessionFields(`q-${a.id}-s`, sessionStatus(a.session, now));
+  const form = h('form', { class: 'quick' }, weekly.el, session.el, h('button', { type: 'submit', class: 'btn primary full' }, '저장'));
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const at = new Date();
@@ -530,55 +349,42 @@ function openEdit(existing: Account | null): void {
   const now = new Date();
   const a = existing ?? newAccount(newId(), now);
   const w = weeklyStatus(a.weekly, now);
-  const s = sessionStatus(a.session, now);
   const sheet = openSheet(existing ? '계정 편집' : '계정 추가');
 
-  const name = h('input', { id: 'f-name', type: 'text', value: a.name, placeholder: '예: 개인, 회사, 서브', required: true, maxLength: 40 });
-  const email = h('input', { id: 'f-email', type: 'email', value: a.email, placeholder: 'name@example.com', autocomplete: 'off' });
+  const name = h('input', { id: 'f-name', type: 'text', value: a.name, placeholder: '예: quaternary2026', required: true, maxLength: 40, autocomplete: 'off' });
+  const email = h('input', { id: 'f-email', type: 'email', value: a.email, placeholder: '선택 · name@example.com', autocomplete: 'off' });
   const plan = h('select', { id: 'f-plan' }, ...Object.entries(PLAN_LABELS).map(([k, v]) => h('option', { value: k }, v)));
   plan.value = a.plan;
 
-  // Weekly reset: a fixed weekday and time, or "resets in …" as claude.ai sometimes shows it.
-  let resetMode: 'weekly' | 'in' = 'weekly';
-  const dow = h('select', { id: 'f-dow', 'aria-label': '초기화 요일' }, ...WEEKDAYS.map((d, i) => h('option', { value: String(i) }, `${d}요일`)));
+  const knowsReset = toggle('f-reset-on', '주간 초기화 시각을 알고 있어요', !!w.resetAt);
+  const dow = h('select', { id: 'f-dow', 'aria-label': '초기화 요일' }, ...WEEKDAYS.map((d, i) => h('option', { value: String(i) }, `매주 ${d}요일`)));
   const time = h('input', { id: 'f-time', type: 'time', 'aria-label': '초기화 시각', value: w.resetAt ? formatClock(w.resetAt) : '09:00' });
   if (w.resetAt) dow.value = String(w.resetAt.getDay());
-  const resetIn = durationFields('f-reset-in', '초기화까지 남은 시간', w.msLeft, true);
-  const weeklyBox = h('div', { class: 'field' }, h('span', { class: 'flabel' }, '매주'), h('div', { class: 'inline' }, dow, time));
   const preview = h('p', { class: 'hint' });
-  const modeBtn = (mode: 'weekly' | 'in', label: string) => h('button', { type: 'button', class: 'seg', onClick: () => setMode(mode) }, label);
-  const segW = modeBtn('weekly', '요일·시각');
-  const segIn = modeBtn('in', '남은 시간');
-
-  const computeReset = (at: Date): Date | null => {
-    if (resetMode === 'weekly') {
-      if (!time.value) return null;
-      const [hh, mm] = time.value.split(':').map(Number);
-      return nextWeekly(Number(dow.value), hh, mm, at);
-    }
-    const ms = resetIn.get();
-    return ms > 0 ? new Date(at.getTime() + ms) : null;
+  const resetAt = (at: Date) => {
+    if (!knowsReset.input.checked || !time.value) return null;
+    const [hh, mm] = time.value.split(':').map(Number);
+    return nextWeekly(Number(dow.value), hh, mm, at);
   };
   const updatePreview = () => {
-    const r = computeReset(new Date());
-    preview.textContent = r ? `다음 초기화: ${formatDateTime(r)} (${formatDuration(r.getTime() - Date.now())} 뒤)` : '';
+    const r = resetAt(new Date());
+    preview.textContent = r ? `다음 초기화는 ${formatDateTime(r)}, ${formatDuration(r.getTime() - Date.now())} 뒤예요` : '';
   };
-  const setMode = (m: 'weekly' | 'in') => {
-    resetMode = m;
-    segW.setAttribute('aria-pressed', String(m === 'weekly'));
-    segIn.setAttribute('aria-pressed', String(m === 'in'));
-    weeklyBox.hidden = m !== 'weekly';
-    resetIn.el.hidden = m !== 'in';
+  const resetBox = h('div', { class: 'stack' }, h('div', { class: 'inline' }, dow, time), preview);
+  const syncReset = () => {
+    resetBox.hidden = !knowsReset.input.checked;
     updatePreview();
   };
   [dow, time].forEach((el) => el.addEventListener('input', updatePreview));
-  resetIn.el.addEventListener('input', updatePreview);
+  knowsReset.input.addEventListener('change', syncReset);
 
-  const weeklyKnown = h('input', { id: 'f-weekly-known', type: 'checkbox', checked: a.weekly.used !== null || !existing });
+  const knowsUsage = toggle('f-weekly-on', '현재 주간 사용량을 알고 있어요', a.weekly.used !== null);
   const weekly = percentField('f-weekly', '주간 사용량', w.level === 'stale-reset' ? 0 : (w.used ?? 0));
-  const session = sessionFields('f-session', s);
-  const billing = h('input', { id: 'f-billing', type: 'number', min: '1', max: '31', inputMode: 'numeric', value: a.billingDay ? String(a.billingDay) : '', placeholder: '예: 15' });
-  const memo = h('input', { id: 'f-memo', type: 'text', value: a.memo, maxLength: 80, placeholder: '예: 코딩 전용' });
+  knowsUsage.input.addEventListener('change', () => (weekly.el.hidden = !knowsUsage.input.checked));
+  weekly.el.hidden = !knowsUsage.input.checked;
+  const session = sessionFields('f-session', sessionStatus(a.session, now));
+  const billing = h('input', { id: 'f-billing', type: 'number', min: '1', max: '31', inputMode: 'numeric', value: a.billingDay ? String(a.billingDay) : '', placeholder: '매달 며칠 · 선택' });
+  const memo = h('input', { id: 'f-memo', type: 'text', value: a.memo, maxLength: 80, placeholder: '선택' });
   const error = h('p', { class: 'error', role: 'alert' });
 
   let armed = false;
@@ -588,7 +394,7 @@ function openEdit(existing: Account | null): void {
       'button',
       {
         type: 'button',
-        class: 'btn danger',
+        class: 'text-btn danger',
         onClick: async () => {
           if (!armed) {
             armed = true;
@@ -598,187 +404,219 @@ function openEdit(existing: Account | null): void {
           try {
             await store!.remove(a.id);
             sheet.close();
-            toast(`${nameOf(a)}을 삭제했어요`);
+            toast(`${nameOf(a)} 계정을 삭제했어요`);
           } catch (e) {
             error.textContent = (e as Error).message;
           }
         },
       },
-      '삭제',
+      '이 계정 삭제',
     );
 
+  const field = (id: string, label: string, input: HTMLElement) => h('div', { class: 'field' }, h('label', { htmlFor: id }, label), input);
   const form = h(
     'form',
-    { class: 'edit', novalidate: true },
-    h('div', { class: 'field' }, h('label', { htmlFor: 'f-name' }, '이름'), name),
-    h('div', { class: 'grid2' }, h('div', { class: 'field' }, h('label', { htmlFor: 'f-email' }, '이메일 (선택)'), email), h('div', { class: 'field' }, h('label', { htmlFor: 'f-plan' }, '요금제'), plan)),
-    h(
-      'fieldset',
-      null,
-      h('legend', null, '주간 한도'),
-      h('div', { class: 'segs', role: 'group', 'aria-label': '초기화 시각 입력 방식' }, segW, segIn),
-      weeklyBox,
-      resetIn.el,
-      preview,
-      h('label', { class: 'switch' }, weeklyKnown, h('span', null, '현재 사용량을 알고 있어요')),
-      weekly.el,
-    ),
-    h('fieldset', null, h('legend', null, '5시간 세션'), session.el),
-    h('div', { class: 'grid2' }, h('div', { class: 'field' }, h('label', { htmlFor: 'f-billing' }, '결제 갱신일 (매달)'), billing), h('div', { class: 'field' }, h('label', { htmlFor: 'f-memo' }, '메모'), memo)),
+    { class: 'form', novalidate: true },
+    field('f-name', '계정 이름', name),
+    h('p', { class: 'hint tight' }, '맥 스크립트에 등록할 이름과 같게 적으면 자동으로 연결돼요.'),
+    h('div', { class: 'grid2' }, field('f-email', '이메일', email), field('f-plan', '요금제', plan)),
+    h('div', { class: 'group' }, knowsReset.el, resetBox, knowsUsage.el, weekly.el),
+    h('div', { class: 'group' }, session.el),
+    h('div', { class: 'grid2' }, field('f-billing', '결제일', billing), field('f-memo', '메모', memo)),
     error,
-    h('div', { class: 'row end sticky-actions' }, del, h('span', { class: 'grow' }), h('button', { type: 'button', class: 'btn ghost', onClick: () => sheet.close() }, '취소'), h('button', { type: 'submit', class: 'btn primary' }, existing ? '저장' : '추가')),
+    del,
+    h('button', { type: 'submit', class: 'btn primary full big' }, existing ? '저장하기' : '추가하기'),
   );
-  weeklyKnown.addEventListener('change', () => (weekly.el.hidden = !weeklyKnown.checked));
-  weekly.el.hidden = !weeklyKnown.checked;
-  setMode('weekly');
+  syncReset();
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const at = new Date();
     if (!name.value.trim()) {
-      error.textContent = '이름을 넣어 주세요.';
+      error.textContent = '계정 이름을 넣어 주세요.';
       name.focus();
-      return;
-    }
-    if (resetMode === 'in' && resetIn.get() > 8 * DAY) {
-      error.textContent = '주간 초기화까지는 7일을 넘을 수 없어요.';
       return;
     }
     const day = billing.value ? Math.round(Number(billing.value)) : null;
     if (day !== null && (day < 1 || day > 31)) {
-      error.textContent = '결제 갱신일은 1~31 사이로 넣어 주세요.';
+      error.textContent = '결제일은 1~31 사이로 넣어 주세요.';
       return;
     }
-    const reset = computeReset(at);
-    const weeklyChanged = weeklyKnown.checked && (weekly.get() !== w.used || a.weekly.used === null || w.level === 'stale-reset');
+    const reset = resetAt(at);
+    const used = knowsUsage.input.checked ? weekly.get() : null;
+    const usageChanged = used !== null && (used !== w.used || a.weekly.used === null || w.level === 'stale-reset');
     const next: Account = {
       ...a,
       name: name.value.trim(),
       email: email.value.trim(),
       plan: plan.value as Plan,
-      weekly: {
-        used: weeklyKnown.checked ? weekly.get() : null,
-        resetAt: reset ? reset.toISOString() : null,
-        updatedAt: weeklyChanged ? at.toISOString() : a.weekly.updatedAt,
-      },
+      weekly: { used, resetAt: reset ? reset.toISOString() : null, updatedAt: usageChanged ? at.toISOString() : a.weekly.updatedAt },
       session: session.read(at),
       billingDay: day,
       memo: memo.value.trim(),
     };
     if (await save(next)) {
       sheet.close();
-      toast(existing ? '저장했어요' : `${next.name}을 추가했어요`);
+      toast(existing ? '저장했어요' : `${next.name} 계정을 추가했어요`);
     }
   });
   append(sheet.body, [form]);
-  name.focus();
+  if (!existing) name.focus();
 }
 
-// ---------- paste import ----------
+// ---------- import ----------
 
 let pasteSheet: Sheet | null = null;
 
-function openPaste(accountId: string | null, initial = ''): void {
+/** What applying a batch would do, account by account. */
+function importPlan(batch: ImportBatch): { label: string; detail: string; target: Account | null; item: ImportBatch['items'][number] }[] {
+  return batch.items.map((item) => {
+    const target = matchAccount(accounts, item) ?? null;
+    const parts = [item.weekly && `주간 ${round1(item.weekly.used)}%`, item.session && `세션 ${round1(item.session.used)}%`].filter(Boolean).join(' · ');
+    return { label: target ? nameOf(target) : (item.name ?? item.email?.split('@')[0] ?? '새 계정'), detail: target ? parts : `${parts} · 새 계정으로 추가돼요`, target, item };
+  });
+}
+
+function openPaste(initial = ''): void {
   pasteSheet?.close();
-  const sheet = openSheet('붙여넣기로 업데이트');
+  const sheet = openSheet('사용량 불러오기');
   pasteSheet = sheet;
-  const text = h('textarea', { id: 'p-text', rows: 4, placeholder: '북마클릿이 복사한 내용을 여기에 붙여 넣으세요', value: initial });
-  const target = h('select', { id: 'p-target' }, h('option', { value: '' }, '계정을 고르세요'), ...accounts.map((a) => h('option', { value: a.id }, nameOf(a))), h('option', { value: '__new' }, '+ 새 계정으로 추가'));
+  const text = h('textarea', { id: 'p-text', rows: 3, placeholder: '여기를 누르고 Cmd+V', value: initial });
   const preview = h('div', { class: 'preview', 'aria-live': 'polite' });
-  const apply = h('button', { type: 'submit', class: 'btn primary', disabled: true }, '적용');
-  let parsed: ImportedUsage | null = null;
-  if (accountId) target.value = accountId;
+  const apply = h('button', { type: 'submit', class: 'btn primary full big', disabled: true }, '반영하기');
+  let batch: ImportBatch | null = null;
 
   const update = () => {
-    parsed = text.value.trim() ? parseUsageJson(text.value) : null;
-    if (!text.value.trim()) {
-      replaceChildren(preview);
-    } else if (!parsed) {
-      replaceChildren(preview, h('p', { class: 'error' }, '사용량 정보를 찾지 못했어요. 북마클릿이 복사한 내용 전체를 붙여 넣었는지 확인해 주세요.'));
-    } else {
-      if (!target.value && parsed.email) {
-        const match = accounts.find((a) => a.email.toLowerCase() === parsed!.email!.toLowerCase());
-        target.value = match ? match.id : '__new';
-      }
-      const now = new Date();
-      const line = (label: string, v: { used: number; resetAt: string | null } | null) =>
-        v && h('li', null, h('strong', null, label), ` ${round1(v.used)}%`, v.resetAt ? ` · ${formatWhen(new Date(v.resetAt), now)} 초기화` : '');
-      replaceChildren(preview, h('ul', null, parsed.email && h('li', null, h('strong', null, '계정'), ` ${parsed.email}`), line('주간', parsed.weekly), line('5시간 세션', parsed.session)));
+    batch = text.value.trim() ? parseUsageBatch(text.value) : null;
+    if (!text.value.trim()) replaceChildren(preview);
+    else if (!batch) replaceChildren(preview, h('p', { class: 'error' }, '사용량 정보를 찾지 못했어요. claude-usage 결과를 그대로 붙여 넣었는지 확인해 주세요.'));
+    else {
+      replaceChildren(
+        preview,
+        h(
+          'ul',
+          { class: 'plan-list' },
+          ...importPlan(batch).map((p) => h('li', null, h('strong', null, p.label), h('span', null, p.detail))),
+          ...batch.failed.map((f) => h('li', { class: 'fail' }, h('strong', null, f.name), h('span', null, f.error))),
+        ),
+      );
     }
-    apply.disabled = !parsed || !target.value;
+    apply.disabled = !batch || batch.items.length === 0;
+    apply.textContent = batch?.items.length ? `${batch.items.length}개 계정에 반영하기` : '반영하기';
   };
   text.addEventListener('input', update);
-  target.addEventListener('change', update);
-
-  const code = h('textarea', { id: 'p-code', rows: 3, readOnly: true, value: BOOKMARKLET, hidden: true, 'aria-label': '북마클릿 코드' });
-  const copyBtn = h('button', { type: 'button', class: 'btn small' }, '코드 복사');
-  copyBtn.addEventListener('click', async () => {
-    try {
-      await navigator.clipboard.writeText(BOOKMARKLET);
-      toast('복사했어요. 새 북마크의 주소(URL)에 붙여 넣으세요.');
-    } catch {
-      code.hidden = false;
-      code.select();
-    }
-  });
-  const dragLink = h('a', { class: 'bookmarklet', href: BOOKMARKLET, title: '북마크바로 끌어다 놓으세요' }, '클로드 사용량 복사');
-  dragLink.addEventListener('click', (e) => {
-    e.preventDefault();
-    toast('이 버튼은 북마크바로 끌어다 놓은 뒤 claude.ai에서 눌러요.');
-  });
 
   const form = h(
     'form',
-    { class: 'paste' },
-    h(
-      'details',
-      { class: 'how', open: !initial },
-      h('summary', null, '북마클릿 만들기 (실험적)'),
-      h(
-        'ol',
-        null,
-        h('li', null, h('span', null, '버튼을 북마크바로 끌어다 놓거나 코드를 복사해 새 북마크 주소로 저장'), h('span', { class: 'row' }, dragLink, copyBtn)),
-        h('li', null, '컴퓨터 브라우저로 claude.ai에 로그인한 뒤 그 북마크를 누르면 사용량이 복사돼요'),
-        h('li', null, '여기에 붙여 넣고 계정을 골라 적용. 다른 계정도 로그인을 바꿔 가며 반복'),
-      ),
-      code,
-      h('p', { class: 'hint' }, 'claude.ai의 공개되지 않은 주소를 읽기 때문에 바뀌면 작동하지 않을 수 있어요. 그땐 직접 입력하세요. 로그인 정보는 복사하지 않아요.'),
-    ),
-    h('div', { class: 'field' }, h('label', { htmlFor: 'p-text' }, '복사한 내용'), text),
-    h('div', { class: 'field' }, h('label', { htmlFor: 'p-target' }, '넣을 계정'), target),
+    { class: 'form' },
+    h('p', { class: 'lead' }, '맥 터미널에서 claude-usage를 실행하면 결과가 복사돼요. 아래에 붙여 넣으면 이름이 같은 계정에 한 번에 반영돼요.'),
+    text,
     preview,
-    h('div', { class: 'row end' }, h('button', { type: 'button', class: 'btn ghost', onClick: () => sheet.close() }, '취소'), apply),
+    apply,
+    h('button', { type: 'button', class: 'text-btn', onClick: () => (sheet.close(), openSetup()) }, '아직 설정 전이라면 · 맥에서 자동으로 불러오기 ›'),
   );
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
-    if (!parsed || !target.value) return;
+    if (!batch) return;
     const now = new Date();
-    let base: Account | undefined = accounts.find((a) => a.id === target.value);
-    if (!base) {
-      base = newAccount(newId(), now);
-      base.name = parsed.email?.split('@')[0] ?? '새 계정';
+    let n = 0;
+    for (const p of importPlan(batch)) {
+      let base = p.target;
+      if (!base) {
+        base = newAccount(newId(), new Date(now.getTime() + n));
+        base.name = p.label;
+      }
+      if (!(await save(applyImport(base, p.item, now)))) return;
+      n++;
     }
-    const next = applyImport(base, parsed, now);
-    if (await save(next)) {
-      sheet.close();
-      toast(`${nameOf(next)} 사용량을 업데이트했어요`);
-    }
+    sheet.close();
+    toast(`${n}개 계정에 반영했어요`);
   });
   append(sheet.body, [form]);
   update();
-  text.focus();
+  if (!initial) text.focus();
 }
 
-// Pasting usage JSON anywhere outside a field opens the import with it.
+// Cmd+V anywhere outside a field opens the import with the clipboard.
 document.addEventListener('paste', (e) => {
   const t = e.target as HTMLElement | null;
   if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
   const text = e.clipboardData?.getData('text') ?? '';
-  if (parseUsageJson(text)) {
+  if (parseUsageBatch(text)) {
     e.preventDefault();
-    openPaste(null, text);
+    openPaste(text);
   }
 });
+
+// ---------- Mac setup ----------
+
+function installCommand(): string {
+  const bytes = new TextEncoder().encode(macScript);
+  let bin = '';
+  bytes.forEach((b) => (bin += String.fromCharCode(b)));
+  // base64 keeps the paste free of characters an interactive shell would expand.
+  return [
+    'mkdir -p ~/.local/bin',
+    `echo '${btoa(bin)}' | base64 --decode > ~/.local/bin/claude-usage`,
+    'chmod +x ~/.local/bin/claude-usage',
+    `(grep -qs '.local/bin' ~/.zshrc || echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc)`,
+    'export PATH="$HOME/.local/bin:$PATH"',
+    'claude-usage help',
+  ].join(' && ');
+}
+
+function openSetup(): void {
+  const sheet = openSheet('맥에서 자동으로 불러오기');
+  const cmd = (label: string, command: string) => {
+    const fallback = h('textarea', { class: 'code-fallback', rows: 2, readOnly: true, value: command, hidden: true, 'aria-label': `${label} 명령` });
+    return h(
+      'div',
+      { class: 'cmd' },
+      h('code', null, label),
+      h('button', { type: 'button', class: 'btn small secondary', onClick: () => copy(command, '복사했어요. 터미널에 붙여 넣으세요.', fallback) }, '복사'),
+      fallback,
+    );
+  };
+  const names = ordered().map(nameOf);
+  const step = (n: number, title: string, ...body: (Node | string | false)[]) =>
+    h('li', { class: 'step' }, h('span', { class: 'step-n' }, String(n)), h('div', { class: 'step-body' }, h('strong', null, title), ...body.filter((b): b is Node | string => b !== false)));
+
+  append(sheet.body, [
+    h('p', { class: 'lead' }, '처음 한 번만 설정하면, 이후에는 터미널에 claude-usage 한 줄로 모든 계정의 사용량을 가져와요.'),
+    h(
+      'ol',
+      { class: 'steps' },
+      step(1, '설치하기', h('p', null, '터미널 앱을 열고 아래 명령을 붙여 넣으세요.'), cmd('설치 명령 (한 줄)', installCommand())),
+      step(
+        2,
+        '계정 연결하기',
+        h('p', null, '계정마다 한 번씩 실행해요. 브라우저가 열리면 그 계정으로 로그인하고, 나온 토큰을 붙여 넣으면 끝이에요.'),
+        ...(names.length ? names : ['계정이름']).map((n) => cmd(`claude-usage add ${n}`, `claude-usage add ${n}`)),
+      ),
+      step(3, '불러오기', h('p', null, '실행하면 결과가 복사돼요. 이 페이지에서 Cmd+V 하면 바로 반영돼요.'), cmd('claude-usage', 'claude-usage')),
+      step(4, '자동 조회 (선택)', h('p', null, '1시간마다 알아서 조회하고, 곧 초기화되는데 많이 남은 계정이 있으면 알림을 보내요.'), cmd('claude-usage schedule on', 'claude-usage schedule on')),
+    ),
+    h(
+      'div',
+      { class: 'notice' },
+      h('strong', null, '알아 두세요'),
+      h(
+        'ul',
+        null,
+        h('li', null, '로그인은 각 계정 브라우저에서 직접 하고, 토큰은 맥 키체인에만 저장돼요. 이 페이지는 사용량 숫자만 받아요.'),
+        h('li', null, 'Claude Code가 설치돼 있어야 해요(claude setup-token).'),
+        h('li', null, 'Claude Code의 /usage가 쓰는 공개되지 않은 주소를 읽어요. 바뀌면 스크립트를 고쳐야 할 수 있어요.'),
+      ),
+    ),
+    h(
+      'details',
+      { class: 'more' },
+      h('summary', null, '맥이 아닌 컴퓨터라면 · 북마클릿 (실험적)'),
+      h('p', null, 'claude.ai에 로그인한 상태에서 누르면 그 계정의 사용량이 복사돼요. 아래 버튼을 북마크바로 끌어다 놓으세요.'),
+      h('a', { class: 'bookmarklet', href: BOOKMARKLET, onClick: (e: Event) => (e.preventDefault(), toast('북마크바로 끌어다 놓은 뒤 claude.ai에서 눌러요.')) }, '클로드 사용량 복사'),
+    ),
+  ]);
+}
 
 // ---------- examples ----------
 
@@ -786,22 +624,20 @@ async function addExamples(): Promise<void> {
   const now = new Date();
   const iso = (ms: number) => new Date(now.getTime() + ms).toISOString();
   const read = iso(-30 * 60_000);
-  const make = (name: string, plan: Plan, used: number, resetIn: number, session: Account['session'], billingDay: number, memo: string): Account => ({
-    ...newAccount(newId(), now),
+  const make = (i: number, name: string, used: number, resetIn: number, session: Account['session'], billingDay: number): Account => ({
+    ...newAccount(newId(), new Date(now.getTime() + i)),
     name,
-    plan,
     weekly: { used, resetAt: iso(resetIn), updatedAt: read },
     session,
     billingDay,
-    memo,
+    memo: '예시예요. 편집에서 삭제할 수 있어요',
   });
   const examples = [
-    make('예시 · 개인', 'pro', 58, 20 * HOUR, { used: 40, resetAt: iso(2 * HOUR + 10 * 60_000), updatedAt: read }, 15, '예시예요. 편집 → 삭제로 지우세요'),
-    make('예시 · 회사', 'max5', 31, 4 * DAY + 6 * HOUR, { used: null, resetAt: null, updatedAt: null }, 3, '예시예요'),
-    make('예시 · 서브', 'pro', 64, 5 * DAY, { used: 100, resetAt: iso(HOUR + 25 * 60_000), updatedAt: read }, 27, '예시예요'),
+    make(0, '예시 · 개인', 58, 20 * HOUR, { used: 40, resetAt: iso(2 * HOUR + 10 * 60_000), updatedAt: read }, 15),
+    make(1, '예시 · 회사', 31, 4 * DAY + 6 * HOUR, { used: null, resetAt: null, updatedAt: null }, 3),
   ];
   for (const a of examples) if (!(await save(a))) return;
-  toast('예시 계정 3개를 넣었어요');
+  toast('예시 계정 2개를 넣었어요');
 }
 
 // ---------- boot ----------
@@ -818,7 +654,6 @@ openStore().then((s) => {
     },
     (message) => toast(message),
   );
-  render();
 });
 
 // Countdowns move on their own; skip while a quick edit is open so typed values survive.
