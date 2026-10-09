@@ -11,7 +11,8 @@
     "typecheck": "tsc --noEmit",
     "promo": "tsx src/promo/cli.ts",
     "build:artifact": "vite build -c vite.artifact.config.ts && node scripts/build-assistant-artifact.mjs",
-    "build:travel-artifact": "node scripts/build-travel-artifact.mjs"
+    "build:travel-artifact": "node scripts/build-travel-artifact.mjs",
+    "export:travel": "node scripts/export-travel.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.131.0",

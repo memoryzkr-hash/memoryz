@@ -124,6 +124,13 @@ map.insets = () => {
   const lowest = Math.min(ctl.top, cta?.top ?? Infinity);
   return { top: Math.max(20, hud.bottom - m.top + 20), bottom: Math.max(20, m.bottom - lowest + 20) };
 };
+map.onLocate = (at, error) => {
+  if (error) toast(error);
+  const first = !view.me && at;
+  view.me = at;
+  if (first) toast('내 위치를 찾았어요. 일정에 가장 가까운 곳을 알려 줄게요');
+  drawPanel();
+};
 map.onCameraChange = (mode) => {
   wantsOverview = mode === 'overview' && player.started;
 };

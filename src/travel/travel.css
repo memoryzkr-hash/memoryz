@@ -1412,6 +1412,41 @@ h3 {
   color: color-mix(in srgb, var(--bg) 70%, transparent);
 }
 
+.here {
+  margin-bottom: 16px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: var(--blue-soft);
+}
+
+.here-k {
+  color: var(--blue);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.here-v {
+  display: block;
+  margin-top: 2px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 700;
+  text-align: left;
+}
+
+.here-opts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin-top: 6px;
+  color: var(--sub);
+  font-size: 14px;
+  font-weight: 600;
+}
+
 .warnings {
   display: flex;
   flex-direction: column;

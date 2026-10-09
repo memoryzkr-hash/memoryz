@@ -117,6 +117,8 @@ export class TripMap {
   /** Told whether the real street map is showing. */
   onTilesChange: (ok: boolean) => void = () => {};
   onCameraChange: (mode: CameraMode) => void = () => {};
+  /** The person's own position from the 📍 button (browser location), or null when it stops. */
+  onLocate: (at: LatLng | null, error?: string) => void = () => {};
 
   constructor(el: HTMLElement, onClick: (at: LatLng) => void) {
     this.map = new maplibregl.Map({
@@ -131,6 +133,18 @@ export class TripMap {
       localIdeographFontFamily: "'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif",
     });
     this.map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
+    // 📍 My location: the browser's Geolocation API (HTTPS or localhost only, asks permission once).
+    const geo = new maplibregl.GeolocateControl({
+      positionOptions: { enableHighAccuracy: true },
+      trackUserLocation: true,
+      fitBoundsOptions: { maxZoom: 16 },
+    });
+    this.map.addControl(geo, 'top-right');
+    geo.on('trackuserlocationstart', () => this.setCamera('overview', false));
+    geo.on('geolocate', (e: GeolocationPosition) => this.onLocate([e.coords.latitude, e.coords.longitude]));
+    geo.on('error', (e: GeolocationPositionError) =>
+      this.onLocate(null, e.code === 1 ? '위치 권한이 꺼져 있어요. 브라우저 설정에서 허용해 주세요' : '지금 위치를 찾을 수 없어요'),
+    );
     this.map.on('style.load', () => this.addOverlays());
     this.map.on('click', (e) => onClick([e.lngLat.lat, e.lngLat.lng]));
     // A drag or rotate by hand means "let me look": stop steering the camera.

@@ -3,6 +3,7 @@ import { compareModes, MODE_CHOICES, MODES, RUSH_FACTOR, speedKmh } from '../cor
 import { formatKrw, formatMoney, type Region } from '../core/regions';
 import type { DaySchedule, TripSchedule } from '../core/schedule';
 import type { RoadLookup } from '../core/roads';
+import { haversineKm, type LatLng } from '../core/geo';
 import { formatClock, formatDuration } from '../core/time';
 import type { Mode, ModeChoice, TripPlan } from '../core/types';
 import { LIMITS } from '../core/validate';
@@ -17,6 +18,8 @@ export interface PanelView {
   editing: boolean;
   /** Leg (index of the stop it arrives at) whose mode picker is open. */
   openLeg: number | null;
+  /** Where the person is right now, once they share their location. */
+  me?: LatLng | null;
 }
 
 export interface PanelActions {
@@ -128,11 +131,37 @@ function planTab(plan: TripPlan, sched: TripSchedule, view: PanelView, a: PanelA
     'div',
     { class: 'plan' },
     dayTabs,
+    view.me ? hereCard(view.me, day, sched, plan.travelers, a, roads) : null,
     warnings,
     toolbar,
     facts,
     h('ol', { class: `route${view.editing ? ' editing' : ''}` }, ...routeRows(day, sched, plan.travelers, view, a, roads)),
     h('p', { class: 'hint' }, view.editing ? '지도를 누르면 그 자리에 장소를 넣을 수 있어요.' : '시각을 누르면 그 순간으로 이동해요. 이동 수단을 누르면 다른 수단과 비교할 수 있어요.'),
+  );
+}
+
+/** "From where I stand": the nearest stop of the day and how to get there now. */
+function hereCard(me: LatLng, day: DaySchedule, sched: TripSchedule, travelers: number, a: PanelActions, roads?: RoadLookup): HTMLElement {
+  let best = 0;
+  day.visits.forEach((v, i) => {
+    if (haversineKm(me, [v.stop.lat, v.stop.lng]) < haversineKm(me, [day.visits[best].stop.lat, day.visits[best].stop.lng])) best = i;
+  });
+  const v = day.visits[best];
+  const km = haversineKm(me, [v.stop.lat, v.stop.lng]);
+  const now = new Date();
+  const options = km < 0.05 ? [] : compareModes(me, [v.stop.lat, v.stop.lng], now.getHours() * 60 + now.getMinutes(), sched.region, travelers, roads).filter((o) => o.mode !== 'car').slice(0, 3); // no rental car for "from where I stand"
+  return h(
+    'div',
+    { class: 'here' },
+    h('p', { class: 'here-k' }, '지금 내 위치에서'),
+    h(
+      'button',
+      { type: 'button', class: 'here-v', onClick: () => a.seekVisit(best) },
+      km < 0.05 ? `${v.stop.name}에 있어요` : `가장 가까운 곳은 ${v.stop.name} · ${km < 1 ? `${Math.round(km * 1000)}m` : `${km.toFixed(1)}km`}`,
+    ),
+    options.length
+      ? h('div', { class: 'here-opts' }, ...options.map((o) => h('span', null, `${MODES[o.mode].icon} ${formatDuration(o.minutes)} · ${o.cost ? formatMoney(sched.region, o.cost) : '무료'}`)))
+      : null,
   );
 }
 
