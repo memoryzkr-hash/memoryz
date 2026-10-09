@@ -5,7 +5,15 @@ import type { CalEvent } from '../core/types';
 
 export type View = 'start' | 'news' | 'events' | 'messages' | 'settings';
 
+/** Where the deployed key version lives (linked from the no-key version). */
+export const KEY_VERSION_URL = 'https://memoryzkr-hash.github.io/memoryz/assistant.html';
+
 export interface App {
+  /** `key`: the viewer's Anthropic API key, briefings search the web.
+   *  `claude`: inside a Claude artifact, Claude via the viewer's account, no key. */
+  readonly mode: 'key' | 'claude';
+  /** Where the data lives: this browser, or the viewer's Claude account (artifact database). */
+  readonly savedIn: 'browser' | 'account';
   readonly store: AssistantStore;
   /** null until a key is saved. */
   ai(): Ai | null;

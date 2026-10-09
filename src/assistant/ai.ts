@@ -24,7 +24,7 @@ const FALLBACK = { betas: ['server-side-fallback-2026-07-01'], fallbacks: 'defau
 /** Server-side search loops can pause; resume at most this many times. */
 const MAX_CONTINUATIONS = 3;
 
-export type AiErrorKind = 'auth' | 'rate' | 'network' | 'server' | 'refusal' | 'bad' | 'aborted';
+export type AiErrorKind = 'auth' | 'rate' | 'network' | 'server' | 'refusal' | 'bad' | 'aborted' | 'unavailable';
 
 export class AiError extends Error {
   constructor(readonly kind: AiErrorKind, message: string) {
@@ -40,7 +40,17 @@ const MESSAGES: Record<AiErrorKind, string> = {
   refusal: '이 요청은 처리할 수 없어요. 내용을 바꿔 다시 시도해 주세요',
   bad: '응답을 이해하지 못했어요. 다시 시도해 주세요',
   aborted: '취소했어요',
+  unavailable: 'Claude를 쓸 수 없어요. 이 페이지에서 Claude 사용을 허용했는지 확인해 주세요',
 };
+
+export interface TopicBriefing {
+  topic: string;
+  result: BriefingResult;
+}
+
+export function aiMessage(kind: AiErrorKind): string {
+  return MESSAGES[kind];
+}
 
 export function toAiError(e: unknown): AiError {
   if (e instanceof AiError) return e;
@@ -56,6 +66,10 @@ export function toAiError(e: unknown): AiError {
 }
 
 export interface Ai {
+  /** True when briefings search the web themselves (API key mode). */
+  readonly canSearch: boolean;
+  /** No-key mode: sort pasted articles into the viewer's topics. */
+  briefFromText?(text: string, topics: string[], today: string, timeZone: string, signal?: AbortSignal): Promise<TopicBriefing[]>;
   /** Free check: asks for the model's info, which needs a valid key but no tokens. */
   testKey(signal?: AbortSignal): Promise<void>;
   briefTopic(topic: string, settings: Settings, today: string, timeZone: string, signal?: AbortSignal): Promise<BriefingResult>;
@@ -86,6 +100,8 @@ export function createAi(apiKey: string): Ai {
   };
 
   return {
+    canSearch: true,
+
     testKey: (signal) =>
       guard(async () => {
         await client.models.retrieve(MODEL, {}, { signal });

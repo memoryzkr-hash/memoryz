@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "promo": "tsx src/promo/cli.ts"
+    "promo": "tsx src/promo/cli.ts",
+    "build:artifact": "vite build -c vite.artifact.config.ts && node scripts/build-assistant-artifact.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.131.0",
