@@ -718,6 +718,32 @@ input[type='range'] {
   color: var(--text-2);
 }
 
+.token-box {
+  background: var(--blue-soft);
+  border-radius: 14px;
+  padding: 14px 16px;
+  display: grid;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--text-2);
+}
+.token-box strong {
+  color: var(--text);
+  font-size: 15px;
+}
+.token-box .opt {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--blue);
+  margin-top: 4px;
+}
+.token-box code {
+  font-size: 12.5px;
+}
+.token-box .cmd {
+  background: var(--card);
+}
+
 /* ---------- import ---------- */
 .plan-list {
   list-style: none;

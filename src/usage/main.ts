@@ -414,11 +414,13 @@ function openEdit(existing: Account | null): void {
     );
 
   const field = (id: string, label: string, input: HTMLElement) => h('div', { class: 'field' }, h('label', { htmlFor: id }, label), input);
+  const guideBox = h('div', null, tokenGuide(a.name));
+  name.addEventListener('input', () => replaceChildren(guideBox, tokenGuide(name.value)));
   const form = h(
     'form',
     { class: 'form', novalidate: true },
     field('f-name', '계정 이름', name),
-    h('p', { class: 'hint tight' }, '맥 스크립트에 등록할 이름과 같게 적으면 자동으로 연결돼요.'),
+    guideBox,
     h('div', { class: 'grid2' }, field('f-email', '이메일', email), field('f-plan', '요금제', plan)),
     h('div', { class: 'group' }, knowsReset.el, resetBox, knowsUsage.el, weekly.el),
     h('div', { class: 'group' }, session.el),
@@ -565,18 +567,41 @@ function installCommand(): string {
   ].join(' && ');
 }
 
+/** A code line with its own copy button (and a selectable fallback when the clipboard is blocked). */
+function copyRow(label: string, text: string, done = '복사했어요. 터미널에 붙여 넣으세요.'): HTMLElement {
+  const fallback = h('textarea', { class: 'code-fallback', rows: 2, readOnly: true, value: text, hidden: true, 'aria-label': label });
+  return h(
+    'div',
+    { class: 'cmd' },
+    h('code', null, label),
+    h('button', { type: 'button', class: 'btn small secondary', onClick: () => copy(text, done, fallback) }, '복사'),
+    fallback,
+  );
+}
+
+/** Environment variable the cloud fetcher reads for an account: "memoryz.kr" → CLAUDE_USAGE_TOKEN_MEMORYZ_KR. */
+function envVarFor(name: string): string {
+  return `CLAUDE_USAGE_TOKEN_${name.trim().toUpperCase().replace(/[^A-Z0-9]+/g, '_').replace(/^_|_$/g, '') || '계정이름'}`;
+}
+
+/** Where this account's token goes. The page itself never takes one. */
+function tokenGuide(name: string): HTMLElement {
+  const n = name.trim() || '계정이름';
+  return h(
+    'div',
+    { class: 'token-box' },
+    h('strong', null, '사용량 자동 조회 연결'),
+    h('p', null, '토큰은 이 페이지에 적지 않아요. 아래 둘 중 한 곳에 넣으면 이 계정과 자동으로 연결돼요.'),
+    h('p', { class: 'opt' }, '클로드에게 맡기기 · 클라우드 환경 설정 → 비밀 값의 이름'),
+    copyRow(envVarFor(n), envVarFor(n), '변수 이름을 복사했어요. 값에는 토큰을 넣으세요.'),
+    h('p', { class: 'opt' }, '내 맥에서 · 터미널'),
+    copyRow(`claude-usage add ${n}`, `claude-usage add ${n}`),
+  );
+}
+
 function openSetup(): void {
   const sheet = openSheet('맥에서 자동으로 불러오기');
-  const cmd = (label: string, command: string) => {
-    const fallback = h('textarea', { class: 'code-fallback', rows: 2, readOnly: true, value: command, hidden: true, 'aria-label': `${label} 명령` });
-    return h(
-      'div',
-      { class: 'cmd' },
-      h('code', null, label),
-      h('button', { type: 'button', class: 'btn small secondary', onClick: () => copy(command, '복사했어요. 터미널에 붙여 넣으세요.', fallback) }, '복사'),
-      fallback,
-    );
-  };
+  const cmd = (label: string, command: string) => copyRow(label, command);
   const names = ordered().map(nameOf);
   const step = (n: number, title: string, ...body: (Node | string | false)[]) =>
     h('li', { class: 'step' }, h('span', { class: 'step-n' }, String(n)), h('div', { class: 'step-body' }, h('strong', null, title), ...body.filter((b): b is Node | string => b !== false)));
