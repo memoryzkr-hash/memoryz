@@ -104,6 +104,16 @@ export class Agent {
       this.warn('state.json을 읽지 못해 새로 시작했어요 (원본은 state.corrupt-*.json으로 옮겼어요)');
     }
     this.state = state;
+    // Comments a person marked as handled in the dashboard leave the inbox.
+    const done = await this.d.data.read('inbox-done.json');
+    if (done) {
+      try {
+        const keys = new Set(JSON.parse(done) as string[]);
+        this.state.inbox = this.state.inbox.filter((i) => !keys.has(i.key));
+      } catch {
+        this.warn('inbox-done.json을 읽지 못했어요');
+      }
+    }
   }
 
   /** A dry run leaves no trace in state, so the real run still sees its slot as due. */

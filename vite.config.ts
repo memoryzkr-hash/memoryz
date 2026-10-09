@@ -12,6 +12,7 @@ export default defineConfig({
         assistant: resolve(import.meta.dirname, 'assistant.html'),
         usage: resolve(import.meta.dirname, 'usage.html'),
         beat: resolve(import.meta.dirname, 'beat.html'),
+        promo: resolve(import.meta.dirname, 'promo.html'),
       },
     },
   },

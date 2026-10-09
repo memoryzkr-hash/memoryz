@@ -117,6 +117,12 @@ Variables는 같은 화면의 **Variables** 탭입니다.
 
 ## 11. 평소 운영
 
+가장 편한 방법은 **관제실** 웹 화면이에요: `https://<내아이디>.github.io/<저장소>/promo.html` (GitHub Pages가 켜져 있어야 해요).
+휴대폰에서 열고 브라우저 메뉴의 **홈 화면에 추가**를 누르면 앱처럼 쓸 수 있어요.
+**설정** 탭에서 저장소 이름과 토큰을 넣으면 연결됩니다. 토큰은 https://github.com/settings/personal-access-tokens 에서
+이 저장소만 골라 **Contents: Read and write**, **Actions: Read and write** 권한으로 만드세요. 토큰은 그 브라우저에만 저장돼요.
+관제실에서 초안 확인·수정·승인, 댓글 처리 완료, 지금 실행을 모두 할 수 있고, 아래 표의 GitHub 방법도 그대로 쓸 수 있어요.
+
 | 하고 싶은 것 | 방법 |
 | --- | --- |
 | 무엇을 했는지 보기 | `promo-data` 브랜치의 `report.md`, 또는 Actions 실행의 Summary |

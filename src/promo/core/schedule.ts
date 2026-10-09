@@ -76,3 +76,23 @@ export function draftIdFor(now: Date, timeZone: string, slot: string | null): st
   const local = localParts(now, timeZone);
   return `${local.date}-${local.time.replace(':', '')}-now`;
 }
+
+/** The next slot at or after `now` (within 8 days), for the dashboard countdown. */
+export function nextSlot(now: Date, timeZone: string, slots: Slot[]): { key: string; date: string; time: string; weekday: Weekday; minutes: number } | null {
+  if (!slots.length) return null;
+  const local = localParts(now, timeZone);
+  const nowMin = wallMinutes(local.date, local.time);
+  let best: { key: string; date: string; time: string; weekday: Weekday; minutes: number } | null = null;
+  for (let d = 0; d <= 7; d++) {
+    const date = addDays(local.date, d);
+    const weekday = weekdayOf(date);
+    for (const slot of slots) {
+      if (!slot.days.includes(weekday)) continue;
+      const minutes = wallMinutes(date, slot.time) - nowMin;
+      if (minutes < 0) continue;
+      if (!best || minutes < best.minutes) best = { key: slotKey(date, slot.time), date, time: slot.time, weekday, minutes };
+    }
+    if (best) return best;
+  }
+  return best;
+}

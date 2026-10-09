@@ -376,6 +376,16 @@ describe('comments', () => {
     expect(ig.replies).toHaveLength(1);
   });
 
+  it('comments marked handled in the dashboard leave the inbox', async () => {
+    const ig = fakePlatform('instagram');
+    ig.inbox = [comment({ id: 'c', text: '환불해 주세요' })];
+    await runOnce(config, fakeAi(), { instagram: ig });
+    await data.write('inbox-done.json', JSON.stringify(['instagram:c']));
+    const agent = await runOnce(config, fakeAi(), { instagram: ig });
+    expect(agent.state.inbox).toEqual([]);
+    expect(await data.read('inbox.md')).toContain('지금은 없어요');
+  });
+
   it('a failed reply is escalated with the error', async () => {
     const ig = fakePlatform('instagram');
     ig.inbox = [comment()];

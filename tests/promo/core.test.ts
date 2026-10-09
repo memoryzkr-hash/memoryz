@@ -3,7 +3,7 @@ import { capReplies, decide, pendingComments, replyProblem } from '../../src/pro
 import { DEFAULT_CONFIG, parseConfig } from '../../src/promo/core/config';
 import { parseDraft, serializeDraft } from '../../src/promo/core/draft';
 import { allowedUrls, checkContent, hasBlocking, instagramCaption, normalizeContent } from '../../src/promo/core/rules';
-import { addDays, draftIdFor, dueSlots, localParts, pickSlot } from '../../src/promo/core/schedule';
+import { addDays, draftIdFor, dueSlots, localParts, nextSlot, pickSlot } from '../../src/promo/core/schedule';
 import { emptyState, parseState, pruneState } from '../../src/promo/core/state';
 import { findUrls, isAllowedUrl, threadsLength, uniqueHashtags } from '../../src/promo/core/text';
 import type { CommentDecision } from '../../src/promo/core/types';
@@ -89,6 +89,13 @@ describe('schedule', () => {
   it('runs only the newest of piled-up slots', () => {
     expect(pickSlot(['a', 'b', 'c'])).toEqual({ run: 'c', skipped: ['a', 'b'] });
     expect(pickSlot([])).toEqual({ run: null, skipped: [] });
+  });
+
+  it('finds the next slot for the countdown', () => {
+    // Fri 09:30 KST → next is Mon 09:00 (Fri slot already passed)
+    expect(nextSlot(at('2026-10-09T00:30:00Z'), 'Asia/Seoul', slots)).toMatchObject({ key: '2026-10-12@09:00', weekday: 'mon', minutes: 3 * 24 * 60 - 30 });
+    expect(nextSlot(at('2026-10-08T23:00:00Z'), 'Asia/Seoul', slots)).toMatchObject({ key: '2026-10-09@09:00', minutes: 60 });
+    expect(nextSlot(at('2026-10-09T00:30:00Z'), 'Asia/Seoul', [])).toBeNull();
   });
 
   it('draft ids come from the slot or the clock', () => {
