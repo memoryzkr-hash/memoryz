@@ -4,6 +4,7 @@ import type { Grade } from '../core/judge';
 import type { Palette, TrackDef } from '../core/levels';
 
 export interface Hud {
+  score: number;
   hearts: number;
   /** Lives this chart starts with. */
   maxHearts: number;
@@ -79,6 +80,10 @@ export class Renderer {
   private safeTop = 0;
   private safeBottom = 0;
   private lastCombo = 0;
+  /** The score as shown: it rolls up towards the real one. */
+  private shownScore = 0;
+  private lastScore = 0;
+  private gains: { amount: number; at: number }[] = [];
   private comboAt = -1;
   private readonly calm = matchMedia('(prefers-reduced-motion: reduce)');
 
@@ -110,6 +115,9 @@ export class Renderer {
     this.trail = [];
     this.hitAt.clear();
     this.camY = 0;
+    this.shownScore = 0;
+    this.lastScore = 0;
+    this.gains = [];
   }
 
   // ---------- effects ----------
@@ -614,12 +622,36 @@ export class Renderer {
     g.fillStyle = alpha('#ffffff', 0.9);
     g.fillText(hud.practice ? '연습 · 무한' : `구절 ${hud.restored}/${hud.phrases}`, x0 + hud.maxHearts * 26 + 8, top + 32);
 
+    // Live score, rolling up, with the latest gains floating off it.
+    const now = performance.now();
+    if (hud.score < this.lastScore) this.shownScore = hud.score;
+    if (hud.score > this.lastScore) this.gains.push({ amount: hud.score - this.lastScore, at: now });
+    this.lastScore = hud.score;
+    this.shownScore += (hud.score - this.shownScore) * (this.calm.matches ? 1 : 0.18);
+    if (Math.abs(hud.score - this.shownScore) < 1) this.shownScore = hud.score;
     g.textAlign = 'right';
     g.textBaseline = 'top';
-    g.font = `16px ${DISPLAY}`;
+    g.font = `24px ${DISPLAY}`;
+    g.lineWidth = 4;
+    g.lineJoin = 'round';
+    g.strokeStyle = alpha(p.ink, 0.6);
+    const scoreText = Math.round(this.shownScore).toLocaleString('ko-KR');
+    g.strokeText(scoreText, x1, top + 16);
     g.fillStyle = '#ffffff';
-    g.fillText(`${(hud.accuracy * 100).toFixed(1)}%`, x1, top + 18);
-    const now = performance.now();
+    g.fillText(scoreText, x1, top + 16);
+    const scoreW = g.measureText(scoreText).width;
+    this.gains = this.gains.filter((q) => now - q.at < 700);
+    this.gains.forEach((q) => {
+      const k = (now - q.at) / 700;
+      g.globalAlpha = 1 - k;
+      g.font = `14px ${DISPLAY}`;
+      g.fillStyle = p.accent;
+      g.fillText(`+${q.amount.toLocaleString('ko-KR')}`, x1 - scoreW - 10, top + 22 - k * 14);
+    });
+    g.globalAlpha = 1;
+    g.font = `600 12px ${BODY}`;
+    g.fillStyle = alpha('#ffffff', 0.85);
+    g.fillText(`정확도 ${(hud.accuracy * 100).toFixed(1)}%`, x1, top + 46);
     if (hud.combo !== this.lastCombo) {
       if (hud.combo > this.lastCombo) this.comboAt = now;
       this.lastCombo = hud.combo;
@@ -627,10 +659,11 @@ export class Renderer {
     if (hud.combo >= 3) {
       const grow = this.calm.matches ? 1 : 1 + 0.25 * Math.max(0, 1 - ((now - this.comboAt) / 1000) * 6);
       g.font = `${20 * grow}px ${DISPLAY}`;
-      g.fillText(`${hud.combo}`, x1, top + 40);
+      g.fillStyle = '#ffffff';
+      g.fillText(`${hud.combo}`, x1, top + 66);
       g.font = `600 11px ${BODY}`;
       g.fillStyle = alpha('#ffffff', 0.75);
-      g.fillText('콤보', x1, top + 64);
+      g.fillText(`콤보 ×${(1 + Math.min(hud.combo, 50) / 50).toFixed(1)}`, x1, top + 90);
     }
 
     // Timing meter: where your recent presses landed, early to late.

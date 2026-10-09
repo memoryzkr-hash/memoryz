@@ -29,12 +29,17 @@
           <span class="en" aria-hidden="true">ECHO BOUNCE</span>
         </h1>
         <p class="tag">들은 대로 치면, 그 음표가 길이 된다</p>
-        <p class="credit">수록곡 4곡 모두 이 게임이 직접 작곡한 오리지널 곡</p>
+        <p class="credit">기본 4곡은 이 게임이 직접 작곡한 오리지널 곡 · 내 음악 파일도 불러올 수 있어요</p>
       </header>
       <div class="deck">
         <div id="diffs" class="diffs" role="radiogroup" aria-label="난이도"></div>
         <div class="deck-head" aria-hidden="true"><span>트랙</span><span>BPM</span><span>길이</span><span>기록</span></div>
         <ol id="tracks" class="tracks"></ol>
+        <div class="import">
+          <button id="import" class="import-btn" type="button">＋ 내 음악 불러오기 <small>MP3 · WAV · OGG</small></button>
+          <input type="file" id="import-file" accept="audio/*,.mp3,.wav,.ogg,.m4a,.flac" hidden />
+          <p id="import-status" class="import-status" role="status">NCS 곡처럼 갖고 있는 음악 파일을 올리면 박자와 리듬을 분석해 그 곡 그대로 악보를 만들어요. 파일은 이 브라우저 안에서만 쓰여요.</p>
+        </div>
         <div class="chips">
           <label class="chip"><input type="checkbox" id="opt-guide" /><span>메아리 그림자</span></label>
           <label class="chip"><input type="checkbox" id="opt-practice" /><span>무한 목숨</span></label>
@@ -66,7 +71,7 @@
         <div class="rank" id="res-rank">S</div>
         <p class="new-best" id="res-new" hidden>최고 기록!</p>
         <dl class="stats">
-          <div class="wide"><dt>정확도</dt><dd id="res-acc">0%</dd></div>
+          <div class="wide"><dt>점수</dt><dd id="res-score">0</dd><p id="res-acc" class="acc-line">정확도 0%</p></div>
           <div><dt>PERFECT</dt><dd id="res-perfect">0</dd></div>
           <div><dt>GREAT</dt><dd id="res-great">0</dd></div>
           <div><dt>GOOD</dt><dd id="res-good">0</dd></div>

@@ -1,4 +1,5 @@
-import type { ComposedSong, MelodyNote } from './compose';
+import { AnalysisError, type Analysis } from './analyze';
+import type { BarRole, ComposedSong, MelodyNote } from './compose';
 import { WINDOW_BEATS } from './constants';
 import type { EchoNote, EchoSong } from './echo';
 
@@ -82,5 +83,101 @@ export function chart(song: ComposedSong, d: Difficulty): EchoSong {
     catchBeats: Math.min(WINDOW_BEATS, (def.catchMs / 1000) * (song.style.bpm / 60)),
     hearts: def.hearts,
     decor,
+  };
+}
+
+/** How each difficulty picks from a recording's eighth-note slots. */
+const AUDIO_PICK: Record<Difficulty, { share: number; perBar: number; onBeatOnly: boolean }> = {
+  easy: { share: 0.3, perBar: 2, onBeatOnly: true },
+  normal: { share: 0.45, perBar: 4, onBeatOnly: false },
+  hard: { share: 0.6, perBar: 6, onBeatOnly: false },
+};
+
+/**
+ * A chart from a real recording (see analyze.ts). Bars pair up into listen / play-back phrases
+ * like the written songs, but each bar keeps its own rhythm: in a response bar you play what the
+ * recording actually hits there. Strong hits first; harder levels take more of them.
+ */
+export function chartAudio(an: Analysis, d: Difficulty): EchoSong {
+  const def = difficultyOf(d);
+  const rule = AUDIO_PICK[d];
+  const bars = Math.floor(an.slots.length / 8);
+  const strengths = an.slots.map((s) => s.strength).filter((v) => v > 0.02).sort((a, b) => b - a);
+  const floor = strengths[Math.min(strengths.length - 1, Math.floor(strengths.length * rule.share))] ?? 1;
+
+  const picks: number[][] = [];
+  for (let b = 0; b < bars; b++) {
+    const cells = [...Array(8).keys()]
+      .filter((c) => !rule.onBeatOnly || c % 2 === 0)
+      .filter((c) => an.slots[b * 8 + c].strength >= floor && an.slots[b * 8 + c].strength > 0.02)
+      .sort((x, y) => an.slots[b * 8 + y].strength - an.slots[b * 8 + x].strength)
+      .slice(0, rule.perBar)
+      .sort((x, y) => x - y);
+    picks.push(cells);
+  }
+  const first = picks.findIndex((p) => p.length > 0);
+  if (first < 0) throw new AnalysisError('박자를 찾지 못했어요. 비트가 분명한 곡으로 해 보세요.');
+  let last = bars - 1;
+  while (last > first && picks[last].length === 0) last--;
+  // Response bars come in pairs after the first call; make the last pair whole.
+  if ((last - first) % 2 === 0) last++;
+
+  const brights = an.slots.map((s) => s.bright).sort((a, b) => a - b);
+  const qb = (p: number) => brights[Math.min(brights.length - 1, Math.floor(p * brights.length))];
+  const lineOf = (bright: number) => (bright < qb(0.2) ? 1 : bright < qb(0.4) ? 2 : bright < qb(0.6) ? 3 : bright < qb(0.8) ? 4 : 5);
+
+  const barRoles: BarRole[] = [];
+  const barPhrase: number[] = [];
+  const notes: EchoNote[] = [];
+  let phrases = 0;
+  const total = last + 2;
+  for (let b = 0; b < total; b++) {
+    if (b < first) {
+      barRoles.push('intro');
+      barPhrase.push(-1);
+      continue;
+    }
+    if (b > last) {
+      barRoles.push('outro');
+      barPhrase.push(-1);
+      continue;
+    }
+    const role = (b - first) % 2 === 0 ? 'call' : 'response';
+    barRoles.push(role);
+    if (role === 'call') {
+      // A phrase only counts when its response bar has something to play.
+      const hasAnswer = (picks[b + 1] ?? []).length > 0;
+      barPhrase.push(hasAnswer ? phrases : -1);
+      barPhrase.push(hasAnswer ? phrases : -1);
+      if (hasAnswer) phrases++;
+    }
+  }
+  for (let b = first; b <= last; b++) {
+    const role = barRoles[b] as 'call' | 'response';
+    const cells = picks[b] ?? [];
+    const bright = cells.map((c) => an.slots[b * 8 + c].bright);
+    const mid = bright.length ? [...bright].sort((x, y) => x - y)[bright.length >> 1] : 0;
+    cells.forEach((c, k) => {
+      const s = an.slots[b * 8 + c];
+      let pitch = lineOf(s.bright);
+      if (def.twoKeys) {
+        const high = bright.length > 1 ? s.bright > mid || (s.bright === mid && k % 2 === 1) : s.bright >= qb(0.5);
+        pitch = high ? (s.bright >= qb(0.8) ? 5 : 4) : s.bright < qb(0.2) ? 1 : 2;
+      }
+      notes.push({ beat: b * 4 + c / 2, pitch, role, phrase: barPhrase[b], midi: 0 });
+    });
+  }
+  if (!notes.some((n) => n.role === 'call')) throw new AnalysisError('박자를 찾지 못했어요. 비트가 분명한 곡으로 해 보세요.');
+  return {
+    notes,
+    barRoles,
+    barPhrase,
+    energy: barRoles.map((_, b) => an.barEnergy[b] ?? 1),
+    phrases,
+    twoKeys: def.twoKeys,
+    endBeat: total * 4,
+    catchBeats: Math.min(WINDOW_BEATS, (def.catchMs / 1000) * (an.bpm / 60)),
+    hearts: def.hearts,
+    decor: [],
   };
 }

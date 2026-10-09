@@ -46,23 +46,23 @@ export function renderTracks(
     const rec = records[recordKey(t.id, d)];
     const len = songLength(t.style.bpm, info[i].beats);
     const best = rec?.rank
-      ? `<span class="badge" data-rank="${rec.rank}">${rec.rank}</span><b>${(rec.accuracy * 100).toFixed(1)}%</b>`
+      ? `<span class="badge" data-rank="${rec.rank}">${rec.rank}</span><b>${(rec.bestScore ?? 0).toLocaleString('ko-KR')}</b>`
       : rec && rec.bestPct > 0 ? `최고 <b>${Math.floor(rec.bestPct * 100)}%</b>` : '—';
     b.innerHTML = `
       <span class="no">${String(i + 1).padStart(2, '0')}</span><span class="play">${PLAY_ICON}</span>
       <span class="title"><span class="name"></span><span class="sub"><span class="tagline"></span> · 노트 ${info[i].notes}</span></span>
-      <span class="num">${t.style.bpm}</span><span class="num">${len}</span>
+      <span class="num">${Math.round(t.style.bpm)}</span><span class="num">${len}</span>
       <span class="best">${best}</span>`;
     b.querySelector('.name')!.textContent = t.name;
     b.querySelector('.tagline')!.textContent = t.tagline;
     if (i === next && !rec?.rank) {
       const tag = document.createElement('span');
       tag.className = 'next';
-      tag.textContent = i === 0 && !rec ? '처음이면 여기' : '다음';
+      tag.textContent = t.recording ? '새로 불러옴' : i === 0 && !rec ? '처음이면 여기' : '다음';
       b.querySelector('.name')!.appendChild(tag);
     }
     const recText = rec?.rank ? `클리어 ${rec.rank}, 정확도 ${(rec.accuracy * 100).toFixed(1)}%` : rec?.bestPct ? `최고 ${Math.floor(rec.bestPct * 100)}%` : '기록 없음';
-    b.setAttribute('aria-label', `${i + 1}번 트랙 ${t.name}, ${t.style.bpm} BPM, ${len}, 노트 ${info[i].notes}개. ${recText}. 누르면 시작`);
+    b.setAttribute('aria-label', `${i + 1}번 트랙 ${t.name}, ${Math.round(t.style.bpm)} BPM, ${len}, 노트 ${info[i].notes}개. ${recText}. 누르면 시작`);
     b.addEventListener('click', () => onPick(t));
     li.appendChild(b);
     return { li, b };
@@ -100,6 +100,7 @@ export interface ResultView {
   accuracy: number;
   counts: Record<Grade, number>;
   maxCombo: number;
+  score: number;
   /** Phrases echoed back without a miss. */
   restored: number;
   phrases: number;
@@ -132,7 +133,8 @@ export function fillResult(r: ResultView): void {
   void rank.offsetWidth;
   rank.style.animation = '';
   $('res-new').hidden = !r.improved;
-  $('res-acc').textContent = `${(r.accuracy * 100).toFixed(1)}%`;
+  $('res-score').textContent = r.score.toLocaleString('ko-KR');
+  $('res-acc').textContent = `정확도 ${(r.accuracy * 100).toFixed(1)}%`;
   $('res-perfect').textContent = String(r.counts.perfect);
   $('res-great').textContent = String(r.counts.great);
   $('res-good').textContent = String(r.counts.good);

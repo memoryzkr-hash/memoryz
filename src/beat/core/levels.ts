@@ -1,4 +1,5 @@
-import { chart, type Difficulty } from './charts';
+import type { Analysis } from './analyze';
+import { chart, chartAudio, type Difficulty } from './charts';
 import { compose, type ComposedSong, type StyleSheet } from './compose';
 import type { EchoSong } from './echo';
 
@@ -26,7 +27,10 @@ export interface TrackDef {
   /** Genre and feel, a few words. */
   tagline: string;
   palette: Palette;
+  /** Written songs: the songwriter's sheet. Loaded recordings carry a stand-in with their tempo. */
   style: StyleSheet;
+  /** A recording the player loaded: its decoded audio and what the analyzer heard in it. */
+  recording?: { buffer: AudioBuffer; analysis: Analysis; artist?: string };
 }
 
 const MAJOR = [0, 2, 4, 5, 7, 9, 11];
@@ -132,8 +136,32 @@ export function chartOf(track: TrackDef, d: Difficulty): EchoSong {
   const key = `${track.id}:${d}`;
   let c = charts.get(key);
   if (!c) {
-    c = chart(songOf(track), d);
+    c = track.recording ? chartAudio(track.recording.analysis, d) : chart(songOf(track), d);
     charts.set(key, c);
   }
   return c;
+}
+
+/** How many beats the track runs (for its length on the tracklist). */
+export function trackBeats(track: TrackDef): number {
+  return track.recording ? chartOf(track, 'normal').endBeat : songOf(track).endBeat;
+}
+
+const LOADED_PALETTES: Palette[] = [
+  { skyTop: '#3a1c71', skyBottom: '#d76d77', staff: '#fff1f3', ink: '#1a0b2e', accent: '#ffaf7b', ball: '#fffaf5' },
+  { skyTop: '#0b6e4f', skyBottom: '#7ad0a4', staff: '#effff6', ink: '#08261c', accent: '#ffe066', ball: '#fffdf5' },
+  { skyTop: '#c0392b', skyBottom: '#f39c12', staff: '#fff6e8', ink: '#2a0d07', accent: '#2ee6d6', ball: '#fffaf0' },
+];
+
+/** A track for a recording the player loaded. Its tempo comes from the analyzer. */
+export function loadedTrack(name: string, artist: string | undefined, buffer: AudioBuffer, analysis: Analysis): TrackDef {
+  const n = [...name].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7);
+  return {
+    id: `file:${name}:${Math.round(analysis.duration)}`,
+    name,
+    tagline: `${artist ? `${artist} · ` : ''}내 음악 · 박자 자동 분석`,
+    palette: LOADED_PALETTES[n % LOADED_PALETTES.length],
+    style: { ...TRACKS[0].style, bpm: analysis.bpm },
+    recording: { buffer, analysis, artist },
+  };
 }

@@ -8,6 +8,8 @@ export interface StageRecord {
   /** Best clear, or null before the first. */
   rank: Rank | null;
   accuracy: number;
+  /** Highest score in any attempt (cleared or not). */
+  bestScore?: number;
 }
 
 export interface Settings {
@@ -23,15 +25,17 @@ export const DEFAULT_SETTINGS: Settings = { offsetMs: 0, guide: true, practice: 
 
 const RANK_ORDER: Record<Rank, number> = { S: 4, A: 3, B: 2, C: 1 };
 
-export type AttemptResult = { cleared: false; pct: number } | { cleared: true; rank: Rank; accuracy: number };
+export type AttemptResult = ({ cleared: false; pct: number } | { cleared: true; rank: Rank; accuracy: number }) & { score?: number };
 
 /** Folds one normal-mode attempt into a stage record. `improved` is true when something got better. */
 export function mergeRecord(prev: StageRecord | undefined, r: AttemptResult): { record: StageRecord; improved: boolean } {
   const rec: StageRecord = prev ? { ...prev } : { bestPct: 0, clears: 0, rank: null, accuracy: 0 };
+  const scoreUp = r.score !== undefined && r.score > (rec.bestScore ?? 0);
+  if (scoreUp) rec.bestScore = r.score;
   if (!r.cleared) {
     const improved = r.pct > rec.bestPct + 1e-9;
     if (improved) rec.bestPct = r.pct;
-    return { record: rec, improved };
+    return { record: rec, improved: improved || scoreUp };
   }
   rec.bestPct = 1;
   rec.clears++;
@@ -43,7 +47,7 @@ export function mergeRecord(prev: StageRecord | undefined, r: AttemptResult): { 
     rec.rank = r.rank;
     rec.accuracy = r.accuracy;
   }
-  return { record: rec, improved: better };
+  return { record: rec, improved: better || scoreUp };
 }
 
 /** Records are kept per track and difficulty: `${trackId}:${difficulty}`. */

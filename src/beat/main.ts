@@ -1,13 +1,13 @@
 import './beat.css';
-import { ClickTrack, SongPlayer, AudioEngine } from './audio/music';
+import { AudioEngine, ClickTrack, RecordingPlayer, SongPlayer, type Player } from './audio/music';
+import { analyze, AnalysisError, downmix, readTags } from './core/analyze';
 import { START_BEAT } from './core/constants';
 import {
   accuracy, advance, ballAt, heightOf, idealTaps, keyOf, newEcho, progress, rank, tap, xAt, type EchoSong, type EchoState, type Key,
 } from './core/echo';
 import { timingSummary, type Grade } from './core/judge';
 import { DIFFICULTIES, difficultyOf, type Difficulty } from './core/charts';
-import type { ComposedSong } from './core/compose';
-import { chartOf, songOf, TRACKS, type TrackDef } from './core/levels';
+import { chartOf, loadedTrack, songOf, trackBeats, TRACKS, type TrackDef } from './core/levels';
 import {
   loadRecords, loadSettings, mergeRecord, recordKey, saveRecords, saveSettings, syncOffset, type StageRecord,
 } from './core/records';
@@ -19,10 +19,9 @@ type Mode = 'title' | 'play' | 'paused' | 'result' | 'sync';
 interface Session {
   stage: TrackDef;
   difficulty: Difficulty;
-  composed: ComposedSong;
   song: EchoSong;
   state: EchoState;
-  player: SongPlayer;
+  player: Player;
   attempt: number;
   practice: boolean;
   overAt: number | null;
@@ -100,14 +99,22 @@ function demoFrame(now: number, dt: number): void {
 
 // ---------------------------------------------------------------- sessions
 
+/** Recordings the player loaded this visit, shown above the written songs. */
+const loaded: TrackDef[] = [];
+const allTracks = (): TrackDef[] => [...loaded, ...TRACKS];
+
+function makePlayer(track: TrackDef): Player {
+  const rec = track.recording;
+  return rec ? new RecordingPlayer(engine, rec.buffer, rec.analysis.bpm, rec.analysis.firstBeat) : new SongPlayer(engine, songOf(track));
+}
+
 function startStage(stage: TrackDef): void {
   engine.unlock();
   const difficulty = settings.difficulty;
-  const composed = songOf(stage);
   const song = chartOf(stage, difficulty);
   session?.player.stop();
   session = {
-    stage, difficulty, composed, song, state: newEcho(song, settings.practice), player: new SongPlayer(engine, composed), attempt: 0,
+    stage, difficulty, song, state: newEcho(song, settings.practice), player: makePlayer(stage), attempt: 0,
     practice: settings.practice, overAt: null, finishedAt: null, beat: START_BEAT, recent: [], card: null,
   };
   document.documentElement.style.setProperty('--accent', stage.palette.accent);
@@ -118,7 +125,7 @@ function startStage(stage: TrackDef): void {
 function beginAttempt(): void {
   const s = session!;
   s.player.stop();
-  s.player = new SongPlayer(engine, s.composed);
+  s.player = makePlayer(s.stage);
   s.attempt++;
   s.state = newEcho(s.song, s.practice);
   s.overAt = null;
@@ -169,7 +176,7 @@ function playFrame(now: number, dt: number): void {
   renderer.render({
     stage: s.stage, song: s.song, state: st, beat: beatNow, hint: settings.guide,
     hud: {
-      hearts: st.hearts, maxHearts: s.song.hearts, combo: st.combo, accuracy: accuracy(st), progress: progress(s.song, Math.max(0, beatNow)),
+      score: st.score, hearts: st.hearts, maxHearts: s.song.hearts, combo: st.combo, accuracy: accuracy(st), progress: progress(s.song, Math.max(0, beatNow)),
       best: s.practice ? 0 : s.card ? s.card.best : records[recordKey(s.stage.id, s.difficulty)]?.bestPct ?? 0, practice: s.practice,
       restored: st.restored, phrases: s.song.phrases, recent: s.recent,
     },
@@ -223,7 +230,7 @@ function handleEvents(s: Session, now: number): void {
       s.player.stop(0.3);
       const pct = progress(song, e.t);
       const before = records[recordKey(s.stage.id, s.difficulty)]?.bestPct ?? 0;
-      const merged = mergeRecord(records[recordKey(s.stage.id, s.difficulty)], { cleared: false, pct });
+      const merged = mergeRecord(records[recordKey(s.stage.id, s.difficulty)], { cleared: false, pct, score: s.state.score });
       records[recordKey(s.stage.id, s.difficulty)] = merged.record;
       saveRecords(records);
       s.card = { pct, best: Math.max(before, pct), newBest: merged.improved };
@@ -241,15 +248,16 @@ function showResult(s: Session): void {
   const acc = accuracy(st);
   let improved = false;
   if (!s.practice) {
-    const merged = mergeRecord(records[recordKey(s.stage.id, s.difficulty)], { cleared: true, rank: r, accuracy: acc });
+    const merged = mergeRecord(records[recordKey(s.stage.id, s.difficulty)], { cleared: true, rank: r, accuracy: acc, score: st.score });
     records[recordKey(s.stage.id, s.difficulty)] = merged.record;
     improved = merged.improved;
     saveRecords(records);
   }
-  const idx = TRACKS.indexOf(s.stage);
+  const list = allTracks();
+  const idx = list.indexOf(s.stage);
   fillResult({
     stage: s.stage, rank: r, accuracy: acc, counts: st.counts, maxCombo: st.maxCombo, restored: st.restored,
-    phrases: s.song.phrases, practice: s.practice, noHint: !settings.guide, improved, hasNext: idx < TRACKS.length - 1,
+    phrases: s.song.phrases, practice: s.practice, noHint: !settings.guide, improved, hasNext: idx < list.length - 1, score: st.score,
     difficulty: difficultyOf(s.difficulty).label,
     timing: timingSummary(st.judged),
   });
@@ -361,7 +369,7 @@ let trackButtons: HTMLButtonElement[] = [];
 function renderTitle(): void {
   const d = settings.difficulty;
   trackButtons = renderTracks(
-    TRACKS, TRACKS.map((t) => ({ beats: songOf(t).endBeat, notes: chartOf(t, d).notes.length / 2 })), records, d, startStage,
+    allTracks(), allTracks().map((t) => ({ beats: trackBeats(t), notes: chartOf(t, d).notes.filter((n) => n.role === 'response').length })), records, d, startStage,
   );
   renderDifficulties(d, (next) => {
     settings.difficulty = next;
@@ -377,7 +385,7 @@ function renderTitle(): void {
 }
 
 function focusNextTrack(): void {
-  trackButtons[nextTrack(TRACKS, records, settings.difficulty)]?.focus({ preventScroll: true });
+  trackButtons[nextTrack(allTracks(), records, settings.difficulty)]?.focus({ preventScroll: true });
 }
 
 $<HTMLInputElement>('opt-guide').addEventListener('change', (e) => {
@@ -408,13 +416,65 @@ $('restart').addEventListener('click', () => {
 $('quit').addEventListener('click', toTitle);
 $('again').addEventListener('click', () => session && startStage(session.stage));
 $('next').addEventListener('click', () => {
-  const i = session ? TRACKS.indexOf(session.stage) : -1;
-  if (i >= 0 && i < TRACKS.length - 1) startStage(TRACKS[i + 1]);
+  const list = allTracks();
+  const i = session ? list.indexOf(session.stage) : -1;
+  if (i >= 0 && i < list.length - 1) startStage(list[i + 1]);
 });
 $('to-title').addEventListener('click', toTitle);
 $('res-sync').addEventListener('click', openSync);
 
 // ---------------------------------------------------------------- input
+
+// ---------------------------------------------------------------- your own music
+
+function importStatus(text: string, kind: '' | 'ok' | 'error' = ''): void {
+  const el = $('import-status');
+  el.textContent = text;
+  el.className = `import-status ${kind}`;
+}
+
+async function importFile(file: File): Promise<void> {
+  const btn = $<HTMLButtonElement>('import');
+  btn.setAttribute('aria-busy', 'true');
+  btn.disabled = true;
+  importStatus(`"${file.name}" 분석 중… 긴 곡은 몇 초 걸려요.`);
+  try {
+    const ctx = engine.unlock();
+    const bytes = await file.arrayBuffer();
+    const tags = readTags(new Uint8Array(bytes));
+    const buffer = await ctx.decodeAudioData(bytes.slice(0));
+    // Let the status paint before the (blocking) analysis.
+    await new Promise((r) => setTimeout(r, 30));
+    const channels = Array.from({ length: buffer.numberOfChannels }, (_, i) => buffer.getChannelData(i));
+    const mono = downmix(channels, buffer.sampleRate);
+    const analysis = analyze(mono.samples, mono.rate);
+    const name = tags.title || file.name.replace(/\.[^.]+$/, '').replace(/[_]+/g, ' ').trim() || '내 음악';
+    const track = loadedTrack(name, tags.artist, buffer, analysis);
+    // Build all three charts now, so a bad file fails here and not mid-song.
+    const counts = DIFFICULTIES.map((d) => chartOf(track, d.id).notes.filter((n) => n.role === 'response').length);
+    const old = loaded.findIndex((t) => t.id === track.id);
+    if (old >= 0) loaded.splice(old, 1);
+    loaded.unshift(track);
+    renderTitle();
+    trackButtons[0]?.focus();
+    const sure = analysis.confidence < 0.25 ? ' 박자가 또렷하지 않아 조금 어긋날 수 있어요.' : '';
+    importStatus(`"${name}" · ${Math.round(analysis.bpm)} BPM으로 분석했어요. 따라 칠 노트 쉬움 ${counts[0]} · 보통 ${counts[1]} · 어려움 ${counts[2]}.${sure}`, 'ok');
+  } catch (err) {
+    const reason = err instanceof AnalysisError ? err.message : '이 파일은 열 수 없어요. MP3·WAV·OGG 파일인지 확인해 주세요.';
+    importStatus(reason, 'error');
+  } finally {
+    btn.removeAttribute('aria-busy');
+    btn.disabled = false;
+  }
+}
+
+$('import').addEventListener('click', () => $<HTMLInputElement>('import-file').click());
+$<HTMLInputElement>('import-file').addEventListener('change', (e) => {
+  const input = e.target as HTMLInputElement;
+  const file = input.files?.[0];
+  input.value = '';
+  if (file) void importFile(file);
+});
 
 function keyFor(code: string): Key | null {
   if (!session?.song.twoKeys) return ANY_KEYS.has(code) ? 'any' : null;
@@ -433,14 +493,14 @@ addEventListener('keydown', (e) => {
     settings.difficulty = DIFFICULTIES[(i + (e.code === 'ArrowRight' ? 1 : n - 1)) % n].id;
     saveSettings(settings);
     renderTitle();
-    trackButtons[focused >= 0 ? focused : nextTrack(TRACKS, records, settings.difficulty)]?.focus();
+    trackButtons[focused >= 0 ? focused : nextTrack(allTracks(), records, settings.difficulty)]?.focus();
     return;
   }
   if (mode === 'title' && (e.code === 'ArrowDown' || e.code === 'ArrowUp')) {
     e.preventDefault();
     const i = trackButtons.indexOf(document.activeElement as HTMLButtonElement);
     const n = trackButtons.length;
-    const next = i < 0 ? nextTrack(TRACKS, records, settings.difficulty) : (i + (e.code === 'ArrowDown' ? 1 : n - 1)) % n;
+    const next = i < 0 ? nextTrack(allTracks(), records, settings.difficulty) : (i + (e.code === 'ArrowDown' ? 1 : n - 1)) % n;
     trackButtons[next].focus();
     return;
   }

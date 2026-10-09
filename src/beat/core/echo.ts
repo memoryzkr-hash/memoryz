@@ -147,6 +147,8 @@ export interface EchoState {
   combo: number;
   maxCombo: number;
   points: number;
+  /** Live score: grade points times the combo multiplier, plus clean-echo bonuses. */
+  score: number;
   counts: Record<Grade, number>;
   /** Things that happened since the caller last emptied this list. */
   events: EchoEvent[];
@@ -161,7 +163,7 @@ export function newEcho(song: EchoSong, practice = false): EchoState {
     next: 0, falling: null, over: false, finished: false, heads: [],
     answer: new Array(song.notes.length).fill(-1), judged: new Array(song.notes.length).fill(null),
     strays: 0, phraseStrays: new Array(song.phrases).fill(0), restored: 0,
-    combo: 0, maxCombo: 0, points: 0, counts: { perfect: 0, great: 0, good: 0, miss: 0 }, events: [],
+    combo: 0, maxCombo: 0, points: 0, score: 0, counts: { perfect: 0, great: 0, good: 0, miss: 0 }, events: [],
   };
 }
 
@@ -201,11 +203,20 @@ export function ballAt(s: EchoState, song: EchoSong, t: number): { x: number; y:
   return { x, y: arcY(s.from, n.beat, heightOf(n.pitch), t) };
 }
 
+/** Points per press before the combo multiplier. */
+export const SCORE_POINTS: Record<Grade, number> = { perfect: 300, great: 200, good: 100, miss: 0 };
+/** A phrase echoed back perfectly. */
+export const PHRASE_BONUS = 500;
+
+/** 1x at no combo, rising to 2x at a 50 combo. */
+export const comboMultiplier = (combo: number): number => 1 + Math.min(combo, 50) / 50;
+
 function record(s: EchoState, note: number, grade: Grade, deltaMs: number): void {
   s.judged[note] = { note, grade, deltaMs };
   s.counts[grade]++;
   s.points += GRADE_POINTS[grade];
   s.combo = grade === 'miss' ? 0 : s.combo + 1;
+  s.score += Math.round(SCORE_POINTS[grade] * comboMultiplier(s.combo));
   s.maxCombo = Math.max(s.maxCombo, s.combo);
 }
 
@@ -229,6 +240,7 @@ function phraseDone(s: EchoState, song: EchoSong, i: number, t: number): void {
   if (clean) s.restored++;
   const healed = perfect && s.hearts < song.hearts && !s.falling;
   if (healed) s.hearts++;
+  if (perfect) s.score += PHRASE_BONUS;
   s.events.push({ type: 'phrase', t, phrase: n.phrase, perfect, healed });
 }
 

@@ -147,12 +147,112 @@ export class AudioEngine {
 /** Steps (sixteenth notes) are scheduled this far ahead of the audio clock. */
 const LOOKAHEAD = 0.14;
 
+/** What the game needs from whatever is playing the music. */
+export interface Player {
+  start(fromBeat: number, countInUntil: number, leadIn?: number): void;
+  beatAt(t: number): number;
+  pump(): void;
+  stop(fade?: number): void;
+  playNote(midi: number): void;
+  knock(): void;
+  crack(): void;
+}
+
+/**
+ * Plays a recording the player loaded (an MP3 of their own), lined up so that beat 0 is the bar
+ * start the analyzer found. The recording carries the music, so presses only add a light tick.
+ */
+export class RecordingPlayer implements Player {
+  private bus: GainNode;
+  private source: AudioBufferSourceNode | null = null;
+  private t0 = 0;
+  private startBeat = 0;
+  private stopped = true;
+  private readonly spb: number;
+
+  constructor(private readonly engine: AudioEngine, private readonly buffer: AudioBuffer, bpm: number, private readonly firstBeat: number) {
+    this.spb = 60 / bpm;
+    this.bus = engine.ctx!.createGain();
+    this.bus.connect(engine.master);
+  }
+
+  start(fromBeat: number, countInUntil: number, leadIn = 0.12): void {
+    const ctx = this.engine.ctx!;
+    this.t0 = ctx.currentTime + leadIn;
+    this.startBeat = fromBeat;
+    this.stopped = false;
+    const src = ctx.createBufferSource();
+    src.buffer = this.buffer;
+    src.connect(this.bus);
+    // The recording's second `offset` sounds at t0 (beat fromBeat).
+    const offset = this.firstBeat + fromBeat * this.spb;
+    if (offset >= 0) src.start(this.t0, offset);
+    else src.start(this.t0 - offset, 0);
+    this.source = src;
+    for (let b = Math.ceil(fromBeat); b < countInUntil; b++) this.engine.tick(this.t0 + (b - fromBeat) * this.spb, b === Math.ceil(fromBeat), this.bus);
+  }
+
+  beatAt(t: number): number {
+    return this.startBeat + (t - this.t0) / this.spb;
+  }
+
+  pump(): void {
+    // Everything is scheduled at start.
+  }
+
+  stop(fade = 0.04): void {
+    if (this.stopped) return;
+    this.stopped = true;
+    const ctx = this.engine.ctx!;
+    this.bus.gain.setTargetAtTime(0, ctx.currentTime, fade);
+    const src = this.source;
+    const bus = this.bus;
+    setTimeout(() => {
+      try {
+        src?.stop();
+      } catch {
+        // Already stopped.
+      }
+      bus.disconnect();
+    }, 1500);
+  }
+
+  private blip(freq: number, vol: number, len: number): void {
+    if (this.stopped) return;
+    const ctx = this.engine.ctx!;
+    const at = ctx.currentTime;
+    const o = ctx.createOscillator();
+    o.type = 'triangle';
+    o.frequency.setValueAtTime(freq, at);
+    o.frequency.exponentialRampToValueAtTime(freq * 0.6, at + len);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, at);
+    g.gain.exponentialRampToValueAtTime(vol, at + 0.003);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + len);
+    o.connect(g).connect(this.bus);
+    o.start(at);
+    o.stop(at + len + 0.02);
+  }
+
+  playNote(midi: number): void {
+    this.blip(midi > 0 ? 440 * 2 ** ((midi - 69) / 12) : 1320, 0.08, 0.06);
+  }
+
+  knock(): void {
+    this.blip(160, 0.2, 0.09);
+  }
+
+  crack(): void {
+    this.blip(2400, 0.18, 0.05);
+  }
+}
+
 /**
  * Plays one attempt of a written song from any beat. The band follows each bar's chord, energy
  * and fills; the lead sings the whole melody in call bars and stays silent in response bars,
  * where the player's presses play it instead.
  */
-export class SongPlayer {
+export class SongPlayer implements Player {
   private bus: GainNode;
   private delaySend: GainNode;
   private t0 = 0;

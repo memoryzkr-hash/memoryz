@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { MAX_HEARTS, WINDOW_BEATS } from '../../src/beat/core/constants';
 import {
+  comboMultiplier, PHRASE_BONUS, SCORE_POINTS,
   advance, ballAt, EchoChartError, heightOf, idealTaps, keyOf, newEcho, parseEcho, playTaps, rank, responseCount, tap,
   type Key,
 } from '../../src/beat/core/echo';
@@ -126,6 +127,25 @@ describe('playing back', () => {
     expect(s.maxCombo).toBeLessThan(responseCount(song));
     const first = s.events.find((e) => e.type === 'phrase' && e.phrase === 0);
     expect(first).toMatchObject({ perfect: false });
+  });
+});
+
+describe('score', () => {
+  it('adds grade points times a combo multiplier that tops out at 2x', () => {
+    expect(comboMultiplier(0)).toBe(1);
+    expect(comboMultiplier(25)).toBe(1.5);
+    expect(comboMultiplier(500)).toBe(2);
+    const s = newEcho(song);
+    advance(s, song, 4);
+    tap(s, song, 4, 'any', BPM);
+    expect(s.score).toBe(Math.round(SCORE_POINTS.perfect * comboMultiplier(1)));
+  });
+
+  it('pays a bonus for every perfect echo and nothing for misses', () => {
+    const perfect = playTaps(song, idealTaps(song), BPM);
+    const presses = idealTaps(song).reduce((sum, _, i) => sum + Math.round(SCORE_POINTS.perfect * comboMultiplier(i + 1)), 0);
+    expect(perfect.score).toBe(presses + PHRASE_BONUS * song.phrases);
+    expect(playTaps(song, [], BPM, { practice: true }).score).toBe(0);
   });
 });
 
