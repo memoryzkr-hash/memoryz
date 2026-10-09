@@ -68,3 +68,24 @@ export function icsFileName(event: Pick<CalEvent, 'title' | 'date'>): string {
     .replace(/^-|-$/g, '');
   return `${truncateChars(base, 40, '') || '일정'}-${event.date}.ics`;
 }
+
+/**
+ * A link that opens Google Calendar with the event filled in. Works anywhere a plain link
+ * works (also inside a Claude artifact, where file downloads are blocked) and can be pasted
+ * into a message so the other person can add it too.
+ */
+export function googleCalendarUrl(event: CalEvent): string {
+  let dates: string;
+  if (event.start) {
+    const start = zonedToUtc(event.date, event.start, event.timeZone);
+    const end = event.end ? zonedToUtc(event.date, event.end, event.timeZone) : new Date(start.getTime() + 3_600_000);
+    dates = `${utcStamp(start)}/${utcStamp(end)}`;
+  } else {
+    const compact = (d: string) => d.replace(/-/g, '');
+    dates = `${compact(event.date)}/${compact(addDays(event.date, 1))}`;
+  }
+  const params = new URLSearchParams({ action: 'TEMPLATE', text: event.title, dates });
+  if (event.location) params.set('location', event.location);
+  if (event.memo) params.set('details', event.memo);
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}

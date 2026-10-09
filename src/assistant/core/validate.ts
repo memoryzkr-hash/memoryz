@@ -26,10 +26,12 @@ export const BRIEFING_ERRORS = {
 } as const;
 
 /**
- * `searchedUrls` are the addresses that actually came back from web search in this call.
+ * `searchedUrls` are the addresses that actually came back from web search in this call
+ * (or, for pasted articles, the ones written in the pasted text).
  * A source Claude names that is not among them is dropped, so made-up links never show.
+ * `requireSources: false` accepts a summary with no link (pasted text often has none).
  */
-export function checkBriefing(input: unknown, searchedUrls: Iterable<string>): BriefingResult {
+export function checkBriefing(input: unknown, searchedUrls: Iterable<string>, opts: { requireSources?: boolean } = {}): BriefingResult {
   if (!isObj(input)) return { status: 'error', bullets: [], sources: [], error: BRIEFING_ERRORS.noSummary };
   if (input.status === 'empty') return { status: 'empty', bullets: [], sources: [] };
 
@@ -60,7 +62,9 @@ export function checkBriefing(input: unknown, searchedUrls: Iterable<string>): B
     });
     if (sources.length >= LIMITS.sources) break;
   }
-  if (sources.length === 0) return { status: 'error', bullets: [], sources: [], error: BRIEFING_ERRORS.noSources };
+  if (sources.length === 0 && opts.requireSources !== false) {
+    return { status: 'error', bullets: [], sources: [], error: BRIEFING_ERRORS.noSources };
+  }
   return { status: 'ok', bullets, sources };
 }
 
@@ -116,6 +120,21 @@ export function checkDrafts(input: unknown): [string, string] | null {
   const drafts = input.drafts.map((d) => (typeof d === 'string' ? truncateChars(cleanMultiLine(d), LIMITS.draft, '') : ''));
   if (drafts.some((d) => !d)) return null;
   return [drafts[0], drafts[1]];
+}
+
+/** Every http(s) address written in a piece of text, in order, without duplicates. */
+export function urlsIn(text: string): string[] {
+  const found = text.match(/https?:\/\/[^\s<>"'()\[\]{}]+/g) ?? [];
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const raw of found) {
+    const url = raw.replace(/[.,;:!?…。、]+$/, '');
+    if (!seen.has(url)) {
+      seen.add(url);
+      out.push(url);
+    }
+  }
+  return out;
 }
 
 /** Structured-output text → object, or null if it is not JSON. */

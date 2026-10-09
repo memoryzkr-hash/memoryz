@@ -1,13 +1,13 @@
 /** S2 일정, S2a 확인 카드, S2b 일정 상세, S2c 공유 (02-screens.md). */
 import { toAiError } from '../ai';
 import { formatLong, formatShort, sectionOf, type Section } from '../core/dates';
-import { buildIcs, icsFileName } from '../core/ics';
+import { buildIcs, googleCalendarUrl, icsFileName } from '../core/ics';
 import { emptyDraft, LIMITS } from '../core/rules';
 import { UndoSlot, type Removed } from '../core/store';
 import { charCount, cleanMultiLine, cleanSingleLine } from '../core/text';
 import type { CalEvent, EventDraft, EventField } from '../core/types';
 import type { App, Screen } from './app';
-import { confirmSheet, counter, download, h, openSheet, replaceChildren, toast } from './dom';
+import { append, confirmSheet, counter, download, h, openSheet, replaceChildren, toast } from './dom';
 
 const EXAMPLE = '다음 주 화요일 3시 강남역에서 민수랑 미팅';
 const SECTION_TITLES: Record<Exclude<Section, 'past'>, string> = { today: '오늘', week: '이번 주', later: '나중' };
@@ -314,28 +314,58 @@ export function eventsScreen(app: App): Screen {
 
   function openShare(e: CalEvent): void {
     const sheet = openSheet('일정 공유');
-    sheet.body.append(
+    const gcal = googleCalendarUrl(e);
+    const linkBox = h('input', { class: 'input', readOnly: true, value: gcal, hidden: true, 'aria-label': '캘린더 링크' });
+    append(sheet.body, [
       h('div', { class: 'event-pill' }, h('span', null, `📅 ${summary(e)}`)),
+      h(
+        'a',
+        { class: 'share-option', href: gcal, target: '_blank', rel: 'noopener', style: 'display:block;color:inherit;text-decoration:none' },
+        h('strong', null, '📅 Google 캘린더에 추가'),
+        h('span', { class: 'muted small' }, '내 캘린더에 바로 넣어요'),
+      ),
       h(
         'button',
         {
           type: 'button',
           class: 'share-option',
-          onClick: () => {
-            download(icsFileName(e), buildIcs(e), 'text/calendar;charset=utf-8');
-            toast('파일을 받았어요');
+          onClick: async () => {
+            try {
+              await navigator.clipboard.writeText(gcal);
+              toast('링크를 복사했어요');
+            } catch {
+              linkBox.hidden = false;
+              linkBox.select();
+              toast('링크를 길게 눌러 복사해 주세요');
+            }
           },
         },
-        h('strong', null, '📥 캘린더 파일(.ics) 받기'),
-        h('span', { class: 'muted small' }, '받은 사람이 열면 자기 캘린더에 추가돼요'),
+        h('strong', null, '🔗 캘린더 링크 복사'),
+        h('span', { class: 'muted small' }, '보내 주면 받은 사람도 눌러서 자기 캘린더에 추가해요'),
       ),
+      linkBox,
+      // A Claude artifact blocks file downloads, so the .ics file is only offered on the key version.
+      app.mode === 'key' &&
+        h(
+          'button',
+          {
+            type: 'button',
+            class: 'share-option',
+            onClick: () => {
+              download(icsFileName(e), buildIcs(e), 'text/calendar;charset=utf-8');
+              toast('파일을 받았어요');
+            },
+          },
+          h('strong', null, '📥 캘린더 파일(.ics) 받기'),
+          h('span', { class: 'muted small' }, '아이폰 캘린더 등 다른 캘린더 앱용'),
+        ),
       h(
         'button',
         { type: 'button', class: 'share-option', onClick: () => (sheet.close(), app.composeAbout(e)) },
         h('strong', null, '✉️ 알림 메시지 쓰기'),
         h('span', { class: 'muted small' }, '일정 내용을 넣어 초안을 써 줘요'),
       ),
-    );
+    ]);
   }
 
   return { title: '일정', render };

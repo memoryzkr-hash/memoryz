@@ -18,11 +18,12 @@
   --radius: 14px;
   --top: 56px;
   --tabs: 64px;
-  color-scheme: light dark;
+  color-scheme: light;
 }
 
+/* Dark: follows the system unless a viewer (e.g. the Claude artifact viewer) sets data-theme. */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme='light']) {
     --bg: #14161d;
     --surface: #1d2029;
     --surface-2: #262a35;
@@ -39,7 +40,28 @@
     --warn-line: #c98f1e;
     --ai-soft: #1f2a40;
     --shadow: 0 1px 2px rgb(0 0 0 / 40%);
+    color-scheme: dark;
   }
+}
+
+:root[data-theme='dark'] {
+  --bg: #14161d;
+  --surface: #1d2029;
+  --surface-2: #262a35;
+  --text: #eceef4;
+  --muted: #9aa1b2;
+  --line: #2f3442;
+  --accent: #7b8cff;
+  --accent-text: #0e1020;
+  --accent-soft: #262c4d;
+  --danger: #ff6b6b;
+  --danger-soft: #3a2024;
+  --warn: #ffc261;
+  --warn-soft: #3a2f1a;
+  --warn-line: #c98f1e;
+  --ai-soft: #1f2a40;
+  --shadow: 0 1px 2px rgb(0 0 0 / 40%);
+  color-scheme: dark;
 }
 
 * {
