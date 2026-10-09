@@ -2,14 +2,14 @@ import './beat.css';
 import { ClickTrack, SongPlayer, AudioEngine } from './audio/music';
 import { idealInputs, type BuiltLevel, type InputEvent } from './core/chart';
 import { SPEED, START_BEAT } from './core/constants';
-import { Judge, type Grade, type JudgeState } from './core/judge';
+import { Judge, timingSummary, type Grade, type JudgeState } from './core/judge';
 import { levelFor, STAGES, type StageDef } from './core/levels';
-import { cloneRun, newRun, press, release, step, type RunState } from './core/physics';
+import { cloneRun, groundAt, newRun, press, release, step, type RunState } from './core/physics';
 import {
   loadRecords, loadSettings, mergeRecord, saveRecords, saveSettings, syncOffset, type StageRecord,
 } from './core/records';
-import { Renderer } from './render/draw';
-import { $, fillResult, renderStages, show } from './ui/screens';
+import { Renderer, type DeathCard, type Tip } from './render/draw';
+import { $, fillResult, nextTrack, renderTracks, show } from './ui/screens';
 
 type Mode = 'title' | 'play' | 'paused' | 'result' | 'sync';
 
@@ -32,6 +32,11 @@ interface Session {
   finishedAt: number | null;
   /** Beat of the last frame, for drawing. */
   beat: number;
+  /** First-time hints for this stage's obstacle kinds. */
+  tips: Tip[];
+  /** Timing of the latest presses, for the HUD meter. */
+  recent: number[];
+  death: DeathCard | null;
 }
 
 const CHECKPOINT_EVERY = 16;
@@ -39,6 +44,11 @@ const RESTART_AFTER_MS = 900;
 const JUMP_KEYS = new Set(['Space', 'ArrowUp', 'KeyW', 'KeyZ', 'KeyX']);
 const GRADE_TEXT: Record<Grade, string> = { perfect: 'PERFECT', great: 'GREAT', good: 'GOOD', miss: 'MISS' };
 const GRADE_COLOR: Record<Grade, string> = { perfect: '#ffffff', great: '#ffe14a', good: '#9fe8ff', miss: '#ff8a8a' };
+/** Hints show on the first few attempts of a stage, with the beat guide on. */
+const TIP_ATTEMPTS = 3;
+const TIP_TEXT = { spike: '박자에 맞춰 탭!', pit: '구멍도 탭으로 점프', up: '탭해서 계단 위로', orb: '링 안에서 한 번 더 탭', pad: '노란 발판은 자동 점프' } as const;
+/** A tap this long after breaking skips the rest of the wait. */
+const SKIP_DEATH_MS = 250;
 
 const engine = new AudioEngine();
 const renderer = new Renderer($('stage'));
@@ -88,11 +98,32 @@ function demoFrame(now: number, dt: number): void {
     if (e.type === 'land') renderer.landed(e.t, e.x, e.y, e.impact, demo.stage.palette.edge);
   }
   run.events.length = 0;
-  renderer.render({ stage: demo.stage, level, run, beat: Math.max(beat, START_BEAT), guide: true, judged: demo.judge.state.judged, hud: null, countIn: null, deadFor: -1 }, dt);
+  renderer.render({ stage: demo.stage, level, run, beat: Math.max(beat, START_BEAT), guide: true, judged: demo.judge.state.judged, hud: null, countIn: null, deadFor: -1, tips: [], death: null }, dt);
   if (run.finished || run.dead || beat > level.endBeat + 2) resetDemo(now);
 }
 
 // ---------------------------------------------------------------- sessions
+
+/** One hint above the first obstacle of each kind in a level. */
+function buildTips(level: BuiltLevel): Tip[] {
+  const tips: Tip[] = [];
+  const seen = new Set<string>();
+  for (const n of level.notes) {
+    if (seen.has(n.kind)) continue;
+    seen.add(n.kind);
+    const x = n.beat * SPEED;
+    if (n.kind === 'orb') {
+      const orb = level.world.orbs.find((o) => Math.abs(o.x - x) < 0.01);
+      if (orb) tips.push({ x, y: orb.y + 1.1, text: TIP_TEXT.orb });
+    } else {
+      const top = groundAt(level.world, x) ?? 0;
+      tips.push({ x: x + 2, y: top + 3.5, text: TIP_TEXT[n.kind] });
+    }
+  }
+  const pad = level.world.pads[0];
+  if (pad) tips.push({ x: pad.x, y: pad.y + 1.6, text: TIP_TEXT.pad });
+  return tips;
+}
 
 function startStage(stage: StageDef): void {
   engine.unlock();
@@ -101,7 +132,7 @@ function startStage(stage: StageDef): void {
   session = {
     stage, level, judge: new Judge(level.notes, stage.bpm), run: newRun(), player: new SongPlayer(engine, stage, level),
     attempt: 0, practice: settings.practice, countInUntil: 0, checkpoint: null, nextCheckpoint: CHECKPOINT_EVERY,
-    marks: [], deadAt: null, finishedAt: null, beat: START_BEAT,
+    marks: [], deadAt: null, finishedAt: null, beat: START_BEAT, tips: buildTips(level), recent: [], death: null,
   };
   document.documentElement.style.setProperty('--accent', stage.palette.accent);
   beginAttempt();
@@ -115,6 +146,8 @@ function beginAttempt(): void {
   s.attempt++;
   s.deadAt = null;
   s.finishedAt = null;
+  s.death = null;
+  s.recent = [];
   queue.length = 0;
   renderer.reset();
   if (s.practice && s.checkpoint) {
@@ -189,9 +222,12 @@ function playFrame(now: number, dt: number): void {
     hud: {
       attempt: s.attempt, combo: s.judge.state.combo, accuracy: s.judge.accuracy(),
       progress: Math.min(1, Math.max(0, run.x / s.level.world.endX)),
-      best: s.practice ? 0 : records[s.stage.id]?.bestPct ?? 0, practice: s.practice, checkpoints: s.marks,
+      best: s.practice ? 0 : s.death ? s.death.best : records[s.stage.id]?.bestPct ?? 0, practice: s.practice, checkpoints: s.marks,
+      recent: s.recent,
     },
     countIn, deadFor: s.deadAt === null ? -1 : (now - s.deadAt) / 1000,
+    tips: settings.guide && s.attempt <= TIP_ATTEMPTS ? s.tips : [],
+    death: s.death,
   }, dt);
 
   if (s.deadAt !== null && now - s.deadAt > RESTART_AFTER_MS && mode === 'play') beginAttempt();
@@ -205,6 +241,8 @@ function handleEvents(s: Session, now: number): void {
       if (e.type === 'orb') renderer.sparks(e.x, e.y + 0.4, p.accent);
       const j = s.judge.hit(e.t, e.type);
       if (j) {
+        s.recent.push(j.deltaMs);
+        if (s.recent.length > 12) s.recent.shift();
         const sub = j.grade === 'perfect' ? '' : j.deltaMs < 0 ? '빠름' : '느림';
         renderer.popup(GRADE_TEXT[j.grade], sub, GRADE_COLOR[j.grade], e.y);
       }
@@ -215,12 +253,21 @@ function handleEvents(s: Session, now: number): void {
       s.player.stop(0.02);
       engine.death();
       renderer.shatter(e.x, e.y, [p.ball, p.accent, p.ink]);
+      try {
+        navigator.vibrate?.(40);
+      } catch {
+        // Not allowed here; the flash and sound are enough.
+      }
+      const pct = Math.min(1, Math.max(0, e.x / s.level.world.endX));
+      const before = records[s.stage.id]?.bestPct ?? 0;
+      let newBest = false;
       if (!s.practice) {
-        const pct = Math.min(1, Math.max(0, e.x / s.level.world.endX));
-        const { record } = mergeRecord(records[s.stage.id], { cleared: false, pct });
-        records[s.stage.id] = record;
+        const merged = mergeRecord(records[s.stage.id], { cleared: false, pct });
+        records[s.stage.id] = merged.record;
+        newBest = merged.improved;
         saveRecords(records);
       }
+      s.death = { pct, best: Math.max(before, s.practice ? 0 : pct), newBest, practice: s.practice };
     } else if (e.type === 'finish') {
       s.finishedAt = now;
       s.judge.sweep(Infinity);
@@ -244,6 +291,7 @@ function showResult(s: Session): void {
   fillResult({
     stage: s.stage, rank, accuracy, counts: s.judge.state.counts, maxCombo: s.judge.state.maxCombo,
     attempts: s.attempt, practice: s.practice, improved, hasNext: idx < STAGES.length - 1,
+    timing: timingSummary(s.judge.state.judged),
   });
   engine.fanfare(s.stage.song.root);
   show('result');
@@ -258,12 +306,15 @@ function toTitle(): void {
   renderTitle();
   resetDemo(performance.now());
   show('title');
+  focusNextTrack();
 }
 
 function pause(): void {
   if (mode !== 'play' || !session || session.deadAt !== null || session.finishedAt !== null) return;
   mode = 'paused';
   void engine.suspend();
+  const pct = Math.floor(Math.min(1, Math.max(0, session.run.x / session.level.world.endX)) * 100);
+  $('pause-info').textContent = `${session.stage.name} · ${pct}% 지점 · 시도 ${session.attempt}`;
   show('pause');
   $('resume').focus();
 }
@@ -345,12 +396,19 @@ function closeSync(): void {
 
 // ---------------------------------------------------------------- title & options
 
+let trackButtons: HTMLButtonElement[] = [];
+
 function renderTitle(): void {
-  renderStages(STAGES, records, startStage);
+  trackButtons = renderTracks(STAGES, STAGES.map((st) => levelFor(st).bars.length), records, startStage);
   $<HTMLInputElement>('opt-guide').checked = settings.guide;
   $<HTMLInputElement>('opt-practice').checked = settings.practice;
   $('sync-value').textContent = `${settings.offsetMs > 0 ? '+' : ''}${settings.offsetMs}ms`;
   $('mute').textContent = settings.muted ? '소리 끔' : '소리 켬';
+  $('mute').setAttribute('aria-pressed', String(settings.muted));
+}
+
+function focusNextTrack(): void {
+  trackButtons[nextTrack(STAGES, records)]?.focus({ preventScroll: true });
 }
 
 $<HTMLInputElement>('opt-guide').addEventListener('change', (e) => {
@@ -385,11 +443,32 @@ $('next').addEventListener('click', () => {
   if (i >= 0 && i < STAGES.length - 1) startStage(STAGES[i + 1]);
 });
 $('to-title').addEventListener('click', toTitle);
+$('res-sync').addEventListener('click', openSync);
 
 // ---------------------------------------------------------------- input
 
+/** During the death card, any press jumps straight to the next attempt. */
+function skipDeath(now: number): boolean {
+  const s = session;
+  if (mode !== 'play' || !s || s.deadAt === null || now - s.deadAt < SKIP_DEATH_MS) return false;
+  beginAttempt();
+  return true;
+}
+
 addEventListener('keydown', (e) => {
+  if (mode === 'title' && (e.code === 'ArrowDown' || e.code === 'ArrowUp')) {
+    e.preventDefault();
+    const i = trackButtons.indexOf(document.activeElement as HTMLButtonElement);
+    const n = trackButtons.length;
+    const next = i < 0 ? nextTrack(STAGES, records) : (i + (e.code === 'ArrowDown' ? 1 : n - 1)) % n;
+    trackButtons[next].focus();
+    return;
+  }
   if (mode === 'play') {
+    if (JUMP_KEYS.has(e.code) && !e.repeat && skipDeath(performance.now())) {
+      e.preventDefault();
+      return;
+    }
     if (JUMP_KEYS.has(e.code)) {
       e.preventDefault();
       if (!e.repeat) queue.push({ time: e.timeStamp, type: 'press' });
@@ -422,6 +501,7 @@ const pointers = new Set<number>();
 renderer.canvas.addEventListener('pointerdown', (e) => {
   if (mode !== 'play') return;
   e.preventDefault();
+  if (skipDeath(performance.now())) return;
   pointers.add(e.pointerId);
   if (pointers.size === 1) queue.push({ time: e.timeStamp, type: 'press' });
 });
@@ -457,6 +537,7 @@ setInterval(() => {
 renderTitle();
 resetDemo(performance.now());
 show('title');
+focusNextTrack();
 requestAnimationFrame(frame);
 void document.fonts?.ready.then(() => renderer.resize());
 

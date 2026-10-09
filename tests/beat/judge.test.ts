@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildLevel, parseChart, ChartError } from '../../src/beat/core/chart';
-import { gradeFor, Judge } from '../../src/beat/core/judge';
+import { gradeFor, Judge, timingSummary } from '../../src/beat/core/judge';
 import type { Note } from '../../src/beat/core/chart';
 import { mergeRecord, syncOffset } from '../../src/beat/core/records';
 
@@ -59,6 +59,24 @@ describe('judge', () => {
     j.restore(snap);
     expect(j.state.counts.perfect).toBe(1);
     expect(j.state.judged[1]).toBeNull();
+  });
+});
+
+describe('timing summary', () => {
+  it('averages hit presses only and bins them in 20 ms steps, clamping the far ends', () => {
+    const j = (deltaMs: number, grade: 'perfect' | 'great' | 'good' | 'miss' = 'perfect') => ({ note: 0, grade, deltaMs });
+    const t = timingSummary([j(0), j(21), j(-39), j(500, 'good'), j(0, 'miss'), null]);
+    expect(t.hits).toBe(4);
+    expect(t.mean).toBeCloseTo((0 + 21 - 39 + 500) / 4);
+    expect(t.bins).toHaveLength(13);
+    expect(t.bins[6]).toBe(1);
+    expect(t.bins[7]).toBe(1);
+    expect(t.bins[4]).toBe(1);
+    expect(t.bins[12]).toBe(1);
+  });
+
+  it('is empty without hits', () => {
+    expect(timingSummary([null, null])).toMatchObject({ hits: 0, mean: 0 });
   });
 });
 

@@ -12,7 +12,15 @@ export interface Hud {
   best: number;
   practice: boolean;
   checkpoints: number[];
+  /** Timing of the latest judged presses in ms (negative = early), oldest first. */
+  recent: number[];
 }
+
+/** A one-time hint pinned above an obstacle the first few attempts. */
+export interface Tip { x: number; y: number; text: string }
+
+/** What the death card says while the next attempt loads. */
+export interface DeathCard { pct: number; best: number; newBest: boolean; practice: boolean }
 
 export interface View {
   stage: StageDef;
@@ -27,6 +35,8 @@ export interface View {
   countIn: number | null;
   /** Seconds since the ball broke, or -1. */
   deadFor: number;
+  tips: Tip[];
+  death: DeathCard | null;
 }
 
 interface Particle { x: number; y: number; vx: number; vy: number; life: number; max: number; size: number; color: string; shard: boolean; rot: number; vr: number }
@@ -58,8 +68,12 @@ export class Renderer {
   private popups: Popup[] = [];
   private trail: { x: number; y: number }[] = [];
   private lastLand = -99;
-  /** Height of the notch area (env(safe-area-inset-top)), measured on resize. */
+  /** Notch and home-indicator insets, measured on resize. */
   private safeTop = 0;
+  private safeBottom = 0;
+  private lastCombo = 0;
+  private comboAt = -1;
+  private readonly calm = matchMedia('(prefers-reduced-motion: reduce)');
 
   constructor(parent: HTMLElement) {
     this.canvas = document.createElement('canvas');
@@ -78,7 +92,9 @@ export class Renderer {
     this.g.setTransform(dpr, 0, 0, dpr, 0, 0);
     // Narrow (portrait) screens trade some look-ahead for a ball you can actually see.
     this.T = Math.max(20, Math.min(this.w / (this.w < this.h ? 12 : 15), this.h / 8.5));
-    this.safeTop = document.getElementById('safe-probe')?.offsetHeight ?? 0;
+    const probe = document.getElementById('safe-probe');
+    this.safeTop = probe?.offsetHeight ?? 0;
+    this.safeBottom = probe?.offsetWidth ?? 0;
   }
 
   /** Forget camera smoothing and effects (new attempt). */
@@ -144,12 +160,12 @@ export class Renderer {
     } else this.camY += (base - this.camY) * (1 - Math.exp(-dt * 5));
     const horizon = h * 0.7;
     let shake = 0;
-    if (v.deadFor >= 0) shake = Math.max(0, 0.3 - v.deadFor) * 30;
+    if (v.deadFor >= 0 && !this.calm.matches) shake = Math.max(0, 0.3 - v.deadFor) * 30;
     const sx = (x: number) => (x - camX) * T + (shake ? (Math.random() - 0.5) * shake : 0);
     const sy = (y: number) => horizon - (y - this.camY) * T;
 
     const beatFrac = frac(v.beat);
-    const pulse = v.countIn === null ? (1 - beatFrac) ** 3 : 0;
+    const pulse = v.countIn === null && !this.calm.matches ? (1 - beatFrac) ** 3 : 0;
     const bar = Math.floor(Math.max(0, v.beat) / 4);
     const energy = v.countIn === null ? v.level.bars[bar]?.energy ?? 0 : 0;
 
@@ -200,8 +216,14 @@ export class Renderer {
       g.fillRect(x0, top, x1 - x0, h - top + 40);
       g.fillStyle = alpha(p.edge, 0.07);
       for (let k = 1; k < 8; k++) g.fillRect(x0, top + k * 0.5 * T, x1 - x0, 1);
+      g.fillStyle = alpha(p.edge, 0.1);
+      g.fillRect(x0, top, x1 - x0, 0.2 * T);
       g.fillStyle = p.edge;
       g.fillRect(x0, top - 2, x1 - x0, 4);
+      if (pulse > 0.01) {
+        g.fillStyle = alpha(p.edge, 0.4 * pulse);
+        g.fillRect(x0, top - 5, x1 - x0, 10);
+      }
     }
     // Vertical edges where the ground steps or breaks.
     g.fillStyle = p.edge;
@@ -318,6 +340,12 @@ export class Renderer {
       g.globalAlpha = 1;
     });
 
+    // First-time hints, pinned above the obstacle they explain.
+    for (const tip of v.tips) {
+      if (tip.x < left - 4 || tip.x > right + 4) continue;
+      this.drawTip(sx(tip.x), sy(tip.y), tip.text, p);
+    }
+
     // Trail while airborne.
     if (alive && !run.grounded) this.trail.push({ x: run.x, y: run.y + BALL_R });
     else if (this.trail.length) this.trail.shift();
@@ -388,7 +416,7 @@ export class Renderer {
     for (const pop of this.popups) pop.age += dt;
     this.popups = this.popups.filter((pop) => pop.age < 0.7);
     for (const pop of this.popups) {
-      const a = 1 - pop.age / 0.7;
+      const a = pop.age < 0.45 ? 1 : 1 - (pop.age - 0.45) / 0.25;
       const rise = (1 - (1 - pop.age / 0.7) ** 3) * 0.8;
       const x = sx(run.x);
       // Above where it popped, but never on top of the ball as it rises through its jump.
@@ -401,6 +429,8 @@ export class Renderer {
       g.lineWidth = Math.max(3, 0.09 * T);
       g.strokeStyle = p.ink;
       g.strokeText(pop.text, x, y);
+      g.fillStyle = p.ink;
+      g.fillText(pop.text, x + 2, y + 3);
       g.fillStyle = pop.color;
       g.fillText(pop.text, x, y);
       if (pop.sub) {
@@ -435,7 +465,60 @@ export class Renderer {
       g.fillRect(0, 0, w, h);
     }
 
+    const vig = g.createRadialGradient(w / 2, h * 0.55, Math.min(w, h) * 0.35, w / 2, h * 0.55, Math.max(w, h) * 0.75);
+    vig.addColorStop(0, alpha(p.ink, 0));
+    vig.addColorStop(1, alpha(p.ink, 0.28));
+    g.fillStyle = vig;
+    g.fillRect(0, 0, w, h);
+
     if (v.hud) this.drawHud(v.hud, p);
+    if (v.death && v.deadFor >= 0.12) this.drawDeath(v.death, v.deadFor - 0.12, p);
+  }
+
+  private drawTip(x: number, y: number, text: string, p: Palette): void {
+    const { g, T } = this;
+    g.font = `600 ${Math.max(12, Math.min(16, 0.3 * T))}px ${BODY}`;
+    const tw = g.measureText(text).width;
+    const padX = 10;
+    const hgt = Math.max(26, 0.56 * T);
+    g.fillStyle = alpha(p.ink, 0.88);
+    g.beginPath();
+    g.roundRect(x - tw / 2 - padX, y - hgt, tw + padX * 2, hgt, hgt / 2);
+    g.moveTo(x - 6, y);
+    g.lineTo(x, y + 7);
+    g.lineTo(x + 6, y);
+    g.fill();
+    g.fillStyle = '#ffffff';
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    g.fillText(text, x, y - hgt / 2 + 1);
+  }
+
+  private drawDeath(d: DeathCard, age: number, p: Palette): void {
+    const { g, w, h } = this;
+    const a = Math.min(1, age / 0.15);
+    const size = Math.min(h * 0.2, w * 0.2);
+    g.globalAlpha = a;
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    g.font = `${size}px ${DISPLAY}`;
+    g.lineWidth = Math.max(5, size * 0.07);
+    g.strokeStyle = p.ink;
+    g.lineJoin = 'round';
+    const cy = h * 0.4;
+    g.strokeText(`${Math.floor(d.pct * 100)}%`, w / 2, cy);
+    g.fillStyle = '#ffffff';
+    g.fillText(`${Math.floor(d.pct * 100)}%`, w / 2, cy);
+    const line = d.practice ? '체크포인트에서 다시' : d.newBest ? '최고 기록!' : `최고 ${Math.floor(d.best * 100)}%`;
+    g.font = `${Math.max(18, size * 0.24)}px ${KOREAN}`;
+    g.lineWidth = 4;
+    g.strokeText(line, w / 2, cy + size * 0.62);
+    g.fillStyle = d.newBest ? p.accent : '#ffffff';
+    g.fillText(line, w / 2, cy + size * 0.62);
+    g.font = `600 14px ${BODY}`;
+    g.fillStyle = alpha('#ffffff', 0.85);
+    g.fillText('누르면 바로 다시 시작', w / 2, cy + size * 0.62 + 34);
+    g.globalAlpha = 1;
   }
 
   private drawBall(v: View, bx: number, by: number, p: Palette): void {
@@ -483,52 +566,103 @@ export class Renderer {
   }
 
   private drawHud(hud: Hud, p: Palette): void {
-    const { g, w } = this;
-    const top = 22 + this.safeTop;
+    const { g, w, h } = this;
+    const top = 16 + this.safeTop;
     const x0 = 16;
     const x1 = w - 72;
-    const barW = Math.max(60, x1 - x0 - 56);
-    g.fillStyle = alpha(p.ink, 0.35);
+    const barW = Math.max(60, x1 - x0);
+
+    // Progress: the whole song as one line, best attempt and checkpoints marked on it.
+    g.fillStyle = alpha(p.ink, 0.4);
     g.beginPath();
-    g.roundRect(x0, top, barW, 10, 5);
+    g.roundRect(x0, top, barW, 8, 4);
     g.fill();
-    if (hud.best > 0) {
-      g.fillStyle = alpha('#ffffff', 0.35);
-      g.fillRect(x0 + barW * hud.best - 1, top - 3, 2, 16);
-    }
     g.fillStyle = '#ffffff';
     g.beginPath();
-    g.roundRect(x0, top, Math.max(10, barW * hud.progress), 10, 5);
+    g.roundRect(x0, top, Math.max(8, barW * hud.progress), 8, 4);
     g.fill();
+    if (hud.best > 0 && hud.best < 1) {
+      g.fillStyle = p.accent;
+      g.fillRect(x0 + barW * hud.best - 1.5, top - 4, 3, 16);
+    }
     g.fillStyle = p.accent;
     for (const c of hud.checkpoints) {
       const cx = x0 + barW * c;
       g.beginPath();
-      g.moveTo(cx, top - 2);
-      g.lineTo(cx + 5, top + 5);
-      g.lineTo(cx, top + 12);
-      g.lineTo(cx - 5, top + 5);
+      g.moveTo(cx, top - 3);
+      g.lineTo(cx + 6, top + 4);
+      g.lineTo(cx, top + 11);
+      g.lineTo(cx - 6, top + 4);
       g.closePath();
       g.fill();
     }
-    g.font = `15px ${DISPLAY}`;
-    g.textAlign = 'left';
-    g.textBaseline = 'middle';
-    g.fillStyle = '#ffffff';
-    g.fillText(`${Math.floor(hud.progress * 100)}%`, x0 + barW + 10, top + 5);
 
-    g.font = `15px ${BODY}`;
     g.textBaseline = 'top';
-    g.fillStyle = alpha('#ffffff', 0.92);
-    g.fillText(hud.practice ? `연습 · 시도 ${hud.attempt}` : `시도 ${hud.attempt}`, x0, top + 22);
+    g.textAlign = 'left';
+    g.font = `16px ${DISPLAY}`;
+    g.fillStyle = '#ffffff';
+    g.fillText(`${Math.floor(hud.progress * 100)}%`, x0, top + 18);
+    const pctW = g.measureText(`${Math.floor(hud.progress * 100)}%`).width;
+    g.font = `600 13px ${BODY}`;
+    g.fillStyle = alpha('#ffffff', 0.85);
+    g.fillText(hud.practice ? `연습 · 시도 ${hud.attempt}` : `시도 ${hud.attempt}`, x0 + pctW + 12, top + 20);
     g.textAlign = 'right';
-    g.font = `15px ${DISPLAY}`;
-    g.fillText(`${(hud.accuracy * 100).toFixed(1)}%`, x1 - 8, top + 22);
-    if (hud.combo >= 2) {
-      g.font = `22px ${DISPLAY}`;
-      g.fillText(String(hud.combo), x1 - 8, top + 42);
-      g.font = `12px ${BODY}`;
-      g.fillText('콤보', x1 - 8, top + 68);
+    g.font = `16px ${DISPLAY}`;
+    g.fillStyle = '#ffffff';
+    g.fillText(`${(hud.accuracy * 100).toFixed(1)}%`, x1, top + 18);
+    g.font = `600 11px ${BODY}`;
+    g.fillStyle = alpha('#ffffff', 0.7);
+    g.fillText('정확도', x1, top + 38);
+
+    // Combo, top centre, popping each time it grows.
+    const now = performance.now();
+    if (hud.combo !== this.lastCombo) {
+      if (hud.combo > this.lastCombo) this.comboAt = now;
+      this.lastCombo = hud.combo;
     }
+    if (hud.combo >= 4) {
+      const since = (now - this.comboAt) / 1000;
+      const pop = this.calm.matches ? 1 : 1 + 0.25 * Math.max(0, 1 - since * 6);
+      g.textAlign = 'center';
+      g.font = `${30 * pop}px ${DISPLAY}`;
+      g.fillStyle = alpha('#ffffff', 0.95);
+      g.fillText(String(hud.combo), w / 2, top + 18);
+      g.font = `11px ${DISPLAY}`;
+      g.fillStyle = alpha('#ffffff', 0.75);
+      g.fillText('COMBO', w / 2, top + 52);
+    }
+
+    // Timing meter, bottom centre: where your recent presses landed, early to late.
+    const mw = Math.min(240, w - 64);
+    const mx = w / 2;
+    const my = h - this.safeBottom - 30;
+    const range = 130;
+    const at = (ms: number) => mx + (Math.max(-range, Math.min(range, ms)) / range) * (mw / 2);
+    g.fillStyle = alpha(p.ink, 0.45);
+    g.beginPath();
+    g.roundRect(mx - mw / 2 - 6, my - 10, mw + 12, 20, 10);
+    g.fill();
+    g.fillStyle = alpha('#9fe8ff', 0.35);
+    g.fillRect(at(-range), my - 2, at(range) - at(-range), 4);
+    g.fillStyle = alpha('#ffe14a', 0.6);
+    g.fillRect(at(-90), my - 2, at(90) - at(-90), 4);
+    g.fillStyle = '#ffffff';
+    g.fillRect(at(-45), my - 2.5, at(45) - at(-45), 5);
+    g.fillRect(mx - 1, my - 8, 2, 16);
+    hud.recent.forEach((ms, i) => {
+      const k = (i + 1) / hud.recent.length;
+      const d = Math.abs(ms);
+      g.fillStyle = d <= 45 ? '#ffffff' : d <= 90 ? '#ffe14a' : '#9fe8ff';
+      g.globalAlpha = 0.25 + 0.75 * k;
+      g.fillRect(at(ms) - 1.5, my - 8, 3, 16);
+    });
+    g.globalAlpha = 1;
+    g.font = `600 11px ${BODY}`;
+    g.textBaseline = 'middle';
+    g.fillStyle = alpha('#ffffff', 0.8);
+    g.textAlign = 'right';
+    g.fillText('빠름', mx - mw / 2 - 12, my);
+    g.textAlign = 'left';
+    g.fillText('느림', mx + mw / 2 + 12, my);
   }
 }
